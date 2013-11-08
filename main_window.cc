@@ -15,7 +15,7 @@ MainWindow::MainWindow() {
 
   this->CreateActions();
   this->CreateMenus();
-
+  this->CreateToolBar();
 }
 
 
@@ -25,7 +25,16 @@ MainWindow::~MainWindow() {
 }
 
 void MainWindow::CreateActions() {
+  this->CreateFileMenuActions();
   this->CreateHelpMenuActions();
+}
+
+void MainWindow::CreateFileMenuActions() {
+  open_image_action_ = new QAction(tr("&Open Image"), this);
+  open_image_action_->setShortcut(QKeySequence::Open);
+  open_image_action_->setIcon(QIcon(":/icon/Open.png"));
+  connect(open_image_action_, SIGNAL(triggered()),
+          this, SLOT(OpenImage()));
 }
 
 void MainWindow::CreateHelpMenuActions() {
@@ -39,11 +48,20 @@ void MainWindow::CreateHelpMenuActions() {
 }
 
 void MainWindow::CreateMenus() {
+  file_menu_ = menuBar()->addMenu(tr("&File"));
+  file_menu_->addAction(open_image_action_);
+
   help_menu_ = menuBar()->addMenu(tr("&Help"));
   help_menu_->addAction(about_soax_action_);
   help_menu_->addAction(about_qt_action_);
 }
 
+void MainWindow::CreateToolBar() {
+  toolbar_ = addToolBar(tr("shortcuts"));
+  toolbar_->addAction(open_image_action_);
+}
+
+void MainWindow::OpenImage() {}
 
 void MainWindow::AboutSOAX() {
   QMessageBox::about(this, tr("About SOAX"),

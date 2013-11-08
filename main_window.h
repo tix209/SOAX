@@ -22,26 +22,38 @@ class MainWindow : public QMainWindow {
   virtual QMenu *createPopupMenu() {return NULL;}
 
  private slots:
-  // void OpenImage();
+  void OpenImage();
 
   void AboutSOAX();
 
  private:
   void CreateActions();
+  void CreateFileMenuActions();
   void CreateHelpMenuActions();
 
   void CreateMenus();
-
+  void CreateToolBar();
 
   QWidget *central_widget_;
+
+  // Actions in File menu
+  QAction *open_image_action_;
 
   // Actions in Help menu
   QAction *about_soax_action_;
   QAction *about_qt_action_;
 
   // Menus
+  QMenu *file_menu_;
   QMenu *help_menu_;
 
+  QToolBar *toolbar_;
+
+  // Complete image file path and name
+  std::string image_filename_;
+
+  // Image and Snake viewer
+  // Viewer *viewer_;
 
   DISALLOW_COPY_AND_ASSIGN(MainWindow);
 };

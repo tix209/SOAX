@@ -34,49 +34,81 @@ void MainWindow::CreateActions() {
 }
 
 void MainWindow::CreateFileMenuActions() {
-  open_image_action_ = new QAction(tr("&Open Image"), this);
-  open_image_action_->setShortcut(QKeySequence::Open);
-  open_image_action_->setIcon(QIcon(":/icon/Open.png"));
-  connect(open_image_action_, SIGNAL(triggered()),
+  open_image_ = new QAction(tr("&Open Image"), this);
+  open_image_->setShortcut(QKeySequence::Open);
+  open_image_->setIcon(QIcon(":/icon/Open.png"));
+  connect(open_image_, SIGNAL(triggered()),
           this, SLOT(OpenImage()));
 }
 
 void MainWindow::CreateViewMenuActions() {
-  toggle_planes_action_ = new QAction(tr("Slice Planes"), this);
-  toggle_planes_action_->setIcon(QIcon(":/icon/Picture.png"));
-  toggle_planes_action_->setCheckable(true);
-  connect(toggle_planes_action_, SIGNAL(toggled(bool)),
+  toggle_planes_ = new QAction(tr("Slice Planes"), this);
+  toggle_planes_->setIcon(QIcon(":/icon/Picture.png"));
+  toggle_planes_->setCheckable(true);
+  connect(toggle_planes_, SIGNAL(toggled(bool)),
           viewer_, SLOT(ToggleSlicePlanes(bool)));
+
+  toggle_mip_ = new QAction(tr("MIP Rendering"), this);
+  toggle_mip_->setIcon(QIcon(":/icon/Globe.png"));
+  toggle_mip_->setCheckable(true);
+  connect(toggle_mip_, SIGNAL(toggled(bool)),
+          viewer_, SLOT(ToggleMIPRendering(bool)));
+
+  toggle_orientation_marker_ = new QAction(tr("Orientation Marker"), this);
+  toggle_orientation_marker_->setCheckable(true);
+  connect(toggle_orientation_marker_, SIGNAL(toggled(bool)),
+          viewer_, SLOT(ToggleOrientationMarker(bool)));
+
+  toggle_screen_information_ = new QAction(tr("Screen Information"), this);
+  toggle_screen_information_->setCheckable(true);
+  connect(toggle_screen_information_, SIGNAL(toggled(bool)),
+          viewer_, SLOT(ToggleScreenInformation(bool)));
+
+  toggle_bounding_box_ = new QAction(tr("Bounding Box"), this);
+  toggle_bounding_box_->setCheckable(true);
+  connect(toggle_bounding_box_, SIGNAL(toggled(bool)),
+          viewer_, SLOT(ToggleBoundingBox(bool)));
+
+  toggle_cube_axes_ = new QAction(tr("Cube Axes"), this);
+  toggle_cube_axes_->setCheckable(true);
+  connect(toggle_cube_axes_, SIGNAL(toggled(bool)),
+          viewer_, SLOT(ToggleCubeAxes(bool)));
 }
 
 void MainWindow::CreateHelpMenuActions() {
-  about_soax_action_ = new QAction(tr("About SOAX"), this);
-  about_soax_action_->setStatusTip(tr("About SOAX"));
-  connect(about_soax_action_, SIGNAL(triggered()), this, SLOT(AboutSOAX()));
+  about_soax_ = new QAction(tr("About SOAX"), this);
+  about_soax_->setStatusTip(tr("About SOAX"));
+  connect(about_soax_, SIGNAL(triggered()), this, SLOT(AboutSOAX()));
 
-  about_qt_action_ = new QAction(tr("About Qt"), this);
-  about_qt_action_->setStatusTip(tr("About Qt"));
-  connect(about_qt_action_, SIGNAL(triggered()), qApp, SLOT(aboutQt()));
+  about_qt_ = new QAction(tr("About Qt"), this);
+  about_qt_->setStatusTip(tr("About Qt"));
+  connect(about_qt_, SIGNAL(triggered()), qApp, SLOT(aboutQt()));
 }
 
 void MainWindow::CreateMenus() {
-  file_menu_ = menuBar()->addMenu(tr("&File"));
-  file_menu_->addAction(open_image_action_);
+  file_ = menuBar()->addMenu(tr("&File"));
+  file_->addAction(open_image_);
 
-  view_menu_ = menuBar()->addMenu(tr("&View"));
-  view_menu_->addAction(toggle_planes_action_);
+  view_ = menuBar()->addMenu(tr("&View"));
+  view_->addAction(toggle_planes_);
+  view_->addAction(toggle_mip_);
+  view_->addAction(toggle_orientation_marker_);
+  view_->addAction(toggle_screen_information_);
+  view_->addAction(toggle_bounding_box_);
+  view_->addAction(toggle_cube_axes_);
 
-  help_menu_ = menuBar()->addMenu(tr("&Help"));
-  help_menu_->addAction(about_soax_action_);
-  help_menu_->addAction(about_qt_action_);
+  help_ = menuBar()->addMenu(tr("&Help"));
+  help_->addAction(about_soax_);
+  help_->addAction(about_qt_);
 }
 
 void MainWindow::CreateToolBar() {
   toolbar_ = addToolBar(tr("shortcuts"));
-  toolbar_->addAction(open_image_action_);
+  toolbar_->addAction(open_image_);
 
   toolbar_->addSeparator();
-  toolbar_->addAction(toggle_planes_action_);
+  toolbar_->addAction(toggle_planes_);
+  toolbar_->addAction(toggle_mip_);
 }
 
 QString MainWindow::GetLastDirectory(const std::string &filename) {
@@ -97,11 +129,12 @@ void MainWindow::OpenImage() {
   this->setWindowTitle(QString("soax3D - ") + image_filename_.c_str());
   multisnake_->LoadImage(image_filename_);
   viewer_->SetupImage(multisnake_->image());
-  // viewer_->DisplayOrientationMarker();
-  // viewer_->DisplayBoundingBox();
-  // viewer_->DisplayUpperLeftCornerInfo();
-  toggle_planes_action_->setChecked(true);
-  // toggle_volume_action_->setChecked(false);
+  toggle_planes_->setChecked(true);
+  toggle_mip_->setChecked(false);
+  toggle_orientation_marker_->setChecked(true);
+  // viewer_->SetupOrientationMarker();
+  // viewer_->SetupUpperLeftCornerText();
+  // viewer_->SetupBoundingBox();
   viewer_->Render();
 
 }

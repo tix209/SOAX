@@ -43,19 +43,24 @@ class MainWindow : public QMainWindow {
   QWidget *central_widget_;
 
   // Actions in File menu
-  QAction *open_image_action_;
+  QAction *open_image_;
 
   // Actions in View menu
-  QAction *toggle_planes_action_;
+  QAction *toggle_planes_;
+  QAction *toggle_mip_;
+  QAction *toggle_orientation_marker_;
+  QAction *toggle_screen_information_;
+  QAction *toggle_bounding_box_;
+  QAction *toggle_cube_axes_;
 
   // Actions in Help menu
-  QAction *about_soax_action_;
-  QAction *about_qt_action_;
+  QAction *about_soax_;
+  QAction *about_qt_;
 
   // Menus
-  QMenu *file_menu_;
-  QMenu *view_menu_;
-  QMenu *help_menu_;
+  QMenu *file_;
+  QMenu *view_;
+  QMenu *help_;
 
   QToolBar *toolbar_;
 

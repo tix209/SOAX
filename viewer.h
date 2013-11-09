@@ -33,13 +33,19 @@ class Viewer : public QObject {
 
  public slots:
   void ToggleSlicePlanes(bool state);
+  void ToggleMIPRendering(bool state);
+  void ToggleOrientationMarker(bool state);
+  void ToggleScreenInformation(bool state);
+  void ToggleBoundingBox(bool state);
+  void ToggleCubeAxes(bool state);
 
  private:
   void SetupSlicePlanes(vtkImageData *data, double min_intensity,
                         double max_intensity);
-
-  void ShowSlicePlanes();
-  void HideSlicePlanes();
+  void SetupMIPRendering(vtkImageData *data,
+                                 double min_intensity,
+                                 double max_intensity);
+  void SetupOrientationMarker();
 
   QVTKWidget *qvtk_;
   vtkSmartPointer<vtkRenderer> renderer_;

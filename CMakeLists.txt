@@ -29,7 +29,7 @@ endif(Boost_FOUND)
 
 set(gui_srcs
   gui.cc
-  # viewer.cc
+  viewer.cc
   main_window.cc
   # parameters_dialog.cc
   # view_options_dialog.cc
@@ -38,11 +38,13 @@ set(gui_srcs
 
 set(common_srcs
   global.h
+  multisnake.h
+  multisnake.cc
   )
 
 set(moc_gui_srcs
   main_window.h
-  # viewer.h
+  viewer.h
   # parameters_dialog.h
   # view_options_dialog.h
   # analysis_options_dialog.h

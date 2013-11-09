@@ -3,11 +3,12 @@
 
 // #include <limits>
 // #include <deque>
+#include "itkImage.h"
 
 namespace soax {
 
 // Constants
-// const unsigned kDimension = 3;
+const unsigned kDimension = 3;
 // const double kPi = 3.14159265358979323846264338;
 // const double kEpsilon = std::numeric_limits<double>::epsilon();
 // const double kPlusInfinity = std::numeric_limits<double>::max();
@@ -24,7 +25,7 @@ namespace soax {
 // typedef PointContainer::iterator PointIterator;
 // typedef PointContainer::const_iterator PointConstIterator;
 // typedef std::vector<Snake *> SnakeContainer;
-
+typedef itk::Image<double, kDimension> ImageType;
 
 // A macro to disallow the copy constructor and operator= functions
 // This should be used in the private: declarations for a class

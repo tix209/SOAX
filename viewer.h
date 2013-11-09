@@ -35,7 +35,7 @@ class Viewer : public QObject {
   void ToggleSlicePlanes(bool state);
   void ToggleMIPRendering(bool state);
   void ToggleOrientationMarker(bool state);
-  void ToggleScreenInformation(bool state);
+  void ToggleCornerText(bool state);
   void ToggleBoundingBox(bool state);
   void ToggleCubeAxes(bool state);
 
@@ -46,6 +46,10 @@ class Viewer : public QObject {
                                  double min_intensity,
                                  double max_intensity);
   void SetupOrientationMarker();
+  void SetupUpperLeftCornerText(unsigned min_intensity,
+                                unsigned max_intensity);
+  void SetupBoundingBox();
+  void SetupCubeAxes(vtkImageData *image);
 
   QVTKWidget *qvtk_;
   vtkSmartPointer<vtkRenderer> renderer_;
@@ -58,14 +62,14 @@ class Viewer : public QObject {
   vtkSmartPointer<vtkActor> bounding_box_;
 
 
-  static const double kWhite[3];
-  static const double kGray[3];
-  static const double kRed[3];
-  static const double kMagenta[3];
-  static const double kYellow[3];
-  static const double kGreen[3];
-  static const double kCyan[3];
-  static const double kBlue[3];
+  static double kWhite[3];
+  static double kGray[3];
+  static double kRed[3];
+  static double kMagenta[3];
+  static double kYellow[3];
+  static double kGreen[3];
+  static double kCyan[3];
+  static double kBlue[3];
 
   DISALLOW_COPY_AND_ASSIGN(Viewer);
 };

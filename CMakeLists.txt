@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 
-project(SOAX3D)
+project(SOAX)
 
 find_package(ITK REQUIRED)
 if(ITK_FOUND)
@@ -57,9 +57,9 @@ add_definitions(-Wall)
 qt4_wrap_cpp(mocs ${moc_gui_srcs})
 qt4_add_resources(rccs ${rcc_srcs})
 
-add_executable(soax3D ${common_srcs} ${gui_srcs} ${mocs} ${rccs})
+add_executable(soax ${common_srcs} ${gui_srcs} ${mocs} ${rccs})
 
-target_link_libraries(soax3D
+target_link_libraries(soax
   ${QT_LIBRARIES}
   ${VTK_LIBRARIES}
   ${ITK_LIBRARIES}

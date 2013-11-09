@@ -15,7 +15,7 @@ MainWindow::MainWindow() {
   central_widget_->setLayout(layout);
   setCentralWidget(central_widget_);
   setWindowIcon(QIcon(":/icon/letter-x.png"));
-
+  setWindowTitle("SOAX");
   this->CreateActions();
   this->CreateMenus();
   this->CreateToolBar();
@@ -59,10 +59,10 @@ void MainWindow::CreateViewMenuActions() {
   connect(toggle_orientation_marker_, SIGNAL(toggled(bool)),
           viewer_, SLOT(ToggleOrientationMarker(bool)));
 
-  toggle_screen_information_ = new QAction(tr("Screen Information"), this);
-  toggle_screen_information_->setCheckable(true);
-  connect(toggle_screen_information_, SIGNAL(toggled(bool)),
-          viewer_, SLOT(ToggleScreenInformation(bool)));
+  toggle_corner_text_ = new QAction(tr("Corner Texts"), this);
+  toggle_corner_text_->setCheckable(true);
+  connect(toggle_corner_text_, SIGNAL(toggled(bool)),
+          viewer_, SLOT(ToggleCornerText(bool)));
 
   toggle_bounding_box_ = new QAction(tr("Bounding Box"), this);
   toggle_bounding_box_->setCheckable(true);
@@ -93,7 +93,7 @@ void MainWindow::CreateMenus() {
   view_->addAction(toggle_planes_);
   view_->addAction(toggle_mip_);
   view_->addAction(toggle_orientation_marker_);
-  view_->addAction(toggle_screen_information_);
+  view_->addAction(toggle_corner_text_);
   view_->addAction(toggle_bounding_box_);
   view_->addAction(toggle_cube_axes_);
 
@@ -126,17 +126,15 @@ void MainWindow::OpenImage() {
       this, tr("Open an image"), dir,
       tr("Image Files (*.tif *.tiff *.mhd *.mha)")).toStdString();
   if (image_filename_.empty()) return;
-  this->setWindowTitle(QString("soax3D - ") + image_filename_.c_str());
+  this->setWindowTitle(QString("SOAX - ") + image_filename_.c_str());
   multisnake_->LoadImage(image_filename_);
   viewer_->SetupImage(multisnake_->image());
   toggle_planes_->setChecked(true);
   toggle_mip_->setChecked(false);
   toggle_orientation_marker_->setChecked(true);
-  // viewer_->SetupOrientationMarker();
-  // viewer_->SetupUpperLeftCornerText();
-  // viewer_->SetupBoundingBox();
-  viewer_->Render();
-
+  toggle_corner_text_->setChecked(true);
+  toggle_bounding_box_->setChecked(false);
+  toggle_cube_axes_->setChecked(false);
 }
 
 void MainWindow::AboutSOAX() {

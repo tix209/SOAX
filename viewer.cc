@@ -18,21 +18,23 @@
 #include "vtkAxesActor.h"
 #include "vtkCaptionActor2D.h"
 #include "vtkTextProperty.h"
-
+#include "vtkProperty.h"
+#include "vtkPolyDataMapper.h"
+#include "vtkOutlineSource.h"
 
 #include "itkStatisticsImageFilter.h"
 
 
 namespace soax {
 
-const double Viewer::kWhite[3] = {1.0, 1.0, 1.0};
-const double Viewer::kGray[3] = {0.8, 0.8, 0.8};
-const double Viewer::kRed[3] = {1.0, 0.0, 0.0};
-const double Viewer::kMagenta[3] = {1.0, 0.0, 1.0};
-const double Viewer::kYellow[3] = {1.0, 1.0, 0.0};
-const double Viewer::kGreen[3] = {0.0, 1.0, 0.0};
-const double Viewer::kCyan[3] = {0.0, 1.0, 1.0};
-const double Viewer::kBlue[3] = {0.0, 0.0, 1.0};
+double Viewer::kWhite[3] = {1.0, 1.0, 1.0};
+double Viewer::kGray[3] = {0.8, 0.8, 0.8};
+double Viewer::kRed[3] = {1.0, 0.0, 0.0};
+double Viewer::kMagenta[3] = {1.0, 0.0, 1.0};
+double Viewer::kYellow[3] = {1.0, 1.0, 0.0};
+double Viewer::kGreen[3] = {0.0, 1.0, 0.0};
+double Viewer::kCyan[3] = {0.0, 1.0, 1.0};
+double Viewer::kBlue[3] = {0.0, 0.0, 1.0};
 
 Viewer::Viewer() {
   qvtk_ = new QVTKWidget;
@@ -89,9 +91,9 @@ void Viewer::SetupImage(ImageType::Pointer image) {
   this->SetupMIPRendering(caster->GetOutput(), min_intensity,
                           max_intensity);
   this->SetupOrientationMarker();
-  // this->SetupScreenInformation();
-  // this->SetupBoundingBox();
-  // this->SetupCubeAxes(caster->GetOutput());
+  this->SetupUpperLeftCornerText(min_intensity, max_intensity);
+  this->SetupBoundingBox();
+  this->SetupCubeAxes(caster->GetOutput());
 }
 
 void Viewer::SetupSlicePlanes(vtkImageData *data, double min_intensity,
@@ -178,7 +180,7 @@ void Viewer::SetupOrientationMarker() {
   orientation_marker_->SetViewport(0, 0, 0.3, 0.3);
   // orientation_marker_->SetEnabled(true);
   // orientation_marker_->InteractiveOn();
-  //  axes->SetXAxisLabelText("hello");
+  // axes->SetXAxisLabelText("hello");
 }
 
 void Viewer::ToggleOrientationMarker(bool state) {
@@ -188,9 +190,82 @@ void Viewer::ToggleOrientationMarker(bool state) {
   this->Render();
 }
 
-void Viewer::ToggleScreenInformation(bool state) {}
-void Viewer::ToggleBoundingBox(bool state) {}
-void Viewer::ToggleCubeAxes(bool state) {}
+void Viewer::SetupUpperLeftCornerText(unsigned min_intensity,
+                                      unsigned max_intensity) {
+  std::ostringstream buffer;
+  buffer << "Intensity Range: [" << min_intensity << ", "
+         << max_intensity << "]";
+  corner_text_->SetText(2, buffer.str().c_str());
+}
+
+void Viewer::ToggleCornerText(bool state) {
+  if (state)
+    renderer_->AddViewProp(corner_text_);
+  else
+    renderer_->RemoveViewProp(corner_text_);
+  this->Render();
+}
+
+void Viewer::SetupBoundingBox() {
+  vtkSmartPointer<vtkOutlineSource> outline =
+      vtkSmartPointer<vtkOutlineSource>::New();
+  vtkSmartPointer<vtkPolyDataMapper> outline_mapper =
+      vtkSmartPointer<vtkPolyDataMapper>::New();
+  outline_mapper->SetInputConnection(outline->GetOutputPort());
+  outline->SetBounds(volume_->GetBounds());
+  bounding_box_->PickableOff();
+  bounding_box_->DragableOff();
+  bounding_box_->SetMapper(outline_mapper);
+  bounding_box_->GetProperty()->SetLineWidth(2.0);
+  bounding_box_->GetProperty()->SetColor(kRed);
+  bounding_box_->GetProperty()->SetAmbient(1.0);
+  bounding_box_->GetProperty()->SetDiffuse(0.0);
+}
+
+void Viewer::ToggleBoundingBox(bool state) {
+  if (state)
+    renderer_->AddActor(bounding_box_);
+  else
+    renderer_->RemoveActor(bounding_box_);
+  this->Render();
+}
+
+void Viewer::SetupCubeAxes(vtkImageData *image) {
+  cube_axes_->SetBounds(image->GetBounds());
+  cube_axes_->SetCamera(camera_);
+  // cube_axes_->SetFlyModeToStaticTriad();
+  // std::cout << cube_axes_->GetCornerOffset() << std::endl;
+  // cube_axes_->SetCornerOffset(0.1);
+
+  // cube_axes_->XAxisTickVisibilityOff();
+  // cube_axes_->XAxisLabelVisibilityOff();
+  cube_axes_->GetTitleTextProperty(0)->SetColor(kRed);
+  cube_axes_->GetLabelTextProperty(0)->SetColor(kRed);
+  cube_axes_->GetTitleTextProperty(1)->SetColor(kGreen);
+  cube_axes_->GetLabelTextProperty(1)->SetColor(kGreen);
+  cube_axes_->GetTitleTextProperty(2)->SetColor(kBlue);
+  cube_axes_->GetLabelTextProperty(2)->SetColor(kBlue);
+  // cube_axes_->GetTitleTextProperty(0)->SetFontSize(40);
+  // std::cout << cube_axes_->GetTitleTextProperty(0)->GetFontSize() << std::endl;
+  // std::cout << cube_axes_->GetXAxisLabelVisibility() << std::endl;
+  vtkSmartPointer<vtkProperty> axes_property =
+      vtkSmartPointer<vtkProperty>::New();
+  axes_property->SetLineWidth(2.0);
+  axes_property->SetColor(kRed);
+  cube_axes_->SetXAxesLinesProperty(axes_property);
+  axes_property->SetColor(kGreen);
+  cube_axes_->SetYAxesLinesProperty(axes_property);
+  axes_property->SetColor(kBlue);
+  cube_axes_->SetZAxesLinesProperty(axes_property);
+}
+
+void Viewer::ToggleCubeAxes(bool state) {
+  if (state)
+    renderer_->AddActor(cube_axes_);
+  else
+    renderer_->RemoveActor(cube_axes_);
+  this->Render();
+}
 
 void Viewer::Render() {
   qvtk_->GetRenderWindow()->Render();

@@ -49,7 +49,7 @@ class MainWindow : public QMainWindow {
   QAction *toggle_planes_;
   QAction *toggle_mip_;
   QAction *toggle_orientation_marker_;
-  QAction *toggle_screen_information_;
+  QAction *toggle_corner_text_;
   QAction *toggle_bounding_box_;
   QAction *toggle_cube_axes_;
 

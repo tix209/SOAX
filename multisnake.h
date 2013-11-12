@@ -27,6 +27,7 @@ class Multisnake {
   ImageType::Pointer image() const {return image_;}
 
   void LoadParameters(const std::string &filename);
+  void UpdateSnakeParameters();
   void SaveParameters(const std::string &filename) const;
   void PrintParameters() const;
 

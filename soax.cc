@@ -72,7 +72,7 @@ int main(int argc, char **argv) {
     std::cout << "stretch is set to " << stretch << std::endl;
     multisnake.set_stretch_factor(stretch);
   }
-
+  multisnake.UpdateSnakeParameters();
   multisnake.PrintParameters();
   multisnake.ScaleImageIntensity();
   multisnake.ComputeImageGradient();

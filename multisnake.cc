@@ -57,29 +57,6 @@ void Multisnake::LoadParameters(const std::string &filename) {
     converter >> name >> value;
     AssignParameters(name, value);
   }
-
-  Snake::set_background(background_ * intensity_scaling_);
-  Snake::set_desired_spacing(desired_spacing_);
-  Snake::set_minimum_length(minimum_length_);
-  Snake::set_max_iterations(max_iterations_);
-  Snake::set_change_threshold(change_threshold_);
-  Snake::set_check_period(check_period_);
-  Snake::set_gamma(gamma_);
-  Snake::set_external_factor(external_factor_);
-  Snake::set_stretch_factor(stretch_factor_);
-  Snake::set_number_of_sectors(number_of_sectors_);
-  Snake::set_radial_near(radial_near_);
-  Snake::set_radial_far(radial_far_);
-  Snake::set_delta(delta_);
-  Snake::set_overlap_threshold(overlap_threshold_);
-  Snake::set_grouping_distance_threshold(grouping_distance_threshold_);
-  Snake::set_grouping_delta(grouping_delta_);
-  Snake::set_direction_threshold(direction_threshold_);
-  Snake::set_damp_z(damp_z_);
-  Snake::set_solver_bank(solver_bank_);
-  solver_bank_->set_alpha(alpha_);
-  solver_bank_->set_beta(beta_);
-  solver_bank_->set_gamma(gamma_);
 }
 
 void Multisnake::AssignParameters(const std::string &name,
@@ -154,6 +131,31 @@ unsigned Multisnake::String2Unsigned(const std::string &s) {
     return value;
   else
     return 0;
+}
+
+void Multisnake::UpdateSnakeParameters() {
+  Snake::set_background(background_ * intensity_scaling_);
+  Snake::set_desired_spacing(desired_spacing_);
+  Snake::set_minimum_length(minimum_length_);
+  Snake::set_max_iterations(max_iterations_);
+  Snake::set_change_threshold(change_threshold_);
+  Snake::set_check_period(check_period_);
+  Snake::set_gamma(gamma_);
+  Snake::set_external_factor(external_factor_);
+  Snake::set_stretch_factor(stretch_factor_);
+  Snake::set_number_of_sectors(number_of_sectors_);
+  Snake::set_radial_near(radial_near_);
+  Snake::set_radial_far(radial_far_);
+  Snake::set_delta(delta_);
+  Snake::set_overlap_threshold(overlap_threshold_);
+  Snake::set_grouping_distance_threshold(grouping_distance_threshold_);
+  Snake::set_grouping_delta(grouping_delta_);
+  Snake::set_direction_threshold(direction_threshold_);
+  Snake::set_damp_z(damp_z_);
+  Snake::set_solver_bank(solver_bank_);
+  solver_bank_->set_alpha(alpha_);
+  solver_bank_->set_beta(beta_);
+  solver_bank_->set_gamma(gamma_);
 }
 
 void Multisnake::SaveParameters(const std::string &filename) const {

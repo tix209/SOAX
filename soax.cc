@@ -79,6 +79,9 @@ int main(int argc, char **argv) {
   multisnake.InitializeSnakes();
   multisnake.SortSnakesOnLength(multisnake.initial_snakes());
   multisnake.DeformSnakes();
+  multisnake.CutSnakesAtTJunctions();
+  multisnake.GroupSnakes();
   multisnake.SaveSnakes(multisnake.converged_snakes(), snake_path);
+  std::cout << "Segmentation completed.\n" << std::endl;
   return EXIT_SUCCESS;
 }

@@ -29,6 +29,10 @@ class Snake {
   double GetY(unsigned i) const {return vertices_.at(i)[1];}
   double GetZ(unsigned i) const {return vertices_.at(i)[2];}
   const PointType &GetPoint(unsigned i) const {return vertices_.at(i);}
+  const PointType &GetHead() const {return vertices_.front();}
+  const PointType &GetTail() const {return vertices_.back();}
+  const PointType &GetTip(bool is_head) const;
+  PointContainer vertices() const {return vertices_;}
 
   /*
    * Resample snake points to make them equally spaced close to the
@@ -66,17 +70,31 @@ class Snake {
   static void set_overlap_threshold(double t) {
     overlap_threshold_ = t;
   }
+  static double grouping_distance_threshold() {
+    return grouping_distance_threshold_;
+  }
   static void set_grouping_distance_threshold(double threshold) {
     grouping_distance_threshold_ = threshold;
   }
+  static unsigned grouping_delta() {return grouping_delta_;}
+  static void set_grouping_delta(unsigned d) {grouping_delta_ = d;}
+
+  static double direction_threshold() {return direction_threshold_;}
+  static void set_direction_threshold(double t) {direction_threshold_ = t;}
   static void set_damp_z(bool d) {damp_z_ = d;}
 
   const SnakeContainer &subsnakes() const {return subsnakes_;}
 
   void Evolve(const SnakeContainer &converged_snakes, unsigned max_iter);
+  void EvolveWithTipFixed(unsigned max_iter);
+  void UpdateHookedIndices();
+  void CopySubSnakes(SnakeContainer &c);
+  bool PassThrough(const PointType &p, double threshold) const;
+
 
  private:
   typedef std::vector<std::pair<double, double> > PairContainer;
+  typedef std::set<unsigned> IndexSet;
 
   /*
    * Update length_ and compute length cumulative sum, stored in sums.
@@ -113,7 +131,6 @@ class Snake {
 
   bool VertexOverlap(const PointType &p,
                      const SnakeContainer &converged_snakes);
-  bool PassThrough(const PointType &p);
 
   void FindHookedSnakeAndIndex(const PointType &p,
                                const SnakeContainer &converged_snakes,
@@ -160,6 +177,7 @@ class Snake {
   double Mean(const DataContainer &vec);
   void CheckBodyOverlap(const SnakeContainer &converged_snakes);
 
+  void AddJunctionIndex(unsigned index);
 
   PointContainer vertices_;
   bool open_;
@@ -205,6 +223,7 @@ class Snake {
    * Snake can be devided into several subsnakes during its evolution.
    */
   SnakeContainer subsnakes_;
+  IndexSet junction_indices_;
 
   static SolverBank *solver_bank_;
 
@@ -269,6 +288,19 @@ class Snake {
    * Distance threshold for determining junctions.
    */
   static double grouping_distance_threshold_;
+
+  /*
+   * Number of points apart to compute the snake branch directions for
+   * grouping.
+   */
+  static unsigned grouping_delta_;
+
+  /*
+   * Angle threshold (in radians) for determining if two snake
+   * branches are smooth enough to be linked together during grouping
+   * process.
+   */
+  static double direction_threshold_;
 
   /*
    * Flag of damping of stretching along z direction. If it is true,

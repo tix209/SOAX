@@ -20,6 +20,8 @@ int Snake::radial_far_ = 0;
 unsigned Snake::delta_ = 0;
 double Snake::overlap_threshold_ = 0.0;
 double Snake::grouping_distance_threshold_ = 0.0;
+unsigned Snake::grouping_delta_ = 0;
+double Snake::direction_threshold_ = 0.0;
 bool Snake::damp_z_ = false;
 const double Snake::kBoundary = 0.5;
 
@@ -302,28 +304,17 @@ bool Snake::VertexOverlap(const PointType &p,
   if (converged_snakes.empty()) return false;
   for (SnakeConstIterator it = converged_snakes.begin();
        it != converged_snakes.end(); ++it) {
-    if ((*it)->PassThrough(p))
+    if ((*it)->PassThrough(p, overlap_threshold_))
       return true;
   }
   return false;
 }
 
-bool Snake::PassThrough(const PointType &p) {
-  for (PointIterator it = vertices_.begin(); it != vertices_.end(); ++it) {
-    VectorType v = *it - p;
-    double norm = v.GetNorm();
-    // double dx = (*it)[0] - p[0];
-    // double dy = (*it)[1] - p[1];
-    // double dz = (*it)[2] - p[2];
-    // double dxx = dx*dx;
-    // double dyy = dy*dy;
-    // double dzz = dz*dz;
-
-    // if (dxx < squared_overlap_threshold_ &&
-    //     dyy < squared_overlap_threshold_ &&
-    //     dzz < squared_overlap_threshold_) {
-    //   double dd = dxx+dyy+dzz;
-    if (norm < overlap_threshold_)
+bool Snake::PassThrough(const PointType &p, double threshold) const {
+  for (PointConstIterator it = vertices_.begin();
+       it != vertices_.end(); ++it) {
+    double dist = p.EuclideanDistanceTo(*it);
+    if (dist < threshold)
       return true;
   }
   return false;
@@ -630,5 +621,106 @@ void Snake::PrintVectorContainer(const VectorContainer &vc) {
   std::cout << "===========================================" << std::endl;
 }
 
+void Snake::UpdateHookedIndices() {
+  if (head_hooked_snake_) {
+    head_hooked_snake_->AddJunctionIndex(head_hooked_index_);
+  }
+  if (tail_hooked_snake_) {
+    tail_hooked_snake_->AddJunctionIndex(tail_hooked_index_);
+  }
+}
+
+void Snake::AddJunctionIndex(unsigned index) {
+  junction_indices_.insert(index);
+}
+
+void Snake::CopySubSnakes(SnakeContainer &c) {
+  PointIterator s, e;
+  s = e = vertices_.begin();
+
+  if (!junction_indices_.empty()) {
+    // add the head sub snake which is not subject to
+    // the grouping_distance_threshold
+    std::vector<unsigned> indices(junction_indices_.begin(),
+                                  junction_indices_.end());
+    // for (unsigned i = 0; i < indices.size(); ++i) {
+    //   std::cout << indices[i] << std::endl;
+    // }
+    // std::cout << "end of it" << std::endl;
+
+    s = vertices_.begin() + indices[0];
+    PointContainer points(vertices_.begin(), s);
+    points.push_back(*s);
+    Snake *snake = new Snake(points, true, false, image_,
+                             external_force_, interpolator_,
+                             vector_interpolator_, transform_);
+    snake->Resample();
+    if (snake->viable())
+      c.push_back(snake);
+
+    // for (IndexSet::iterator it = junction_indices_.begin() + 1;
+    //      it != junction_indices_.end(); ++it) {
+    //   e = vertices_.begin() + (*it);
+    //   PointContainer points(s, e);
+    //   // add the junction point too
+    //   points.push_back(*e);
+
+    //   Snake *snake = new Snake(points, true, true);
+    //   snake->Resample();
+    //   if (snake->viable())
+    //     c.push_back(snake);
+    //   s = e;
+    // }
+    for (std::vector<unsigned>::iterator it = indices.begin() + 1;
+         it != indices.end(); ++it) {
+      e = vertices_.begin() + (*it);
+      PointContainer points(s, e);
+      // add the junction point too
+      points.push_back(*e);
+      Snake *snake = new Snake(points, true, true, image_,
+                               external_force_, interpolator_,
+                               vector_interpolator_, transform_);
+      snake->Resample();
+      if (snake->viable())
+        c.push_back(snake);
+      s = e;
+    }
+  }
+  // add the tail sub snake which is not subject to
+  // the grouping_distance_threshold
+  PointContainer points(s, vertices_.end());
+  Snake *snake = new Snake(points, true, false, image_,
+                           external_force_, interpolator_,
+                           vector_interpolator_, transform_);
+  snake->Resample();
+  if (snake->viable())
+    c.push_back(snake);
+}
+
+void Snake::EvolveWithTipFixed(unsigned max_iter) {
+  unsigned iter = 0;
+  fixed_head_ = vertices_.front();
+  fixed_tail_ = vertices_.back();
+
+  while (viable_ && iter < max_iter) {
+    if (!(iterations_ % check_period_)) {
+      if (this->IsConverged())
+        break;
+    }
+
+    this->IterateOnce();
+    this->Resample();
+    iter++;
+  }
+  final_ = true;
+  this->Resample();
+}
+
+const PointType &Snake::GetTip(bool is_head) const {
+  if (is_head)
+    return this->GetHead();
+  else
+    return this->GetTail();
+}
 
 } // namespace soax

@@ -3,6 +3,8 @@
 
 #include "global.h"
 #include "snake.h"
+#include "junctions.h"
+
 
 class QProgressBar;
 
@@ -71,11 +73,14 @@ class Multisnake {
                   const std::string &filename) const;
 
   void DeformSnakes(QProgressBar * progress_bar = NULL);
+  void CutSnakesAtTJunctions();
+  void GroupSnakes();
 
 
  private:
   typedef itk::Vector<bool, kDimension> BoolVectorType;
   typedef itk::Image<BoolVectorType, kDimension> BoolVectorImageType;
+  typedef std::set<Snake *> SnakeSet;
 
   void SaveParameters(std::ofstream &outfile) const;
 
@@ -122,6 +127,20 @@ class Multisnake {
   double String2Double(const std::string &s);
   unsigned String2Unsigned(const std::string &s);
 
+  void CutSnakes(SnakeContainer &seg);
+  void ClearSnakeContainer(SnakeContainer &snakes);
+
+  void LinkSegments(SnakeContainer &seg);
+  void LinkFromSegment(Snake *s, SnakeContainer &seg,
+                       SnakeSet &log, PointContainer &pc, bool &is_open);
+  void LinkFromSegmentTip(SnakeTip *neighbor, PointContainer &pc,
+                          bool &is_open, SnakeContainer &seg,
+                          SnakeSet &log, bool from_head);
+  void AddToPointContainer(PointContainer &pc, Snake *s,
+                           bool is_head, bool from_head);
+  void UpdateJunctions();
+  unsigned GetNumberOfSnakesCloseToPoint(const PointType &p);
+
   std::string image_filename_;
   ImageType::Pointer image_;
   VectorImageType::Pointer external_force_;
@@ -136,7 +155,7 @@ class Multisnake {
   SnakeContainer comparing_snakes1_;
   SnakeContainer comparing_snakes2_;
 
-  // Junctioins junctions_;
+  Junctions junctions_;
 
 
 

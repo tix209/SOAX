@@ -73,6 +73,8 @@ void Multisnake::LoadParameters(const std::string &filename) {
   Snake::set_delta(delta_);
   Snake::set_overlap_threshold(overlap_threshold_);
   Snake::set_grouping_distance_threshold(grouping_distance_threshold_);
+  Snake::set_grouping_delta(grouping_delta_);
+  Snake::set_direction_threshold(direction_threshold_);
   Snake::set_damp_z(damp_z_);
   Snake::set_solver_bank(solver_bank_);
   solver_bank_->set_alpha(alpha_);
@@ -482,7 +484,7 @@ void Multisnake::SaveSnakes(const SnakeContainer &snakes,
     snake_index++;
   }
 
-  // junctions_.PrintJunctionPoints(filename);
+  junctions_.PrintJunctionPoints(filename);
   outfile.close();
 }
 
@@ -516,6 +518,158 @@ void Multisnake::DeformSnakes(QProgressBar * progress_bar) {
   }
   std::cout << "\nConverged # snakes: " << converged_snakes_.size()
             << std::endl;
+}
+
+void Multisnake::CutSnakesAtTJunctions() {
+  SnakeContainer segments;
+  this->CutSnakes(segments);
+  this->ClearSnakeContainer(converged_snakes_);
+  converged_snakes_ = segments;
+}
+
+void Multisnake::CutSnakes(SnakeContainer &seg) {
+  if (converged_snakes_.empty()) return;
+  for (SnakeIterator it = converged_snakes_.begin();
+       it != converged_snakes_.end(); ++it) {
+    (*it)->UpdateHookedIndices();
+  }
+
+  for (SnakeIterator it = converged_snakes_.begin();
+       it != converged_snakes_.end(); ++it) {
+    (*it)->CopySubSnakes(seg);
+  }
+}
+
+void Multisnake::ClearSnakeContainer(SnakeContainer &snakes) {
+  if (snakes.empty()) return;
+  for (SnakeContainer::iterator it = snakes.begin();
+       it != snakes.end(); ++it) {
+    delete *it;
+  }
+  snakes.clear();
+}
+
+void Multisnake::GroupSnakes() {
+  junctions_.Initialize(converged_snakes_);
+  junctions_.Union();
+  junctions_.Configure();
+  //  junctions_.PrintTipSets();
+  //  junctions_.PrintTips();
+  this->LinkSegments(converged_snakes_);
+  SnakeIterator it = converged_snakes_.begin();
+  while (it != converged_snakes_.end()) {
+    (*it)->EvolveWithTipFixed(100);
+    if ((*it)->viable()) {
+      it++;
+    } else {
+      delete *it;
+      // std::cout << "snake  erased!" << std::endl;
+      it = converged_snakes_.erase(it);
+    }
+  }
+  this->UpdateJunctions();
+}
+
+void Multisnake::LinkSegments(SnakeContainer &seg) {
+  SnakeContainer c;
+  std::reverse(seg.begin(), seg.end());
+  while (!seg.empty()) {
+    Snake *segment = seg.back();
+    seg.pop_back();
+    // log is for detecting loop in linking snake segments
+    SnakeSet log;
+    PointContainer points;
+    bool is_open = true;
+    this->LinkFromSegment(segment, seg, log, points, is_open);
+    delete segment;
+    Snake *s = new Snake(points, is_open, false, image_,
+                         external_force_, interpolator_,
+                         vector_interpolator_, transform_);
+    s->Resample();
+    c.push_back(s);
+  }
+  converged_snakes_ = c;
+}
+
+void Multisnake::LinkFromSegment(Snake *s, SnakeContainer &seg,
+                                 SnakeSet &log, PointContainer &pc,
+                                 bool &is_open) {
+  log.insert(s);
+  pc = s->vertices();
+  SnakeTip * t = junctions_.FindSnakeTip(s, true);
+  this->LinkFromSegmentTip(t->neighbor(), pc, is_open, seg, log, true);
+  t = junctions_.FindSnakeTip(s, false);
+  this->LinkFromSegmentTip(t->neighbor(), pc, is_open, seg, log, false);
+}
+
+void Multisnake::LinkFromSegmentTip(SnakeTip *neighbor, PointContainer &pc,
+                                    bool &is_open, SnakeContainer &seg,
+                                    SnakeSet &log, bool from_head) {
+  if (!neighbor) {
+    return;
+  } else if (log.find(neighbor->snake()) != log.end()) {
+    is_open = false;
+    return;
+  } else {
+    this->AddToPointContainer(pc, neighbor->snake(), neighbor->is_head(),
+                              from_head);
+    SnakeContainer::iterator it = std::find(seg.begin(), seg.end(),
+                                            neighbor->snake());
+    if (it != seg.end())
+      seg.erase(it);
+    //seg.remove(neighbor->snake());
+    log.insert(neighbor->snake());
+    delete neighbor->snake();
+    SnakeTip * t = junctions_.FindSnakeTip(neighbor->snake(),
+                                           !neighbor->is_head());
+    this->LinkFromSegmentTip(t->neighbor(), pc, is_open, seg, log,
+                             from_head);
+  }
+}
+
+void Multisnake::AddToPointContainer(PointContainer &pc, Snake *s,
+                                     bool is_head, bool from_head) {
+  PointContainer p = s->vertices();
+
+  if (from_head) {
+    if (is_head)
+      std::reverse(p.begin(), p.end());
+    pc.insert(pc.begin(), p.begin(), p.end());
+  } else {
+    if (!is_head)
+      std::reverse(p.begin(), p.end());
+    pc.insert(pc.end(), p.begin(), p.end());
+  }
+}
+
+void Multisnake::UpdateJunctions() {
+  if (converged_snakes_.empty())
+    junctions_.ClearJunctionPoints();
+
+  PointContainer &junction_points = junctions_.junction_points();
+  PointContainer new_junction_points;
+  for (PointContainer::iterator it = junction_points.begin();
+       it != junction_points.end(); ++it) {
+    unsigned num_of_close_snake = GetNumberOfSnakesCloseToPoint(*it);
+    if (num_of_close_snake > 1)
+      new_junction_points.push_back(*it);
+  }
+  // int size_diff = junction_points.size() - new_junction_points.size();
+  // std::cout << "size diff: " << size_diff << std::endl;
+  junction_points = new_junction_points;
+}
+
+unsigned Multisnake::GetNumberOfSnakesCloseToPoint(const PointType &p) {
+  unsigned num = 0;
+  // TODO: improve this dist_threshold
+  // const double dist_threshold = grouping_distance_threshold_/2;
+  const double dist_threshold = grouping_distance_threshold_;
+  for (SnakeContainer::const_iterator it = converged_snakes_.begin();
+       it != converged_snakes_.end(); ++it) {
+    if ((*it)->PassThrough(p, dist_threshold))
+      num++;
+  }
+  return num;
 }
 
 

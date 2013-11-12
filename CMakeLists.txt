@@ -44,6 +44,12 @@ set(common_srcs
   snake.cc
   solver_bank.h
   solver_bank.cc
+  junctions.h
+  junctions.cc
+  snake_tip.h
+  snake_tip.cc
+  snake_tip_set.cc
+  snake_tip_set.h
   )
 
 set(moc_gui_srcs

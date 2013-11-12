@@ -28,7 +28,7 @@ if(Boost_FOUND)
 endif(Boost_FOUND)
 
 set(gui_srcs
-  gui.cc
+  soax.cc
   viewer.cc
   main_window.cc
   # parameters_dialog.cc
@@ -40,6 +40,10 @@ set(common_srcs
   global.h
   multisnake.h
   multisnake.cc
+  snake.h
+  snake.cc
+  solver_bank.h
+  solver_bank.cc
   )
 
 set(moc_gui_srcs

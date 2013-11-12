@@ -19,6 +19,7 @@ MainWindow::MainWindow() {
   this->CreateActions();
   this->CreateMenus();
   this->CreateToolBar();
+  this->CreateStatusBar();
 }
 
 
@@ -39,6 +40,16 @@ void MainWindow::CreateFileMenuActions() {
   open_image_->setIcon(QIcon(":/icon/Open.png"));
   connect(open_image_, SIGNAL(triggered()),
           this, SLOT(OpenImage()));
+
+  load_parameters_ = new QAction(tr("Load Pa&rameters"), this);
+  load_parameters_->setShortcut(Qt::CTRL + Qt::Key_R);
+  load_parameters_->setIcon(QIcon(":/icon/Properties.png"));
+  connect(load_parameters_, SIGNAL(triggered()),
+          this, SLOT(LoadParameters()));
+
+  save_parameters_ = new QAction(tr("Save Parameters"), this);
+  connect(save_parameters_, SIGNAL(triggered()),
+          this, SLOT(SaveParameters()));
 }
 
 void MainWindow::CreateViewMenuActions() {
@@ -88,6 +99,8 @@ void MainWindow::CreateHelpMenuActions() {
 void MainWindow::CreateMenus() {
   file_ = menuBar()->addMenu(tr("&File"));
   file_->addAction(open_image_);
+  file_->addAction(load_parameters_);
+  file_->addAction(save_parameters_);
 
   view_ = menuBar()->addMenu(tr("&View"));
   view_->addAction(toggle_planes_);
@@ -105,10 +118,16 @@ void MainWindow::CreateMenus() {
 void MainWindow::CreateToolBar() {
   toolbar_ = addToolBar(tr("shortcuts"));
   toolbar_->addAction(open_image_);
-
+  toolbar_->addAction(load_parameters_);
   toolbar_->addSeparator();
   toolbar_->addAction(toggle_planes_);
   toolbar_->addAction(toggle_mip_);
+}
+
+void MainWindow::CreateStatusBar() {
+  progress_bar_ = new QProgressBar;
+  statusBar()->addWidget(progress_bar_);
+  message_timeout_ = 3000;
 }
 
 QString MainWindow::GetLastDirectory(const std::string &filename) {
@@ -126,6 +145,7 @@ void MainWindow::OpenImage() {
       this, tr("Open an image"), dir,
       tr("Image Files (*.tif *.tiff *.mhd *.mha)")).toStdString();
   if (image_filename_.empty()) return;
+
   this->setWindowTitle(QString("SOAX - ") + image_filename_.c_str());
   multisnake_->LoadImage(image_filename_);
   viewer_->SetupImage(multisnake_->image());
@@ -135,6 +155,29 @@ void MainWindow::OpenImage() {
   toggle_corner_text_->setChecked(true);
   toggle_bounding_box_->setChecked(false);
   toggle_cube_axes_->setChecked(false);
+  statusBar()->showMessage(tr("Image loaded."), message_timeout_);
+
+  open_image_->setEnabled(false);
+}
+
+void MainWindow::LoadParameters() {
+  QString dir = this->GetLastDirectory(parameter_filename_);
+  parameter_filename_ = QFileDialog::getOpenFileName(
+      this, tr("Open a parameter file"), dir,
+      tr("Text Files (*.txt)")).toStdString();
+  if (parameter_filename_.empty()) return;
+  multisnake_->LoadParameters(parameter_filename_);
+  statusBar()->showMessage(tr("Parameters loaded."), message_timeout_);
+}
+
+void MainWindow::SaveParameters() {
+  QString dir = this->GetLastDirectory(parameter_filename_);
+  parameter_filename_ = QFileDialog::getSaveFileName(
+      this, tr("Save current parameters"), dir,
+      tr("Text Files (*.txt)")).toStdString();
+  if (parameter_filename_.empty()) return;
+  multisnake_->SaveParameters(parameter_filename_);
+  statusBar()->showMessage("Parameters saved.", message_timeout_);
 }
 
 void MainWindow::AboutSOAX() {
@@ -144,7 +187,7 @@ void MainWindow::AboutSOAX() {
                         "Lehigh University "
                         "<p>SOAX extracts curvilinear network structure "
                         "in biomedical images."
-                        "This work is supported by NIH, grant R01GM098430."));
+                        "This work is supported by NIH grant R01GM098430."));
 }
 
 } // namespace soax

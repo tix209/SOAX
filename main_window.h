@@ -4,6 +4,8 @@
 #include <QMainWindow>
 #include "global.h"
 
+class QProgressBar;
+
 
 namespace soax {
 
@@ -25,7 +27,8 @@ class MainWindow : public QMainWindow {
 
  private slots:
   void OpenImage();
-
+  void LoadParameters();
+  void SaveParameters();
   void AboutSOAX();
 
  private:
@@ -36,6 +39,7 @@ class MainWindow : public QMainWindow {
 
   void CreateMenus();
   void CreateToolBar();
+  void CreateStatusBar();
 
   QString GetLastDirectory(const std::string &filename);
 
@@ -44,6 +48,8 @@ class MainWindow : public QMainWindow {
 
   // Actions in File menu
   QAction *open_image_;
+  QAction *load_parameters_;
+  QAction *save_parameters_;
 
   // Actions in View menu
   QAction *toggle_planes_;
@@ -63,9 +69,12 @@ class MainWindow : public QMainWindow {
   QMenu *help_;
 
   QToolBar *toolbar_;
+  QProgressBar *progress_bar_;
+  int message_timeout_; // in milliseconds
 
   // Complete image file path and name
   std::string image_filename_;
+  std::string parameter_filename_;
   Multisnake *multisnake_;
   Viewer *viewer_;
 

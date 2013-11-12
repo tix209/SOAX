@@ -4,6 +4,8 @@
 #include "multisnake.h"
 #include "itkImageFileReader.h"
 #include "itkShiftScaleImageFilter.h"
+#include "itkGradientImageFilter.h"
+#include "itkVectorCastImageFilter.h"
 #include "itkGradientRecursiveGaussianImageFilter.h"
 #include "itkImageRegionIteratorWithIndex.h"
 #include "solver_bank.h"
@@ -251,19 +253,37 @@ void Multisnake::ScaleImageIntensity() {
 }
 
 void Multisnake::ComputeImageGradient() {
-  typedef itk::GradientRecursiveGaussianImageFilter<
-    ImageType, VectorImageType> FilterType;
-  FilterType::Pointer filter = FilterType::New();
-  filter->SetSigma(sigma_);
-  filter->SetInput(image_);
-  try {
-    filter->Update();
-  } catch( itk::ExceptionObject & e ) {
-    std::cerr << "Exception caught when computing image gradient!\n"
-              << e << std::endl;
+  if (sigma_ < 0.01) { // no smoothing
+    typedef itk::GradientImageFilter<ImageType> FilterType;
+    FilterType::Pointer filter = FilterType::New();
+    filter->SetInput(image_);
+    typedef itk::VectorCastImageFilter<FilterType::OutputImageType,
+                                       VectorImageType> CasterType;
+    CasterType::Pointer caster = CasterType::New();
+    caster->SetInput(filter->GetOutput());
+    try {
+      caster->Update();
+    } catch( itk::ExceptionObject & e ) {
+      std::cerr << "Exception caught when computing image gradient!\n"
+                << e << std::endl;
+    }
+    external_force_ = caster->GetOutput();
+    external_force_->DisconnectPipeline();
+  } else {
+    typedef itk::GradientRecursiveGaussianImageFilter<
+      ImageType, VectorImageType> FilterType;
+    FilterType::Pointer filter = FilterType::New();
+    filter->SetSigma(sigma_);
+    filter->SetInput(image_);
+    try {
+      filter->Update();
+    } catch( itk::ExceptionObject & e ) {
+      std::cerr << "Exception caught when computing image gradient!\n"
+                << e << std::endl;
+    }
+    external_force_ = filter->GetOutput();
+    external_force_->DisconnectPipeline();
   }
-  external_force_ = filter->GetOutput();
-  external_force_->DisconnectPipeline();
   vector_interpolator_->SetInputImage(external_force_);
 }
 

@@ -78,10 +78,17 @@ int main(int argc, char **argv) {
   multisnake.ComputeImageGradient();
   multisnake.InitializeSnakes();
   multisnake.SortSnakesOnLength(multisnake.initial_snakes());
+
+  time_t start, end;
+  time(&start);
   multisnake.DeformSnakes();
+  time(&end);
+  double time_elasped = difftime(end, start);
+
   multisnake.CutSnakesAtTJunctions();
   multisnake.GroupSnakes();
   multisnake.SaveSnakes(multisnake.converged_snakes(), snake_path);
-  std::cout << "Segmentation completed.\n" << std::endl;
+  std::cout << "Segmentation completed (Evolution time: "
+            << time_elasped << "s)" << std::endl;
   return EXIT_SUCCESS;
 }

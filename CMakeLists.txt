@@ -50,6 +50,8 @@ set(common_srcs
   snake_tip.cc
   snake_tip_set.cc
   snake_tip_set.h
+  utility.h
+  utility.cc
   )
 
 set(moc_gui_srcs
@@ -68,10 +70,16 @@ qt4_wrap_cpp(mocs ${moc_gui_srcs})
 qt4_add_resources(rccs ${rcc_srcs})
 
 add_executable(soax ${common_srcs} ${gui_srcs} ${mocs} ${rccs})
+add_executable(evaluate evaluate.cc ${common_srcs})
 
 target_link_libraries(soax
   ${QT_LIBRARIES}
   ${VTK_LIBRARIES}
+  ${ITK_LIBRARIES}
+  ${Boost_PROGRAM_OPTIONS_LIBRARY}
+  )
+
+target_link_libraries(evaluate
   ${ITK_LIBRARIES}
   ${Boost_PROGRAM_OPTIONS_LIBRARY}
   )

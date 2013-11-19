@@ -9,17 +9,19 @@
 #include "itkGradientRecursiveGaussianImageFilter.h"
 #include "itkImageRegionIteratorWithIndex.h"
 #include "solver_bank.h"
-
+#include "utility.h"
 
 namespace soax {
 
 Multisnake::Multisnake() :
-    image_(NULL), intensity_scaling_(0.0), intensity_scaled_(false),
-    ridge_threshold_(0.0), initialize_z_(false), stretch_factor_(0.0) {
+    image_(NULL), external_force_(NULL), intensity_scaling_(0.0),
+    intensity_scaled_(false), sigma_(0.0), ridge_threshold_(0.0),
+    foreground_(0.0), background_(0.0), initialize_z_(false) {
   interpolator_ = InterpolatorType::New();
   vector_interpolator_ = VectorInterpolatorType::New();
   transform_ = TransformType::New();
   solver_bank_ = new SolverBank;
+  Snake::set_solver_bank(solver_bank_);
 }
 
 Multisnake::~Multisnake() {
@@ -38,7 +40,8 @@ void Multisnake::LoadImage(const std::string &filename) {
     std::cerr << e << std::endl;
   }
   image_filename_ = filename;
-  const ImageType::SizeType &size = image_->GetLargestPossibleRegion().GetSize();
+  const ImageType::SizeType &size =
+      image_->GetLargestPossibleRegion().GetSize();
   std::cout << "Image size: " << size << std::endl;
   std::cout << image_filename_ << std::endl;
 }
@@ -57,12 +60,13 @@ void Multisnake::LoadParameters(const std::string &filename) {
     converter << line;
     std::string name, value;
     converter >> name >> value;
-    AssignParameters(name, value);
+    this->AssignParameters(name, value);
   }
+  Snake::set_background(background_ * intensity_scaling_);
 }
 
 void Multisnake::AssignParameters(const std::string &name,
-                             const std::string &value) {
+                                  const std::string &value) {
   if (name == "intensity-scaling") {
     intensity_scaling_ = String2Double(value);
   } else if (name == "smoothing") {
@@ -70,95 +74,78 @@ void Multisnake::AssignParameters(const std::string &name,
   } else if (name == "grad-diff") {
     ridge_threshold_ = String2Double(value);
   } else if (name == "foreground") {
-    set_foreground(String2Double(value));
+    foreground_ = String2Double(value);
   } else if (name == "background") {
-    set_background(String2Double(value));
+    background_ = String2Double(value);
   } else if (name == "spacing") {
-    desired_spacing_ = String2Double(value);
+    Snake::set_desired_spacing(String2Double(value));
   } else if (name == "init-z") {
     initialize_z_ = value == "true";
   } else if (name == "minimum-size") {
-    minimum_length_ = String2Double(value);
+    Snake::set_minimum_length(String2Double(value));
   } else if (name == "max-iterations") {
-    max_iterations_ = String2Unsigned(value);
+    Snake::set_max_iterations(String2Unsigned(value));
   } else if (name == "change-threshold") {
-    change_threshold_ = String2Double(value);
+    Snake::set_change_threshold(String2Double(value));
   } else if (name == "check-period") {
-    check_period_ = String2Unsigned(value);
+    Snake::set_check_period(String2Unsigned(value));
   } else if (name == "alpha") {
-    alpha_ = String2Double(value);
+    solver_bank_->set_alpha(String2Double(value));
   } else if (name == "beta") {
-    beta_ = String2Double(value);
+    solver_bank_->set_beta(String2Double(value));
   } else if (name == "gamma") {
-    gamma_ = String2Double(value);
+    solver_bank_->set_gamma(String2Double(value));
+    Snake::set_gamma(solver_bank_->gamma());
   } else if (name == "weight") {
-    external_factor_ = String2Double(value);
+    Snake::set_external_factor(String2Double(value));
   } else if (name == "stretch") {
-    stretch_factor_ = String2Double(value);
+    Snake::set_stretch_factor(String2Double(value));
   } else if (name == "nsector") {
-    number_of_sectors_ = String2Unsigned(value);
+    Snake::set_number_of_sectors(String2Unsigned(value));
   } else if (name == "radial-near") {
-    radial_near_ = String2Unsigned(value);
+    Snake::set_radial_near(String2Unsigned(value));
   } else if (name == "radial-far") {
-    radial_far_ = String2Unsigned(value);
+    Snake::set_radial_far(String2Unsigned(value));
   } else if (name == "delta") {
-    delta_ = String2Unsigned(value);
+    Snake::set_delta(String2Unsigned(value));
   } else if (name == "overlap-threshold") {
-    overlap_threshold_ = String2Double(value);
+    Snake::set_overlap_threshold(String2Double(value));
   } else if (name == "grouping-distance-threshold") {
-    grouping_distance_threshold_ = String2Double(value);
+    Snake::set_grouping_distance_threshold(String2Double(value));
   } else if (name == "grouping-delta") {
-    grouping_delta_ = String2Unsigned(value);
+    Snake::set_grouping_delta(String2Unsigned(value));
   } else if (name == "direction-threshold") {
-    direction_threshold_ = String2Double(value);
+    Snake::set_direction_threshold(String2Double(value));
   } else if (name == "damp-z") {
-    damp_z_ = value == "true";
+    Snake::set_damp_z(value == "true");
   }
 }
 
-double Multisnake::String2Double(const std::string &s) {
-  std::stringstream converter(s);
-  // converter << s;
-  double value;
-  if (converter >> value)
-    return value;
-  else
-    return 0.0;
-}
 
-unsigned Multisnake::String2Unsigned(const std::string &s) {
-  std::stringstream converter(s);
-  unsigned value;
-  if (converter >> value)
-    return value;
-  else
-    return 0;
-}
-
-void Multisnake::UpdateSnakeParameters() {
-  Snake::set_background(background_ * intensity_scaling_);
-  Snake::set_desired_spacing(desired_spacing_);
-  Snake::set_minimum_length(minimum_length_);
-  Snake::set_max_iterations(max_iterations_);
-  Snake::set_change_threshold(change_threshold_);
-  Snake::set_check_period(check_period_);
-  Snake::set_gamma(gamma_);
-  Snake::set_external_factor(external_factor_);
-  Snake::set_stretch_factor(stretch_factor_);
-  Snake::set_number_of_sectors(number_of_sectors_);
-  Snake::set_radial_near(radial_near_);
-  Snake::set_radial_far(radial_far_);
-  Snake::set_delta(delta_);
-  Snake::set_overlap_threshold(overlap_threshold_);
-  Snake::set_grouping_distance_threshold(grouping_distance_threshold_);
-  Snake::set_grouping_delta(grouping_delta_);
-  Snake::set_direction_threshold(direction_threshold_);
-  Snake::set_damp_z(damp_z_);
-  Snake::set_solver_bank(solver_bank_);
-  solver_bank_->set_alpha(alpha_);
-  solver_bank_->set_beta(beta_);
-  solver_bank_->set_gamma(gamma_);
-}
+// void Multisnake::UpdateSnakeParameters() {
+//   Snake::set_background(background_ * intensity_scaling_);
+//   Snake::set_desired_spacing(desired_spacing_);
+//   Snake::set_minimum_length(minimum_length_);
+//   Snake::set_max_iterations(max_iterations_);
+//   Snake::set_change_threshold(change_threshold_);
+//   Snake::set_check_period(check_period_);
+//   Snake::set_gamma(gamma_);
+//   Snake::set_external_factor(external_factor_);
+//   Snake::set_stretch_factor(stretch_factor_);
+//   Snake::set_number_of_sectors(number_of_sectors_);
+//   Snake::set_radial_near(radial_near_);
+//   Snake::set_radial_far(radial_far_);
+//   Snake::set_delta(delta_);
+//   Snake::set_overlap_threshold(overlap_threshold_);
+//   Snake::set_grouping_distance_threshold(grouping_distance_threshold_);
+//   Snake::set_grouping_delta(grouping_delta_);
+//   Snake::set_direction_threshold(direction_threshold_);
+//   Snake::set_damp_z(damp_z_);
+//   Snake::set_solver_bank(solver_bank_);
+//   solver_bank_->set_alpha(alpha_);
+//   solver_bank_->set_beta(beta_);
+//   solver_bank_->set_gamma(gamma_);
+// }
 
 void Multisnake::SaveParameters(const std::string &filename) const {
   std::ofstream outfile;
@@ -167,73 +154,73 @@ void Multisnake::SaveParameters(const std::string &filename) const {
     std::cerr << "Couldn't open file: " << outfile << std::endl;
     return;
   }
-  SaveParameters(outfile);
+  this->WriteParameters(outfile);
   outfile.close();
 }
 
-void Multisnake::SaveParameters(std::ofstream &outfile) const {
-  outfile << std::boolalpha;
-  outfile << "intensity-scaling\t" << intensity_scaling_ << std::endl;
-  outfile << "smoothing\t" << sigma_ << std::endl;
-  outfile << "grad-diff\t" << ridge_threshold_ << std::endl;
-  outfile << "foreground\t" << foreground_ << std::endl;
-  outfile << "background\t" << background_ << std::endl;
-  outfile << "init-z\t" << initialize_z_ << std::endl;
-  outfile << "spacing \t" << desired_spacing_ << std::endl;
-  outfile << "minimum-size \t" << minimum_length_ << std::endl;
-  outfile << "max-iterations \t" << max_iterations_ << std::endl;
-  outfile << "change-threshold \t" << change_threshold_ << std::endl;
-  outfile << "check-period \t" << check_period_ << std::endl;
-  outfile << "alpha \t" << alpha_ << std::endl;
-  outfile << "beta \t" << beta_ << std::endl;
-  outfile << "gamma \t" << gamma_ << std::endl;
-  outfile << "weight \t" << external_factor_ << std::endl;
-  outfile << "stretch \t" << stretch_factor_ << std::endl;
-  outfile << "nsector \t" << number_of_sectors_ << std::endl;
-  outfile << "radial-near \t" << radial_near_ << std::endl;
-  outfile << "radial-far \t" << radial_far_ << std::endl;
-  outfile << "delta \t" << delta_ << std::endl;
-  outfile << "overlap-threshold \t" << overlap_threshold_ << std::endl;
-  outfile << "grouping-distance-threshold \t" << grouping_distance_threshold_
-          << std::endl;
-  outfile << "grouping-delta \t" << grouping_delta_ << std::endl;
-  outfile << "direction-threshold \t" << direction_threshold_ << std::endl;
-  outfile << "damp-z \t" << damp_z_ << std::endl;
-  outfile << std::noboolalpha;
+void Multisnake::WriteParameters(std::ostream &os) const {
+  os << std::boolalpha;
+  os << "intensity-scaling\t" << intensity_scaling_ << std::endl;
+  os << "smoothing\t" << sigma_ << std::endl;
+  os << "grad-diff\t" << ridge_threshold_ << std::endl;
+  os << "foreground\t" << foreground_ << std::endl;
+  os << "background\t" << background_ << std::endl;
+  os << "init-z\t" << initialize_z_ << std::endl;
+  os << "spacing \t" << Snake::desired_spacing() << std::endl;
+  os << "minimum-size \t" << Snake::minimum_length() << std::endl;
+  os << "max-iterations \t" << Snake::max_iterations() << std::endl;
+  os << "change-threshold \t" << Snake::change_threshold() << std::endl;
+  os << "check-period \t" << Snake::check_period() << std::endl;
+  os << "alpha \t" << solver_bank_->alpha() << std::endl;
+  os << "beta \t" << solver_bank_->beta() << std::endl;
+  os << "gamma \t" << solver_bank_->gamma() << std::endl;
+  os << "weight \t" << Snake::external_factor() << std::endl;
+  os << "stretch \t" << Snake::stretch_factor() << std::endl;
+  os << "nsector \t" << Snake::number_of_sectors() << std::endl;
+  os << "radial-near \t" << Snake::radial_near() << std::endl;
+  os << "radial-far \t" << Snake::radial_far() << std::endl;
+  os << "delta \t" << Snake::delta() << std::endl;
+  os << "overlap-threshold \t" << Snake::overlap_threshold() << std::endl;
+  os << "grouping-distance-threshold \t"
+     << Snake::grouping_distance_threshold() << std::endl;
+  os << "grouping-delta \t" << Snake::grouping_delta() << std::endl;
+  os << "direction-threshold \t" << Snake::direction_threshold() << std::endl;
+  os << "damp-z \t" << Snake::damp_z() << std::endl;
+  os << std::noboolalpha;
 }
 
-void Multisnake::PrintParameters() const {
-  std::cout << "============ Current Parameters ============" << std::endl;
-  std::cout << std::boolalpha;
-  std::cout << "intensity-scaling: " << intensity_scaling_ << std::endl;
-  std::cout << "smoothing: " << sigma_ << std::endl;
-  std::cout << "grad-diff: " << ridge_threshold_ << std::endl;
-  std::cout << "foreground: " << foreground_ << std::endl;
-  std::cout << "background: " << background_ << std::endl;
-  std::cout << "init-z: " << initialize_z_ << std::endl;
-  std::cout << "spacing: " << desired_spacing_ << std::endl;
-  std::cout << "minimum-size: " << minimum_length_ << std::endl;
-  std::cout << "max-iterations: " << max_iterations_ << std::endl;
-  std::cout << "change-threshold: " << change_threshold_ << std::endl;
-  std::cout << "check-period: " << check_period_ << std::endl;
-  std::cout << "alpha: " << alpha_ << std::endl;
-  std::cout << "beta: " << beta_ << std::endl;
-  std::cout << "gamma: " << gamma_ << std::endl;
-  std::cout << "weight: " << external_factor_ << std::endl;
-  std::cout << "stretch: " << stretch_factor_ << std::endl;
-  std::cout << "nsector: " << number_of_sectors_ << std::endl;
-  std::cout << "radial-near: " << radial_near_ << std::endl;
-  std::cout << "radial-far: " << radial_far_ << std::endl;
-  std::cout << "delta: " << delta_ << std::endl;
-  std::cout << "overlap-threshold: " << overlap_threshold_ << std::endl;
-  std::cout << "grouping-distance-threshold: " << grouping_distance_threshold_
-            << std::endl;
-  std::cout << "grouping-delta: " << grouping_delta_ << std::endl;
-  std::cout << "direction-threshold: " << direction_threshold_ << std::endl;
-  std::cout << "damp-z: " << damp_z_ << std::endl;
-  std::cout << "============================================" << std::endl;
-  std::cout << std::noboolalpha;
-}
+// void Multisnake::PrintParameters() const {
+//   std::cout << "============ Current Parameters ============" << std::endl;
+//   std::cout << std::boolalpha;
+//   std::cout << "intensity-scaling: " << intensity_scaling_ << std::endl;
+//   std::cout << "smoothing: " << sigma_ << std::endl;
+//   std::cout << "grad-diff: " << ridge_threshold_ << std::endl;
+//   std::cout << "foreground: " << foreground_ << std::endl;
+//   std::cout << "background: " << background_ << std::endl;
+//   std::cout << "init-z: " << initialize_z_ << std::endl;
+//   std::cout << "spacing: " << desired_spacing_ << std::endl;
+//   std::cout << "minimum-size: " << minimum_length_ << std::endl;
+//   std::cout << "max-iterations: " << max_iterations_ << std::endl;
+//   std::cout << "change-threshold: " << change_threshold_ << std::endl;
+//   std::cout << "check-period: " << check_period_ << std::endl;
+//   std::cout << "alpha: " << alpha_ << std::endl;
+//   std::cout << "beta: " << beta_ << std::endl;
+//   std::cout << "gamma: " << gamma_ << std::endl;
+//   std::cout << "weight: " << external_factor_ << std::endl;
+//   std::cout << "stretch: " << stretch_factor_ << std::endl;
+//   std::cout << "nsector: " << number_of_sectors_ << std::endl;
+//   std::cout << "radial-near: " << radial_near_ << std::endl;
+//   std::cout << "radial-far: " << radial_far_ << std::endl;
+//   std::cout << "delta: " << delta_ << std::endl;
+//   std::cout << "overlap-threshold: " << overlap_threshold_ << std::endl;
+//   std::cout << "grouping-distance-threshold: " << grouping_distance_threshold_
+//             << std::endl;
+//   std::cout << "grouping-delta: " << grouping_delta_ << std::endl;
+//   std::cout << "direction-threshold: " << direction_threshold_ << std::endl;
+//   std::cout << "damp-z: " << damp_z_ << std::endl;
+//   std::cout << "============================================" << std::endl;
+//   std::cout << std::noboolalpha;
+// }
 
 void Multisnake::ScaleImageIntensity() {
   typedef itk::ShiftScaleImageFilter<ImageType, ImageType> FilterType;
@@ -480,7 +467,7 @@ void Multisnake::SaveSnakes(const SnakeContainer &snakes,
 
   const unsigned column_width = 20;
   outfile << "image\t" << image_filename_ << std::endl;
-  SaveParameters(outfile);
+  WriteParameters(outfile);
 
   if (snakes.empty()) {
     std::cout << "No snakes to save!" << std::endl;
@@ -685,7 +672,7 @@ unsigned Multisnake::GetNumberOfSnakesCloseToPoint(const PointType &p) {
   unsigned num = 0;
   // TODO: improve this dist_threshold
   // const double dist_threshold = grouping_distance_threshold_/2;
-  const double dist_threshold = grouping_distance_threshold_;
+  const double dist_threshold = Snake::grouping_distance_threshold();
   for (SnakeContainer::const_iterator it = converged_snakes_.begin();
        it != converged_snakes_.end(); ++it) {
     if ((*it)->PassThrough(p, dist_threshold))
@@ -694,5 +681,204 @@ unsigned Multisnake::GetNumberOfSnakesCloseToPoint(const PointType &p) {
   return num;
 }
 
+void Multisnake::LoadSnakes(const std::string &filename,
+                            SnakeContainer &snakes) {
+  snakes.clear();
+  std::ifstream infile(filename.c_str());
+  if (!infile.is_open()) {
+    std::cerr << "LoadSnakes: couldn't open file: " << filename << std::endl;
+    return;
+  }
+  std::string line, name, value;
+  PointContainer points;
+  bool is_open = true;
+  PointContainer junction_points;
+
+  while (std::getline(infile, line)) {
+    if (isalpha(line[0])) {
+      std::stringstream converter;
+      converter << line;
+      converter >> name >> value;
+      this->AssignParameters(name, value);
+    } else if (line[0] == '#') {
+      if (points.size() > 1) {
+        Snake *s = new Snake(points, is_open, false, image_, external_force_,
+                             interpolator_, vector_interpolator_, transform_);
+        snakes.push_back(s);
+        s->Resample();
+      }
+      is_open = (line[1] != '0');
+      std::istringstream stream(line);
+      std::string dummy;
+      double x0, y0, z0, x1, y1, z1;
+      stream >> dummy >> x0 >> y0 >> z0 >> x1 >> y1 >> z1;
+      points.clear();
+    } else if (line[0] == '[') {
+      this->LoadPoint(line, junction_points);
+    } else {
+      std::istringstream stream(line);
+      double snake_index, point_index, x, y, z;
+      stream >> snake_index >> point_index >> x >> y >> z;
+      PointType  snake_point;
+      snake_point[0] = x;
+      snake_point[1] = y;
+      snake_point[2] = z;
+      points.push_back(snake_point);
+    }
+  }
+  infile.close();
+
+  if (points.size() > 1) {
+    Snake *s = new Snake(points, is_open, false, image_, external_force_,
+                         interpolator_, vector_interpolator_, transform_);
+    snakes.push_back(s);
+    s->Resample();
+  }
+  junctions_.set_junction_points(junction_points);
+}
+
+void Multisnake::LoadJFilamentSnakes(const std::string &filename,
+                                     SnakeContainer &snakes) {
+  std::ifstream infile(filename.c_str());
+  if (!infile) {
+    std::cerr << "Couldn't open file: " << infile << std::endl;
+    return;
+  }
+
+  std::string line;
+  PointContainer points;
+  bool is_open = true;
+  bool pound  = false;
+
+  while (getline(infile, line)) {
+    if (isalpha(line[0])) {
+      continue;
+    } else if (line[0] == '#') {
+      if (points.size() > 1) {
+        Snake *s = new Snake(points, is_open, false, image_, external_force_,
+                             interpolator_, vector_interpolator_, transform_);
+        snakes.push_back(s);
+        s->Resample();
+      }
+      points.clear();
+      pound = true;
+    } else if (line[0] == '0') {
+      if (pound) {
+        pound = false;
+        continue;
+      } else {
+        std::istringstream  stream(line);
+        double zero, index, x, y, z;
+        stream >> zero >> index >> x >> y >> z;
+        //std::cout << x << " " << y << " " << z << std::endl;
+        PointType  snake_point;
+        snake_point[0] = x;
+        snake_point[1] = y;
+        snake_point[2] = z;
+        points.push_back(snake_point);
+      }
+    }
+  }
+
+  infile.close();
+
+  if (points.size() > 1) {
+    Snake *s = new Snake(points, is_open, false, image_, external_force_,
+                         interpolator_, vector_interpolator_, transform_);
+    snakes.push_back(s);
+    s->Resample();
+  }
+}
+
+void Multisnake::LoadPoint(const std::string &s, PointContainer &c) {
+  std::istringstream buffer(s);
+  char padding;
+  double x, y, z;
+  buffer >> padding >> x >> padding >> y >> padding >> z >> padding;
+
+  PointType p;
+  p[0] = x;
+  p[1] = y;
+  p[2] = z;
+  c.push_back(p);
+}
+
+void Multisnake::EvaluateByVertexErrorHausdorffDistance(
+    const std::string &snake_path,
+    const std::string &filename) const {
+  std::ofstream outfile;
+  outfile.open(filename.c_str(), std::ios::out | std::ios::app);
+  if (!outfile.is_open()) {
+    std::cerr << "Couldn't open error stat file: " << outfile << std::endl;
+    return;
+  }
+
+  double vertex_error = static_cast<double>(
+      image_->GetLargestPossibleRegion().GetSize()[0]);
+  double hausdorff = static_cast<double>(
+      image_->GetLargestPossibleRegion().GetSize()[0]);
+  if (!converged_snakes_.empty()) {
+    DataContainer errors1, errors2;
+    this->ComputeErrorFromSnakesToComparingSnakes(errors1);
+    this->ComputeErrorFromComparingSnakesToSnakes(errors2);
+    vertex_error = (Mean(errors1) + Mean(errors2))/2;
+
+    double max_error1 = Maximum(errors1);
+    double max_error2 = Maximum(errors2);
+    hausdorff = max_error1 > max_error2 ? max_error1 : max_error2;
+  }
+
+  const unsigned width = 10;
+  outfile << std::setw(width) << ridge_threshold_
+          << std::setw(width) << Snake::stretch_factor()
+          << std::setw(width) << vertex_error
+          << std::setw(width) << hausdorff
+          << "\t" << snake_path << std::endl;
+  outfile.close();
+}
+
+void Multisnake::ComputeErrorFromSnakesToComparingSnakes(
+    DataContainer &errors) const {
+  for (SnakeConstIterator iter = converged_snakes_.begin();
+       iter != converged_snakes_.end(); ++iter) {
+    for (unsigned i = 0; i < (*iter)->GetSize(); ++i) {
+      double dist = this->ComputeShortestDistance((*iter)->GetPoint(i),
+                                                  comparing_snakes1_);
+      errors.push_back(dist);
+    }
+  }
+}
+
+void Multisnake::ComputeErrorFromComparingSnakesToSnakes(
+    DataContainer &errors) const {
+  for (SnakeConstIterator iter = comparing_snakes1_.begin();
+       iter != comparing_snakes1_.end(); ++iter) {
+    for (unsigned i = 0; i < (*iter)->GetSize(); ++i) {
+      double dist = this->ComputeShortestDistance((*iter)->GetPoint(i),
+                                                  converged_snakes_);
+      errors.push_back(dist);
+    }
+  }
+}
+
+double Multisnake::ComputeShortestDistance(
+    const PointType &p, const SnakeContainer &snakes) const {
+  double min_dist = kPlusInfinity;
+  for (SnakeConstIterator iter = snakes.begin();
+       iter != snakes.end(); ++iter) {
+    for (unsigned i = 0; i < (*iter)->GetSize(); ++i) {
+      double dist = p.EuclideanDistanceTo((*iter)->GetPoint(i));
+      if (dist < min_dist)
+        min_dist = dist;
+    }
+  }
+  return min_dist;
+}
+
+
+void Multisnake::EvaluateByFFunction(double threshold, double penalizer,
+                                     const std::string &snake_path,
+                                     const std::string &filename) const {
+}
 
 } // namespace soax

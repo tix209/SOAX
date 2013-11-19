@@ -1,9 +1,10 @@
 #include <iomanip>
 #include "snake.h"
 #include "solver_bank.h"
-
+#include "utility.h"
 
 namespace soax {
+
 SolverBank *Snake::solver_bank_ = NULL;
 double Snake::background_ = 0.0;
 double Snake::desired_spacing_ = 0.0;
@@ -23,6 +24,7 @@ double Snake::grouping_distance_threshold_ = 0.0;
 unsigned Snake::grouping_delta_ = 0;
 double Snake::direction_threshold_ = 0.0;
 bool Snake::damp_z_ = false;
+
 const double Snake::kBoundary = 0.5;
 
 
@@ -450,7 +452,8 @@ double Snake::ComputeLocalStretch(bool is_head) {
   // PointType &vertex = is_head ? vertices_.front() : vertices_.back();
   // double fg = this->ComputeVertexIntensity(vertex);
 
-  // Good for noisy images such as OCT vessels and microtubules, and actin rings.
+  // Good for noisy images such as OCT vessels and microtubules,
+  // and actin rings.
   double fg = this->ComputeCircularMeanIntensity(is_head, true);
 
   if (fg < background_ + kEpsilon)
@@ -486,7 +489,7 @@ double Snake::ComputeCircularMeanIntensity(bool is_head, bool is_fg) {
     // this->PrintSelf();
     return 0; // could be a bug here!!!
   } else {
-    return this->Mean(intensities);
+    return Mean(intensities);
   }
 }
 
@@ -540,14 +543,6 @@ bool Snake::IsInsideImage(const PointType &point) {
   return true;
 }
 
-double Snake::Mean(const DataContainer &vec) {
-  assert(!vec.empty());
-  double total = 0.0;
-  for (unsigned i = 0; i < vec.size(); ++i) {
-    total += vec[i];
-  }
-  return total / vec.size();
-}
 
 /*
  * Implementation Notes: CheckBodyOverlap:

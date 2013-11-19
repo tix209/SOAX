@@ -70,10 +70,13 @@ int main(int argc, char **argv) {
 
   if (vm.count("stretch")) {
     std::cout << "stretch is set to " << stretch << std::endl;
-    multisnake.set_stretch_factor(stretch);
+    soax::Snake::set_stretch_factor(stretch);
   }
-  multisnake.UpdateSnakeParameters();
-  multisnake.PrintParameters();
+
+  std::cout << "============ Current Parameters ============" << std::endl;
+  multisnake.WriteParameters(std::cout);
+  std::cout << "============================================" << std::endl;
+
   multisnake.ScaleImageIntensity();
   multisnake.ComputeImageGradient();
   multisnake.InitializeSnakes();

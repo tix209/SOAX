@@ -49,38 +49,64 @@ class Snake {
   // static double background() {return background_;}
   static void set_background(double background) {background_ = background;}
 
-  // static double desired_spacing() {return desired_spacing_;}
+  static double desired_spacing() {return desired_spacing_;}
   static void set_desired_spacing(double spacing) {
     desired_spacing_ = spacing;
   }
 
+  static unsigned max_iterations() {return max_iterations_;}
   static void set_max_iterations(unsigned n) {max_iterations_ = n;}
+
+  static double change_threshold() {return change_threshold_;}
   static void set_change_threshold(double v) {change_threshold_ = v;}
+
+  static unsigned check_period() {return check_period_;}
   static void set_check_period(unsigned v) {check_period_ = v;}
+
+  static double minimum_length() {return minimum_length_;}
   static void set_minimum_length(double length) {minimum_length_ = length;}
+
   static void set_gamma(double g) {gamma_ = g;}
+
+  static double external_factor() {return external_factor_;}
   static void set_external_factor(double f) {external_factor_ = f;}
+
+  static double stretch_factor() {return stretch_factor_;}
   static void set_stretch_factor(double f) {stretch_factor_ = f;}
+
+  static int number_of_sectors() {return number_of_sectors_;}
   static void set_number_of_sectors(int nsectors) {
     number_of_sectors_ = nsectors;
   }
+
+  static int radial_near() {return radial_near_;}
   static void set_radial_near(int rnear) {radial_near_ = rnear;}
+
+  static int radial_far() {return radial_far_;}
   static void set_radial_far(int rfar) {radial_far_ = rfar;}
+
+  static unsigned delta() {return delta_;}
   static void set_delta(unsigned n) {delta_ = n;}
+
+  static double overlap_threshold() {return overlap_threshold_;}
   static void set_overlap_threshold(double t) {
     overlap_threshold_ = t;
   }
+
   static double grouping_distance_threshold() {
     return grouping_distance_threshold_;
   }
   static void set_grouping_distance_threshold(double threshold) {
     grouping_distance_threshold_ = threshold;
   }
+
   static unsigned grouping_delta() {return grouping_delta_;}
   static void set_grouping_delta(unsigned d) {grouping_delta_ = d;}
 
   static double direction_threshold() {return direction_threshold_;}
   static void set_direction_threshold(double t) {direction_threshold_ = t;}
+
+  static bool damp_z() {return damp_z_;}
   static void set_damp_z(bool d) {damp_z_ = d;}
 
   const SnakeContainer &subsnakes() const {return subsnakes_;}
@@ -174,10 +200,12 @@ class Snake {
                           const VectorType &normal,
                           int d, int s);
   bool IsInsideImage(const PointType &point);
-  double Mean(const DataContainer &vec);
+
   void CheckBodyOverlap(const SnakeContainer &converged_snakes);
 
   void AddJunctionIndex(unsigned index);
+
+
 
   PointContainer vertices_;
   bool open_;

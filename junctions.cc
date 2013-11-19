@@ -39,7 +39,7 @@ void Junctions::Reset() {
 }
 
 void Junctions::Initialize(const SnakeContainer &seg) {
-  for (SnakeContainer::const_iterator it = seg.begin(); it != seg.end(); ++it) {
+  for (SnakeConstIterator it = seg.begin(); it != seg.end(); ++it) {
     SnakeTip * head = new SnakeTip(*it, true);
     SnakeTip * tail = new SnakeTip(*it, false);
 
@@ -85,7 +85,8 @@ void Junctions::AddToTipSets(SnakeTip *t) {
     this->JoinTipSet(t, ts);
 }
 
-void Junctions::FindCloseTipSets(SnakeTip *t, TipSetContainer &close_tip_sets) const {
+void Junctions::FindCloseTipSets(SnakeTip *t,
+                                 TipSetContainer &close_tip_sets) const {
   if (tip_sets_.empty()) return;
 
   for (TipSetContainer::const_iterator it = tip_sets_.begin();
@@ -97,7 +98,8 @@ void Junctions::FindCloseTipSets(SnakeTip *t, TipSetContainer &close_tip_sets) c
   }
 }
 
-SnakeTipSet * Junctions::MergeCloseTipSets(const TipSetContainer &close_tip_sets) {
+SnakeTipSet * Junctions::MergeCloseTipSets(
+    const TipSetContainer &close_tip_sets) {
   if (close_tip_sets.empty()) {
     return NULL;
   } else if (close_tip_sets.size() == 1) {
@@ -116,7 +118,9 @@ SnakeTipSet * Junctions::MergeCloseTipSets(const TipSetContainer &close_tip_sets
 
 
 void Junctions::RemoveTipSet(SnakeTipSet *ts) {
-  TipSetContainer::iterator it = std::find(tip_sets_.begin(), tip_sets_.end(), ts);
+  TipSetContainer::iterator it = std::find(tip_sets_.begin(),
+                                           tip_sets_.end(),
+                                           ts);
   if (it != tip_sets_.end()) {
     tip_sets_.erase(it);
   } else {

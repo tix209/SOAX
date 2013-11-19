@@ -25,13 +25,13 @@ class SolverBank {
 
   double GetSolution(unsigned order, unsigned index, bool open);
 
-  double alpha() {return alpha_;}
+  double alpha() const {return alpha_;}
   void set_alpha(double a) {alpha_ = a;}
 
-  double beta() {return beta_;}
+  double beta() const {return beta_;}
   void set_beta(double b) {beta_ = b;}
 
-  double gamma() {return gamma_;}
+  double gamma() const {return gamma_;}
   void set_gamma(double g) {gamma_ = g;}
 
  private:

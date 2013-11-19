@@ -29,7 +29,7 @@ class Multisnake {
   void LoadParameters(const std::string &filename);
   void UpdateSnakeParameters();
   void SaveParameters(const std::string &filename) const;
-  void PrintParameters() const;
+  void WriteParameters(std::ostream &os) const;
 
   double intensity_scaling() const  {return intensity_scaling_;}
   void set_intensity_scaling(double scale) {intensity_scaling_ = scale;}
@@ -47,8 +47,6 @@ class Multisnake {
   double background() const {return background_;}
   void set_background(double background) {background_ = background;}
 
-  double stretch_factor() const {return stretch_factor_;}
-  void set_stretch_factor(double factor) {stretch_factor_ = factor;}
 
   /*
    * Multiply the image intensity by a constant factor.
@@ -77,13 +75,25 @@ class Multisnake {
   void CutSnakesAtTJunctions();
   void GroupSnakes();
 
+  void LoadConvergedSnakes(const std::string &filename) {
+    this->LoadSnakes(filename, converged_snakes_);
+  }
+
+  void LoadGroundTruthSnakes(const std::string &filename) {
+    this->LoadJFilamentSnakes(filename, comparing_snakes1_);
+  }
+
+  void EvaluateByVertexErrorHausdorffDistance(
+      const std::string &snake_path, const std::string &filename) const;
+  void EvaluateByFFunction(double threshold, double penalizer,
+                           const std::string &snake_path,
+                           const std::string &filename) const;
 
  private:
   typedef itk::Vector<bool, kDimension> BoolVectorType;
   typedef itk::Image<BoolVectorType, kDimension> BoolVectorImageType;
   typedef std::set<Snake *> SnakeSet;
 
-  void SaveParameters(std::ofstream &outfile) const;
 
   /*
    * Initialize a new bool vector image used for snake initialization.
@@ -125,8 +135,6 @@ class Multisnake {
   void AssignParameters(const std::string &name,
                         const std::string &value);
 
-  double String2Double(const std::string &s);
-  unsigned String2Unsigned(const std::string &s);
 
   void CutSnakes(SnakeContainer &seg);
   void ClearSnakeContainer(SnakeContainer &snakes);
@@ -141,6 +149,17 @@ class Multisnake {
                            bool is_head, bool from_head);
   void UpdateJunctions();
   unsigned GetNumberOfSnakesCloseToPoint(const PointType &p);
+
+  void LoadSnakes(const std::string &filename, SnakeContainer &snakes);
+  void LoadJFilamentSnakes(const std::string &filename,
+                           SnakeContainer &snakes);
+  void LoadPoint(const std::string &s, PointContainer &c);
+
+  void ComputeErrorFromSnakesToComparingSnakes(DataContainer &errors) const;
+  void ComputeErrorFromComparingSnakesToSnakes(DataContainer &errors) const;
+  double ComputeShortestDistance(const PointType &p,
+                                 const SnakeContainer &snakes) const;
+
 
   std::string image_filename_;
   ImageType::Pointer image_;
@@ -157,7 +176,6 @@ class Multisnake {
   SnakeContainer comparing_snakes2_;
 
   Junctions junctions_;
-
 
 
 
@@ -193,112 +211,112 @@ class Multisnake {
   double foreground_;
   double background_;
 
-  /*
-   * The distance between adjacent snake points the snakes try to maintain.
-   */
-  double desired_spacing_;
+  // /*
+  //  * The distance between adjacent snake points the snakes try to maintain.
+  //  */
+  // double desired_spacing_;
 
   /*
    * True if initialize snakes along z axis direction.
    */
   bool initialize_z_;
 
-  /*
-   * Minimum length for the final snake.
-   */
-  double minimum_length_;
+  // /*
+  //  * Minimum length for the final snake.
+  //  */
+  // double minimum_length_;
 
-  /*
-   * Maximum number iterations allowed for a snake.
-   */
-  unsigned max_iterations_;
+  // /*
+  //  * Maximum number iterations allowed for a snake.
+  //  */
+  // unsigned max_iterations_;
 
-  /*
-   * Change threshold for determining snake convergence. If every
-   * snake point move a distance less than this threshold, then the
-   * snake is converged.
-   */
-  double change_threshold_;
+  // /*
+  //  * Change threshold for determining snake convergence. If every
+  //  * snake point move a distance less than this threshold, then the
+  //  * snake is converged.
+  //  */
+  // double change_threshold_;
 
-  /*
-   * Period (# of iterations) of checking convergence.
-   */
-  unsigned check_period_;
+  // /*
+  //  * Period (# of iterations) of checking convergence.
+  //  */
+  // unsigned check_period_;
 
   /*
    * Number of iterations performed on each click in step evolution mode.
    */
-  unsigned iterations_per_press_;
+  // unsigned iterations_per_press_;
 
-  /*
-   * Weight for first order continuity of snakes.
-   */
-  double alpha_;
+  // /*
+  //  * Weight for first order continuity of snakes.
+  //  */
+  // double alpha_;
 
-  /*
-   * Weight for second order continuity of snakes.
-   */
-  double beta_;
+  // /*
+  //  * Weight for second order continuity of snakes.
+  //  */
+  // double beta_;
 
-  /*
-   * Step size of iteration.
-   */
-  double gamma_;
+  // /*
+  //  * Step size of iteration.
+  //  */
+  // double gamma_;
 
-  /*
-   * Weight for external forces.
-   */
-  double external_factor_;
+  // /*
+  //  * Weight for external forces.
+  //  */
+  // double external_factor_;
 
-  /*
-   * Weight for stretch forces. It controls how much snakes stretch.
-   */
-  double stretch_factor_;
+  // /*
+  //  * Weight for stretch forces. It controls how much snakes stretch.
+  //  */
+  // double stretch_factor_;
 
-  /*
-   * These thress parameters determine the sampling locations of local
-   * shell in estimating the local background intensity near snake
-   * tips.
-   */
-  int number_of_sectors_;
-  int radial_near_;
-  int radial_far_;
+  // /*
+  //  * These thress parameters determine the sampling locations of local
+  //  * shell in estimating the local background intensity near snake
+  //  * tips.
+  //  */
+  // int number_of_sectors_;
+  // int radial_near_;
+  // int radial_far_;
 
-  /*
-   * Number of points apart to compute the tangent vector at snake
-   * tips.
-   */
-  unsigned delta_;
+  // /*
+  //  * Number of points apart to compute the tangent vector at snake
+  //  * tips.
+  //  */
+  // unsigned delta_;
 
-  /*
-   * Distance threshold for determining overlap with other snakes.
-   */
-  double overlap_threshold_;
+  // /*
+  //  * Distance threshold for determining overlap with other snakes.
+  //  */
+  // double overlap_threshold_;
 
-  /*
-   * Distance threshold for determining junctions.
-   */
-  double grouping_distance_threshold_;
+  // /*
+  //  * Distance threshold for determining junctions.
+  //  */
+  // double grouping_distance_threshold_;
 
-  /*
-   * Number of points apart to compute the snake branch directions for
-   * grouping.
-   */
-  unsigned grouping_delta_;
+  // /*
+  //  * Number of points apart to compute the snake branch directions for
+  //  * grouping.
+  //  */
+  // unsigned grouping_delta_;
 
-  /*
-   * Angle threshold (in radians) for determining if two snake
-   * branches are smooth enough to be linked together during grouping
-   * process.
-   */
-  double direction_threshold_;
+  // /*
+  //  * Angle threshold (in radians) for determining if two snake
+  //  * branches are smooth enough to be linked together during grouping
+  //  * process.
+  //  */
+  // double direction_threshold_;
 
-  /*
-   * Flag of damping of stretching along z direction. If it is true,
-   * the stretching forces are reduced if the tangent directions of
-   * tips are along z direction.
-   */
-  bool damp_z_;
+  // /*
+  //  * Flag of damping of stretching along z direction. If it is true,
+  //  * the stretching forces are reduced if the tangent directions of
+  //  * tips are along z direction.
+  //  */
+  // bool damp_z_;
 
 
   DISALLOW_COPY_AND_ASSIGN(Multisnake);

@@ -14,6 +14,12 @@ double StandardDeviation(const DataContainer &data, double mean);
 double Median(DataContainer &data);
 double Minimum(const DataContainer &data);
 double Maximum(const DataContainer &data);
+/*
+ * Get the image filename from snake file. Assuming the path is at
+ * the first line in a snake file.
+ */
+std::string GetImageName(const std::string &snake_path);
+
 
 } // namespace soax
 

@@ -809,7 +809,7 @@ void Multisnake::EvaluateByVertexErrorHausdorffDistance(
   std::ofstream outfile;
   outfile.open(filename.c_str(), std::ios::out | std::ios::app);
   if (!outfile.is_open()) {
-    std::cerr << "Couldn't open error stat file: " << outfile << std::endl;
+    std::cerr << "Couldn't open error stat file: " << filename << std::endl;
     return;
   }
 
@@ -833,7 +833,7 @@ void Multisnake::EvaluateByVertexErrorHausdorffDistance(
           << std::setw(width) << Snake::stretch_factor()
           << std::setw(width) << vertex_error
           << std::setw(width) << hausdorff
-          << "\t" << snake_path << std::endl;
+          << "\t" << GetImageName(snake_path) << std::endl;
   outfile.close();
 }
 

@@ -26,8 +26,8 @@ int main(int argc, char **argv) {
   required.add_options()
       ("image,i", po::value<std::string>(&image_path)->required(),
        "Image file path")
-      ("parameters,p", po::value<std::string>(&parameter_path)->
-       required(), "Parameter file path")
+      ("parameters,p", po::value<std::string>(&parameter_path)->required(),
+       "Parameter file path")
       ("snake,s", po::value<std::string>(&snake_path)->required(),
        "Snake file path");
 

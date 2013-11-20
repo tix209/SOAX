@@ -107,5 +107,18 @@ double Maximum(const DataContainer &data) {
   return max_value;
 }
 
+std::string GetImageName(const std::string &snake_path) {
+  std::ifstream infile(snake_path.c_str());
+  if (!infile) {
+    std::cerr << "Couldn't open file: " << infile << std::endl;
+    return "";
+  }
+
+  std::string line;
+  getline(infile, line);
+
+  unsigned found_slash = line.find_last_of("/\\");
+  return line.substr(found_slash + 1);
+}
 
 } // namespace soax

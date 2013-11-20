@@ -38,15 +38,12 @@ int main(int argc, char **argv) {
 
     po::options_description optional("Optional options");
     optional.add_options()
-        ("comparing,c",
-         po::value<std::string>(&comparing_snake_path)->required(),
+        ("comparing,c", po::value<std::string>(&comparing_snake_path),
          "Comparing snake file path")
-        ("snr,t", po::value<double>(&snr_threshold)->required(),
+        ("snr,t", po::value<double>(&snr_threshold),
          "Low SNR threshold")
-        ("penalizer,p", po::value<double>(&penalizer)->required(),
+        ("penalizer,p", po::value<double>(&penalizer),
          "Constant c for penalizing the low SNR snake points.")
-        // ("grad-diff", "Set grad-diff as a variable")
-        // ("stretch", "Set stretch as a variable")
         ;
 
     po::options_description all("Allowed options");

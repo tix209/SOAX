@@ -24,6 +24,12 @@ class Multisnake {
    * Load the image and set image_filename_.
    */
   void LoadImage(const std::string &filename);
+
+  /*
+   * Resample and save as an isotropic 16-bit image.
+   */
+  void SaveAsIsotropicImage(const std::string &filename, double z_spacing);
+
   ImageType::Pointer image() const {return image_;}
 
   void LoadParameters(const std::string &filename);

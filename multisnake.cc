@@ -3,6 +3,9 @@
 #include <QProgressBar>
 #include "multisnake.h"
 #include "itkImageFileReader.h"
+#include "itkImageFileWriter.h"
+#include "itkBSplineInterpolateImageFunction.h"
+#include "itkResampleImageFilter.h"
 #include "itkShiftScaleImageFilter.h"
 #include "itkGradientImageFilter.h"
 #include "itkVectorCastImageFilter.h"
@@ -44,6 +47,58 @@ void Multisnake::LoadImage(const std::string &filename) {
       image_->GetLargestPossibleRegion().GetSize();
   std::cout << "Image size: " << size << std::endl;
   std::cout << image_filename_ << std::endl;
+}
+
+void Multisnake::SaveAsIsotropicImage(const std::string &filename,
+                                      double z_spacing) {
+  if (intensity_scaled_) {
+    std::cerr << "Please save as isotropic right after loading an image."
+              << std::endl;
+    return;
+  }
+
+  typedef itk::BSplineInterpolateImageFunction<ImageType, double, double>
+      InterpolatorType;
+  InterpolatorType::Pointer interp = InterpolatorType::New();
+  interp->SetSplineOrder(3);
+  typedef itk::ResampleImageFilter<ImageType, OutputImageType> ResamplerType;
+  ResamplerType::Pointer resampler = ResamplerType::New();
+  resampler->SetInterpolator(interp);
+  resampler->SetOutputOrigin(image_->GetOrigin());
+  resampler->SetOutputDirection(image_->GetDirection());
+
+  // const ImageType::SpacingType &input_spacing = image_->GetSpacing();
+  ImageType::SpacingType input_spacing;
+  input_spacing.Fill(1.0);
+  input_spacing[2] = z_spacing;
+  image_->SetSpacing(input_spacing);
+
+  const ImageType::SizeType &input_size =
+      image_->GetLargestPossibleRegion().GetSize();
+  ImageType::SpacingType output_spacing;
+  output_spacing.Fill(1.0);
+  ImageType::SizeType output_size;
+  for (unsigned i = 0; i < kDimension; ++i) {
+    output_size[i] = static_cast<ImageType::SizeValueType>(
+        input_size[i] * input_spacing[i]);
+  }
+
+  resampler->SetOutputSpacing(output_spacing);
+  resampler->SetSize(output_size);
+  resampler->SetDefaultPixelValue(0.0);
+  resampler->SetInput(image_);
+
+  typedef itk::ImageFileWriter<OutputImageType> WriterType;
+  WriterType::Pointer writer = WriterType::New();
+  writer->SetFileName(filename);
+  writer->SetInput(resampler->GetOutput());
+
+  try {
+    writer->Update();
+  } catch( itk::ExceptionObject & exp ) {
+    std::cerr << "Exception caught when write an image!" << std::endl;
+    std::cerr << exp << std::endl;
+  }
 }
 
 void Multisnake::LoadParameters(const std::string &filename) {

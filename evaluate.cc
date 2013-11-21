@@ -5,9 +5,6 @@
 #include "multisnake.h"
 #include "utility.h"
 
-
-
-
 /*
  * Evaluate the resultant snakes using Vertex Error and Hausdorff
  * Distance if the ground truths are known and using F-function

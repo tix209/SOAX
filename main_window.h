@@ -27,9 +27,19 @@ class MainWindow : public QMainWindow {
 
  private slots:
   void OpenImage();
+  void SaveAsIsotropicImage();
   void LoadParameters();
   void SaveParameters();
+  void LoadSnakes();
+  void SaveSnakes();
+  void CompareSnakes();
+  void CompareAnotherSnakes();
+  void LoadJFilamentSnakes();
+  void SaveJFilamentSnakes();
+  void CloseSession();
   void AboutSOAX();
+
+
 
  private:
   void CreateActions();
@@ -41,6 +51,7 @@ class MainWindow : public QMainWindow {
   void CreateToolBar();
   void CreateStatusBar();
 
+  void ResetActions();
   QString GetLastDirectory(const std::string &filename);
 
 
@@ -48,8 +59,17 @@ class MainWindow : public QMainWindow {
 
   // Actions in File menu
   QAction *open_image_;
+  QAction *save_as_isotropic_image_;
   QAction *load_parameters_;
   QAction *save_parameters_;
+  QAction *load_snakes_;
+  QAction *save_snakes_;
+  QAction *load_jfilament_snakes_;
+  QAction *save_jfilament_snakes_;
+  QAction *compare_snakes_;
+  QAction *compare_another_snakes_;
+  QAction *close_session_;
+  QAction *exit_;
 
   // Actions in View menu
   QAction *toggle_planes_;

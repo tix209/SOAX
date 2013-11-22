@@ -39,12 +39,19 @@ class MainWindow : public QMainWindow {
   void CloseSession();
   void AboutSOAX();
 
+  void InitializeSnakes();
+  void DeformSnakes();
+  void DeformSnakesInAction();
+  void DeformOneSnake();
+  void CutSnakes();
+  void GroupSnakes();
 
 
  private:
   void CreateActions();
   void CreateFileMenuActions();
   void CreateViewMenuActions();
+  void CreateProcessMenuActions();
   void CreateHelpMenuActions();
 
   void CreateMenus();
@@ -78,6 +85,15 @@ class MainWindow : public QMainWindow {
   QAction *toggle_corner_text_;
   QAction *toggle_bounding_box_;
   QAction *toggle_cube_axes_;
+  QAction *toggle_snakes_;
+
+  // Actions in Process menu
+  QAction *initialize_snakes_;
+  QAction *deform_snakes_;
+  QAction *deform_snakes_in_action_;
+  QAction *deform_one_snake_;
+  QAction *cut_snakes_;
+  QAction *group_snakes_;
 
   // Actions in Help menu
   QAction *about_soax_;
@@ -86,6 +102,7 @@ class MainWindow : public QMainWindow {
   // Menus
   QMenu *file_;
   QMenu *view_;
+  QMenu *process_;
   QMenu *help_;
 
   QToolBar *toolbar_;

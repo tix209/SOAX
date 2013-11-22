@@ -346,6 +346,7 @@ void Multisnake::InitializeSnakes() {
   for (unsigned d = 0; d < num_directions; ++d) {
     LinkCandidates(candidate_image, d);
   }
+  std::sort(initial_snakes_.begin(), initial_snakes_.end(), IsShorter);
 }
 
 Multisnake::BoolVectorImageType::Pointer
@@ -506,9 +507,9 @@ bool Multisnake::FindNextCandidate(
   return false;
 }
 
-void Multisnake::SortSnakesOnLength(SnakeContainer &snakes) {
-  std::sort(snakes.begin(), snakes.end(), IsShorter);
-}
+// void Multisnake::SortSnakesOnLength(SnakeContainer &snakes) {
+//   std::sort(snakes.begin(), snakes.end(), IsShorter);
+// }
 
 
 void Multisnake::SaveSnakes(const SnakeContainer &snakes,

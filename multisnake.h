@@ -67,12 +67,13 @@ class Multisnake {
 
   void InitializeSnakes();
 
-  void SortSnakesOnLength(SnakeContainer &snakes);
+  unsigned GetNumberOfInitialSnakes() const {return initial_snakes_.size();}
+  // void SortSnakesOnLength(SnakeContainer &snakes);
 
-  SnakeContainer &initial_snakes() {return initial_snakes_;}
-  SnakeContainer &converged_snakes() {return converged_snakes_;}
-  SnakeContainer &comparing_snakes1() {return comparing_snakes1_;}
-  SnakeContainer &comparing_snakes2() {return comparing_snakes2_;}
+  const SnakeContainer &initial_snakes() const {return initial_snakes_;}
+  const SnakeContainer &converged_snakes() const {return converged_snakes_;}
+  const SnakeContainer &comparing_snakes1() const {return comparing_snakes1_;}
+  const SnakeContainer &comparing_snakes2() const {return comparing_snakes2_;}
 
   void SaveSnakes(const SnakeContainer &snakes,
                   const std::string &filename) const;

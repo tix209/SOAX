@@ -15,6 +15,8 @@ class vtkCornerAnnotation;
 class vtkCubeAxesActor;
 class vtkActor;
 class vtkImageData;
+class vtkPolyData;
+
 
 namespace soax {
 
@@ -28,7 +30,7 @@ class Viewer : public QObject {
   QVTKWidget *qvtk() const {return qvtk_;}
 
   void SetupImage(ImageType::Pointer image);
-
+  void SetupSnakes(const SnakeContainer &snakes, unsigned category = 0);
   void Render();
 
  public slots:
@@ -38,8 +40,12 @@ class Viewer : public QObject {
   void ToggleCornerText(bool state);
   void ToggleBoundingBox(bool state);
   void ToggleCubeAxes(bool state);
+  void ToggleSnakes(bool state);
 
  private:
+  typedef std::map<vtkActor *, Snake *> ActorSnakeMap;
+  typedef std::map<Snake *, vtkActor *> SnakeActorMap;
+
   void SetupSlicePlanes(vtkImageData *data, double min_intensity,
                         double max_intensity);
   void SetupMIPRendering(vtkImageData *data,
@@ -50,6 +56,15 @@ class Viewer : public QObject {
                                 unsigned max_intensity);
   void SetupBoundingBox();
   void SetupCubeAxes(vtkImageData *image);
+  void SetupSnake(Snake *snake, unsigned category);
+  vtkActor * ActSnake(Snake *snake);
+  vtkActor * ActSnakeCell(Snake *snake, unsigned start, unsigned end);
+  vtkPolyData * MakePolyData(Snake *snake,unsigned start, unsigned end);
+  void SetupEvolvingActorProperty(vtkActor *actor);
+  void SetupComparingActorProperty(vtkActor *actor);
+  void SetupAnotherComparingActorProperty(vtkActor *actor);
+
+
 
   QVTKWidget *qvtk_;
   vtkSmartPointer<vtkRenderer> renderer_;
@@ -61,6 +76,20 @@ class Viewer : public QObject {
   vtkSmartPointer<vtkCubeAxesActor> cube_axes_;
   vtkSmartPointer<vtkActor> bounding_box_;
 
+  ActorSnakeMap actor_snakes_;
+  SnakeActorMap snake_actors_;
+
+  double snake_opacity_;
+  double comparing_snakes1_opacity_;
+  double comparing_snakes2_opacity_;
+
+  double *snake_color_;
+  double *comparing_snakes1_color_;
+  double *comparing_snakes2_color_;
+
+  double snake_width_;
+  double comparing_snakes1_width_;
+  double comparing_snakes2_width_;
 
   static double kWhite[3];
   static double kGray[3];

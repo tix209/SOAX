@@ -21,9 +21,10 @@
 #include "vtkProperty.h"
 #include "vtkPolyDataMapper.h"
 #include "vtkOutlineSource.h"
-
+#include "vtkDataSetMapper.h"
+#include "vtkCellArray.h"
 #include "itkStatisticsImageFilter.h"
-
+#include "snake.h"
 
 namespace soax {
 
@@ -63,6 +64,16 @@ Viewer::Viewer() {
   corner_text_ = vtkSmartPointer<vtkCornerAnnotation>::New();
   cube_axes_ = vtkSmartPointer<vtkCubeAxesActor>::New();
   bounding_box_ = vtkSmartPointer<vtkActor>::New();
+
+  snake_color_ = kMagenta;
+  comparing_snakes1_color_ = kYellow;
+  comparing_snakes2_color_ = kCyan;
+  snake_width_ = 3.0;
+  comparing_snakes1_width_ = 6.0;
+  comparing_snakes2_width_ = 9.0;
+  snake_opacity_ = 0.8;
+  comparing_snakes1_opacity_ = 0.5;
+  comparing_snakes2_opacity_ = 0.25;
 }
 
 Viewer::~Viewer() {
@@ -267,8 +278,147 @@ void Viewer::ToggleCubeAxes(bool state) {
   this->Render();
 }
 
+void Viewer::SetupSnakes(const SnakeContainer &snakes, unsigned category) {
+  if (snakes.empty()) return;
+
+  for (SnakeConstIterator it = snakes.begin(); it != snakes.end(); ++it) {
+    this->SetupSnake(*it, category);
+  }
+}
+
+void Viewer::SetupSnake(Snake *snake, unsigned category) {
+  SnakeActorMap::iterator it = snake_actors_.find(snake);
+  if (it != snake_actors_.end()) {
+    renderer_->RemoveActor(it->second);
+    actor_snakes_.erase(it->second);
+    it->second->Delete();
+  }
+
+  vtkActor *actor = this->ActSnake(snake);
+  actor_snakes_[actor] = snake;
+  snake_actors_[snake] = actor;
+
+  switch (category) {
+    case 0:
+      this->SetupEvolvingActorProperty(actor);
+      break;
+    case 1:
+      this->SetupComparingActorProperty(actor);
+      break;
+    case 2:
+      this->SetupAnotherComparingActorProperty(actor);
+      break;
+    default:
+      std::cerr << "SetupSnake: unknown snake category!" << std::endl;
+  }
+  renderer_->AddActor(actor);
+}
+
+vtkActor * Viewer::ActSnake(Snake *snake) {
+  return this->ActSnakeCell(snake, 0, snake->GetSize());
+}
+
+vtkActor * Viewer::ActSnakeCell(Snake *snake, unsigned start, unsigned end) {
+  vtkDataSetMapper *mapper = vtkDataSetMapper::New();
+  vtkPolyData *curve = this->MakePolyData(snake, start, end);
+  mapper->SetInputData(curve);
+  vtkActor *actor = vtkActor::New();
+  actor->SetMapper(mapper);
+  mapper->Update();
+  mapper->Delete();
+  curve->Delete();
+  return actor;
+}
+
+
+vtkPolyData * Viewer::MakePolyData(Snake *snake,
+                                   unsigned start, unsigned end) {
+  vtkPolyData *curve = vtkPolyData::New();
+  vtkPoints *points = vtkPoints::New();
+  vtkCellArray *cells = vtkCellArray::New();
+
+  vtkIdType cell_index[2];
+  vtkFloatingPointType coordinates[3];
+
+  for (unsigned i = start, j = 0; i < end; ++i, ++j) {
+    coordinates[0] = snake->GetX(i);
+    coordinates[1] = snake->GetY(i);
+    coordinates[2] = snake->GetZ(i);
+
+    points->InsertPoint(j, coordinates);
+
+    // last point
+    if (i == end - 1) {
+      if (!snake->open()) {
+        cell_index[0] = end-1-start;
+        cell_index[1] = 0;
+        cells->InsertNextCell(2, cell_index);
+      }
+    } else {
+      cell_index[0] = j;
+      cell_index[1] = j+1;
+      cells->InsertNextCell(2, cell_index);
+    }
+  }
+
+  curve->SetPoints(points);
+  curve->SetLines(cells);
+  points->Delete();
+  cells->Delete();
+  return curve;
+}
+
+void Viewer::SetupEvolvingActorProperty(vtkActor *actor) {
+  actor->GetProperty()->SetInterpolationToPhong();
+  actor->GetProperty()->SetOpacity(snake_opacity_);
+  actor->GetProperty()->SetAmbient(0.2);
+  actor->GetProperty()->SetDiffuse(0.7);
+  actor->GetProperty()->SetSpecular(0.6);
+  actor->GetProperty()->SetSpecularPower(50);
+  actor->GetProperty()->SetColor(snake_color_);
+  actor->GetProperty()->SetLineWidth(snake_width_);
+}
+
+void Viewer::SetupComparingActorProperty(vtkActor *actor) {
+  actor->GetProperty()->SetInterpolationToPhong();
+  actor->GetProperty()->SetOpacity(comparing_snakes1_opacity_);
+  actor->GetProperty()->SetAmbient(0.2);
+  actor->GetProperty()->SetDiffuse(0.7);
+  actor->GetProperty()->SetSpecular(0.6);
+  actor->GetProperty()->SetSpecularPower(50);
+  actor->GetProperty()->SetColor(comparing_snakes1_color_);
+  actor->GetProperty()->SetLineWidth(comparing_snakes1_width_);
+}
+
+void Viewer::SetupAnotherComparingActorProperty(vtkActor *actor) {
+  actor->GetProperty()->SetInterpolationToPhong();
+  actor->GetProperty()->SetOpacity(comparing_snakes2_opacity_);
+  actor->GetProperty()->SetAmbient(0.2);
+  actor->GetProperty()->SetDiffuse(0.7);
+  actor->GetProperty()->SetSpecular(0.6);
+  actor->GetProperty()->SetSpecularPower(50);
+  actor->GetProperty()->SetColor(comparing_snakes2_color_);
+  actor->GetProperty()->SetLineWidth(comparing_snakes2_width_);
+}
+
+void Viewer::ToggleSnakes(bool state) {
+  if (state) {
+    for (ActorSnakeMap::iterator it = actor_snakes_.begin();
+         it != actor_snakes_.end(); ++it) {
+      renderer_->AddActor(it->first);
+    }
+  } else {
+    for (ActorSnakeMap::iterator it = actor_snakes_.begin();
+         it != actor_snakes_.end(); ++it) {
+      renderer_->RemoveActor(it->first);
+    }
+  }
+  this->Render();
+}
+
 void Viewer::Render() {
   qvtk_->GetRenderWindow()->Render();
 }
+
 
 } // namespace soax

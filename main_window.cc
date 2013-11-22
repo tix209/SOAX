@@ -33,6 +33,7 @@ MainWindow::~MainWindow() {
 void MainWindow::CreateActions() {
   this->CreateFileMenuActions();
   this->CreateViewMenuActions();
+  this->CreateProcessMenuActions();
   this->CreateHelpMenuActions();
 }
 
@@ -124,6 +125,44 @@ void MainWindow::CreateViewMenuActions() {
   toggle_cube_axes_->setCheckable(true);
   connect(toggle_cube_axes_, SIGNAL(toggled(bool)),
           viewer_, SLOT(ToggleCubeAxes(bool)));
+
+  toggle_snakes_ = new QAction(tr("Snakes"), this);
+  toggle_snakes_->setIcon(QIcon(":/icon/Synchronize.png"));
+  toggle_snakes_->setCheckable(true);
+  connect(toggle_snakes_, SIGNAL(toggled(bool)),
+          viewer_, SLOT(ToggleSnakes(bool)));
+
+}
+
+void MainWindow::CreateProcessMenuActions() {
+  initialize_snakes_ = new QAction(tr("Initialize Snakes"), this);
+  initialize_snakes_->setIcon(QIcon(":/icon/Add.png"));
+  initialize_snakes_->setShortcut(Qt::CTRL + Qt::Key_A);
+  connect(initialize_snakes_, SIGNAL(triggered()),
+          this, SLOT(InitializeSnakes()));
+
+  deform_snakes_ = new QAction(tr("Deform Snakes"), this);
+  deform_snakes_->setIcon(QIcon(":/icon/Play.png"));
+  deform_snakes_->setShortcut(Qt::CTRL + Qt::Key_D);
+  connect(deform_snakes_, SIGNAL(triggered()), this, SLOT(DeformSnakes()));
+
+  deform_snakes_in_action_ = new QAction(tr("Deform Snakes in Action"), this);
+  deform_snakes_in_action_->setIcon(QIcon(":/icon/Refresh.png"));
+  connect(deform_snakes_in_action_, SIGNAL(triggered()),
+          this, SLOT(DeformSnakesInAction()));
+
+  deform_one_snake_ = new QAction(tr("Deform One Snake"), this);
+  deform_one_snake_->setIcon(QIcon(":/icon/Pause.png"));
+  connect(deform_one_snake_, SIGNAL(triggered()),
+          this, SLOT(DeformOneSnake()));
+
+  cut_snakes_ = new QAction(tr("Cut Snakes at Junctions"), this);
+  cut_snakes_->setIcon(QIcon(":/icon/Cut.png"));
+  connect(cut_snakes_, SIGNAL(triggered()), this, SLOT(CutSnakes()));
+
+  group_snakes_ = new QAction(tr("Group Snakes"), this);
+  group_snakes_->setIcon(QIcon(":/icon/Favorites.png"));
+  connect(group_snakes_, SIGNAL(triggered()), this, SLOT(GroupSnakes()));
 }
 
 void MainWindow::CreateHelpMenuActions() {
@@ -158,6 +197,15 @@ void MainWindow::CreateMenus() {
   view_->addAction(toggle_corner_text_);
   view_->addAction(toggle_bounding_box_);
   view_->addAction(toggle_cube_axes_);
+  view_->addAction(toggle_snakes_);
+
+  process_ = menuBar()->addMenu(tr("&Process"));
+  process_->addAction(initialize_snakes_);
+  process_->addAction(deform_snakes_);
+  process_->addAction(deform_snakes_in_action_);
+  process_->addAction(deform_one_snake_);
+  process_->addAction(cut_snakes_);
+  process_->addAction(group_snakes_);
 
   help_ = menuBar()->addMenu(tr("&Help"));
   help_->addAction(about_soax_);
@@ -169,9 +217,21 @@ void MainWindow::CreateToolBar() {
   toolbar_->addAction(open_image_);
   toolbar_->addAction(load_parameters_);
   toolbar_->addAction(save_snakes_);
+
   toolbar_->addSeparator();
   toolbar_->addAction(toggle_planes_);
   toolbar_->addAction(toggle_mip_);
+  toolbar_->addAction(toggle_snakes_);
+
+  toolbar_->addSeparator();
+  toolbar_->addAction(initialize_snakes_);
+  toolbar_->addAction(deform_snakes_);
+  toolbar_->addAction(cut_snakes_);
+  toolbar_->addAction(group_snakes_);
+  toolbar_->addAction(deform_one_snake_);
+
+  toolbar_->addSeparator();
+  toolbar_->addAction(close_session_);
 }
 
 void MainWindow::CreateStatusBar() {
@@ -195,6 +255,14 @@ void MainWindow::ResetActions() {
   toggle_corner_text_->setEnabled(false);
   toggle_bounding_box_->setEnabled(false);
   toggle_cube_axes_->setEnabled(false);
+  toggle_snakes_->setEnabled(false);
+
+  initialize_snakes_->setEnabled(false);
+  deform_snakes_->setEnabled(false);
+  deform_snakes_in_action_->setEnabled(false);
+  deform_one_snake_->setEnabled(false);
+  cut_snakes_->setEnabled(false);
+  group_snakes_->setEnabled(false);
 }
 
 QString MainWindow::GetLastDirectory(const std::string &filename) {
@@ -236,6 +304,7 @@ void MainWindow::OpenImage() {
   toggle_corner_text_->setEnabled(true);
   toggle_bounding_box_->setEnabled(true);
   toggle_cube_axes_->setEnabled(true);
+  initialize_snakes_->setEnabled(true);
 }
 
 void MainWindow::SaveAsIsotropicImage() {
@@ -295,6 +364,38 @@ void MainWindow::CompareSnakes() {}
 void MainWindow::CompareAnotherSnakes() {}
 
 void MainWindow::CloseSession() {}
+
+void MainWindow::InitializeSnakes() {
+  std::cout << "============ Current Parameters ============" << std::endl;
+  multisnake_->WriteParameters(std::cout);
+  std::cout << "============================================" << std::endl;
+
+  multisnake_->ScaleImageIntensity();
+  multisnake_->ComputeImageGradient();
+  multisnake_->InitializeSnakes();
+  QString msg = QString::number(multisnake_->GetNumberOfInitialSnakes()) +
+      " snakes initialized.";
+  statusBar()->showMessage(msg, message_timeout_);
+
+  viewer_->SetupSnakes(multisnake_->initial_snakes());
+  toggle_snakes_->setChecked(true);
+
+  initialize_snakes_->setEnabled(false);
+  toggle_snakes_->setEnabled(true);
+  deform_snakes_->setEnabled(true);
+  deform_snakes_in_action_->setEnabled(true);
+  deform_one_snake_->setEnabled(true);
+}
+
+void MainWindow::DeformSnakes() {}
+
+void MainWindow::DeformSnakesInAction() {}
+
+void MainWindow::DeformOneSnake() {}
+
+void MainWindow::CutSnakes() {}
+
+void MainWindow::GroupSnakes() {}
 
 void MainWindow::AboutSOAX() {
   QMessageBox::about(this, tr("About SOAX"),

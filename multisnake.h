@@ -68,7 +68,15 @@ class Multisnake {
   void InitializeSnakes();
 
   unsigned GetNumberOfInitialSnakes() const {return initial_snakes_.size();}
-  // void SortSnakesOnLength(SnakeContainer &snakes);
+  unsigned GetNumberOfConvergedSnakes() const {
+    return converged_snakes_.size();
+  }
+  unsigned GetNumberOfComparingSnakes1() const {
+    return comparing_snakes1_.size();
+  }
+  unsigned GetNumberOfComparingSnakes2() const {
+    return comparing_snakes2_.size();
+  }
 
   const SnakeContainer &initial_snakes() const {return initial_snakes_;}
   const SnakeContainer &converged_snakes() const {return converged_snakes_;}
@@ -81,6 +89,10 @@ class Multisnake {
   void DeformSnakes(QProgressBar * progress_bar = NULL);
   void CutSnakesAtTJunctions();
   void GroupSnakes();
+
+  const PointContainer &GetJunctions() const {
+    return junctions_.junction_points();
+  }
 
   void LoadConvergedSnakes(const std::string &filename) {
     this->LoadSnakes(filename, converged_snakes_);

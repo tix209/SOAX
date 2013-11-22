@@ -21,7 +21,7 @@ MainWindow::MainWindow() {
   this->CreateToolBar();
   this->CreateStatusBar();
   this->ResetActions();
-  message_timeout_ = 9000;
+  message_timeout_ = 0;
 }
 
 
@@ -132,6 +132,11 @@ void MainWindow::CreateViewMenuActions() {
   connect(toggle_snakes_, SIGNAL(toggled(bool)),
           viewer_, SLOT(ToggleSnakes(bool)));
 
+  toggle_junctions_ = new QAction(tr("Junctions"), this);
+  toggle_junctions_->setIcon(QIcon(":/icon/Positive.png"));
+  toggle_junctions_->setCheckable(true);
+  connect(toggle_junctions_, SIGNAL(toggled(bool)),
+          viewer_, SLOT(ToggleJunctions(bool)));
 }
 
 void MainWindow::CreateProcessMenuActions() {
@@ -198,6 +203,7 @@ void MainWindow::CreateMenus() {
   view_->addAction(toggle_bounding_box_);
   view_->addAction(toggle_cube_axes_);
   view_->addAction(toggle_snakes_);
+  view_->addAction(toggle_junctions_);
 
   process_ = menuBar()->addMenu(tr("&Process"));
   process_->addAction(initialize_snakes_);
@@ -222,6 +228,7 @@ void MainWindow::CreateToolBar() {
   toolbar_->addAction(toggle_planes_);
   toolbar_->addAction(toggle_mip_);
   toolbar_->addAction(toggle_snakes_);
+  toolbar_->addAction(toggle_junctions_);
 
   toolbar_->addSeparator();
   toolbar_->addAction(initialize_snakes_);
@@ -236,7 +243,7 @@ void MainWindow::CreateToolBar() {
 
 void MainWindow::CreateStatusBar() {
   progress_bar_ = new QProgressBar;
-  statusBar()->addWidget(progress_bar_);
+  statusBar()->addPermanentWidget(progress_bar_);
 }
 
 void MainWindow::ResetActions() {
@@ -256,6 +263,7 @@ void MainWindow::ResetActions() {
   toggle_bounding_box_->setEnabled(false);
   toggle_cube_axes_->setEnabled(false);
   toggle_snakes_->setEnabled(false);
+  toggle_junctions_->setEnabled(false);
 
   initialize_snakes_->setEnabled(false);
   deform_snakes_->setEnabled(false);
@@ -320,8 +328,6 @@ void MainWindow::SaveAsIsotropicImage() {
     image_filename_ = QFileDialog::getSaveFileName(
         this, tr("Save as Isotropic Image"), dir).toStdString();
     if (image_filename_.empty()) return;
-    // multisnake_->ResampleImageBSpline(z_spacing);
-    // multisnake_->SaveImage(image_filename_);
     multisnake_->SaveAsIsotropicImage(image_filename_, z_spacing);
     statusBar()->showMessage(tr("Image has been resampled and saved."),
                              message_timeout_);
@@ -351,11 +357,70 @@ void MainWindow::SaveParameters() {
   statusBar()->showMessage("Parameters saved.", message_timeout_);
 }
 
-void MainWindow::LoadSnakes() {}
+void MainWindow::LoadSnakes() {
+  QString dir = this->GetLastDirectory(snake_filename_);
+  snake_filename_ = QFileDialog::getOpenFileName(
+      this, tr("Load Snakes"), dir, "Text (*.txt)").toStdString();
+  if (snake_filename_.empty()) return;
 
-void MainWindow::SaveSnakes() {}
+  multisnake_->LoadConvergedSnakes(snake_filename_);
+  unsigned num_snakes = multisnake_->GetNumberOfConvergedSnakes();
+  QString msg = "Number of snakes loaded: " + QString::number(num_snakes);
+  statusBar()->showMessage(msg, message_timeout_);
+  viewer_->RemoveJunctions();
+  viewer_->RemoveSnakes();
+  viewer_->SetupSnakes(multisnake_->converged_snakes());
+  viewer_->SetupSnakes(multisnake_->comparing_snakes1(), 1);
+  toggle_snakes_->setChecked(true);
+  viewer_->set_snake_filename(snake_filename_);
+  viewer_->SetupUpperRightCornerText();
+  toggle_corner_text_->setChecked(true);
+  viewer_->SetupJunctions(multisnake_->GetJunctions());
+  toggle_junctions_->setChecked(true);
+  viewer_->Render();
 
-void MainWindow::LoadJFilamentSnakes() {}
+  save_snakes_->setEnabled(true);
+  save_jfilament_snakes_->setEnabled(true);
+  compare_snakes_->setEnabled(true);
+  initialize_snakes_->setEnabled(false);
+  deform_one_snake_->setEnabled(true);
+  toggle_snakes_->setEnabled(true);
+  toggle_junctions_->setEnabled(true);
+}
+
+void MainWindow::SaveSnakes() {
+  QString dir = this->GetLastDirectory(snake_filename_);
+  snake_filename_ = QFileDialog::getSaveFileName(
+      this, tr("Save Snakes"), dir, "Text (*.txt)").toStdString();
+  if (snake_filename_.empty()) return;
+  multisnake_->SaveSnakes(multisnake_->converged_snakes(), snake_filename_);
+  statusBar()->showMessage(tr("Snakes are saved."), message_timeout_);
+}
+
+void MainWindow::LoadJFilamentSnakes() {
+  QString dir = this->GetLastDirectory(snake_filename_);
+  snake_filename_ = QFileDialog::getOpenFileName(
+      this, tr("Load JFilament Snakes"), dir, "Text (*.txt)").toStdString();
+  if (snake_filename_.empty()) return;
+  multisnake_->LoadGroundTruthSnakes(snake_filename_);
+  unsigned num_snakes = multisnake_->GetNumberOfComparingSnakes1();
+  QString msg = "Number of JFilament snakes loaded: " +
+      QString::number(num_snakes);
+  statusBar()->showMessage(msg, message_timeout_);
+  viewer_->RemoveSnakes();
+  viewer_->SetupSnakes(multisnake_->converged_snakes());
+  viewer_->SetupSnakes(multisnake_->comparing_snakes1(), 1);
+  toggle_snakes_->setChecked(true);
+  viewer_->set_comapring_snake_filename1(snake_filename_);
+  viewer_->SetupUpperRightCornerText();
+  toggle_corner_text_->setChecked(true);
+  viewer_->Render();
+
+  save_snakes_->setEnabled(true);
+  save_jfilament_snakes_->setEnabled(true);
+  compare_snakes_->setEnabled(true);
+  toggle_snakes_->setEnabled(true);
+}
 
 void MainWindow::SaveJFilamentSnakes() {}
 
@@ -387,15 +452,57 @@ void MainWindow::InitializeSnakes() {
   deform_one_snake_->setEnabled(true);
 }
 
-void MainWindow::DeformSnakes() {}
+void MainWindow::DeformSnakes() {
+  progress_bar_->setMaximum(multisnake_->GetNumberOfInitialSnakes());
+  multisnake_->DeformSnakes(progress_bar_);
+  unsigned num_snakes = multisnake_->GetNumberOfConvergedSnakes();
+  QString msg = "Number of converged snakes: " + QString::number(num_snakes);
+  statusBar()->showMessage(msg, message_timeout_);
+  viewer_->RemoveSnakes();
+  viewer_->SetupSnakes(multisnake_->converged_snakes());
+  toggle_snakes_->setChecked(true);
+  viewer_->Render();
+
+  deform_snakes_->setEnabled(false);
+  toggle_snakes_->setEnabled(true);
+  save_snakes_->setEnabled(true);
+  save_jfilament_snakes_->setEnabled(true);
+  compare_snakes_->setEnabled(true);
+  cut_snakes_->setEnabled(true);
+}
 
 void MainWindow::DeformSnakesInAction() {}
 
 void MainWindow::DeformOneSnake() {}
 
-void MainWindow::CutSnakes() {}
+void MainWindow::CutSnakes() {
+  multisnake_->CutSnakesAtTJunctions();
+  viewer_->RemoveSnakes();
+  viewer_->SetupSnakes(multisnake_->converged_snakes());
+  toggle_snakes_->setChecked(true);
+  viewer_->Render();
+  statusBar()->showMessage(tr("Snakes are cut at junctions."));
+  cut_snakes_->setEnabled(false);
+  group_snakes_->setEnabled(true);
+  save_snakes_->setEnabled(true);
+  save_jfilament_snakes_->setEnabled(true);
+}
 
-void MainWindow::GroupSnakes() {}
+void MainWindow::GroupSnakes() {
+  multisnake_->GroupSnakes();
+  viewer_->RemoveSnakes();
+  viewer_->SetupSnakes(multisnake_->converged_snakes());
+  toggle_snakes_->setChecked(true);
+  viewer_->SetupJunctions(multisnake_->GetJunctions());
+  toggle_junctions_->setChecked(true);
+  viewer_->Render();
+  statusBar()->showMessage(tr("Snakes are reconfigured."));
+
+  group_snakes_->setEnabled(false);
+  toggle_junctions_->setEnabled(true);
+  save_snakes_->setEnabled(true);
+  save_jfilament_snakes_->setEnabled(true);
+}
 
 void MainWindow::AboutSOAX() {
   QMessageBox::about(this, tr("About SOAX"),

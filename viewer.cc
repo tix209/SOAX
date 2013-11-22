@@ -23,6 +23,8 @@
 #include "vtkOutlineSource.h"
 #include "vtkDataSetMapper.h"
 #include "vtkCellArray.h"
+#include "vtkSphereSource.h"
+
 #include "itkStatisticsImageFilter.h"
 #include "snake.h"
 
@@ -74,6 +76,8 @@ Viewer::Viewer() {
   snake_opacity_ = 0.8;
   comparing_snakes1_opacity_ = 0.5;
   comparing_snakes2_opacity_ = 0.25;
+  junction_radius_ = 2.0;
+  junction_color_ = kGreen;
 }
 
 Viewer::~Viewer() {
@@ -207,6 +211,17 @@ void Viewer::SetupUpperLeftCornerText(unsigned min_intensity,
   buffer << "Intensity Range: [" << min_intensity << ", "
          << max_intensity << "]";
   corner_text_->SetText(2, buffer.str().c_str());
+}
+
+void Viewer::SetupUpperRightCornerText() {
+  std::string info;
+  if (!snake_filename_.empty())
+    info += snake_filename_ + " (Magenta)\n";
+  if (!comparing_snake_filename1_.empty())
+    info += comparing_snake_filename1_ + " (Yellow)\n";
+  if (!comparing_snake_filename2_.empty())
+    info += comparing_snake_filename2_ + " (Cyan)";
+  corner_text_->SetText(3, info.c_str());
 }
 
 void Viewer::ToggleCornerText(bool state) {
@@ -416,9 +431,69 @@ void Viewer::ToggleSnakes(bool state) {
   this->Render();
 }
 
+void Viewer::RemoveSnakes() {
+  for (ActorSnakeMap::iterator it = actor_snakes_.begin();
+       it != actor_snakes_.end(); ++it) {
+    renderer_->RemoveActor(it->first);
+    it->first->Delete();
+  }
+  snake_actors_.clear();
+  actor_snakes_.clear();
+  actor_selected_snakes_.clear();
+}
+
+void Viewer::SetupJunctions(const PointContainer &points) {
+  if (points.empty()) return;
+  for (PointConstIterator it = points.begin(); it != points.end(); ++it) {
+    vtkActor *s = vtkActor::New();
+    this->SetupSphere(*it, s);
+    junctions_[s] = *it;
+  }
+}
+
+void Viewer::SetupSphere(const PointType &point, vtkActor *sphere) {
+  vtkSphereSource *source = vtkSphereSource::New();
+  source->SetCenter(point[0], point[1], point[2]);
+  source->SetRadius(junction_radius_);
+  source->Update();
+  vtkPolyDataMapper *mapper = vtkPolyDataMapper::New();
+  mapper->SetInputConnection(source->GetOutputPort());
+  sphere->SetMapper(mapper);
+  sphere->GetProperty()->SetColor(junction_color_);
+  source->Delete();
+  mapper->Delete();
+}
+
+void Viewer::ToggleJunctions(bool state) {
+  if (state) {
+    for (ActorPointMap::const_iterator it = junctions_.begin();
+         it != junctions_.end(); ++it) {
+      renderer_->AddActor(it->first);
+    }
+  } else {
+    for (ActorPointMap::const_iterator it = junctions_.begin();
+         it != junctions_.end(); ++it) {
+      renderer_->RemoveActor(it->first);
+    }
+  }
+  this->Render();
+}
+
+void Viewer::RemoveJunctions() {
+  for (ActorPointMap::iterator it = junctions_.begin();
+       it != junctions_.end(); ++it) {
+    renderer_->RemoveActor(it->first);
+    it->first->Delete();
+  }
+  junctions_.clear();
+  selected_junctions_.clear();
+}
+
 void Viewer::Render() {
   qvtk_->GetRenderWindow()->Render();
 }
 
-
+void Viewer::ResetCamera() {
+  renderer_->ResetCamera();
+}
 } // namespace soax

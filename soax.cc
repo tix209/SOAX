@@ -80,7 +80,6 @@ int main(int argc, char **argv) {
   multisnake.ScaleImageIntensity();
   multisnake.ComputeImageGradient();
   multisnake.InitializeSnakes();
-  // multisnake.SortSnakesOnLength(multisnake.initial_snakes());
 
   time_t start, end;
   time(&start);

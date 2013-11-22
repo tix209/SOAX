@@ -12,7 +12,7 @@ class Junctions {
 
   ~Junctions();
 
-  PointContainer &junction_points() {return junction_points_;}
+  const PointContainer &junction_points() const {return junction_points_;}
   void set_junction_points(const PointContainer &p) {junction_points_ = p;}
   void Initialize(const SnakeContainer &seg);
   void Union();

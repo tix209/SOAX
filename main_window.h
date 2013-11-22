@@ -86,6 +86,7 @@ class MainWindow : public QMainWindow {
   QAction *toggle_bounding_box_;
   QAction *toggle_cube_axes_;
   QAction *toggle_snakes_;
+  QAction *toggle_junctions_;
 
   // Actions in Process menu
   QAction *initialize_snakes_;
@@ -112,6 +113,7 @@ class MainWindow : public QMainWindow {
   // Complete image file path and name
   std::string image_filename_;
   std::string parameter_filename_;
+  std::string snake_filename_;
   Multisnake *multisnake_;
   Viewer *viewer_;
 

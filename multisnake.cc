@@ -507,11 +507,6 @@ bool Multisnake::FindNextCandidate(
   return false;
 }
 
-// void Multisnake::SortSnakesOnLength(SnakeContainer &snakes) {
-//   std::sort(snakes.begin(), snakes.end(), IsShorter);
-// }
-
-
 void Multisnake::SaveSnakes(const SnakeContainer &snakes,
                             const std::string &filename) const {
   std::ofstream outfile;
@@ -711,9 +706,9 @@ void Multisnake::UpdateJunctions() {
   if (converged_snakes_.empty())
     junctions_.ClearJunctionPoints();
 
-  PointContainer &junction_points = junctions_.junction_points();
+  const PointContainer &junction_points = junctions_.junction_points();
   PointContainer new_junction_points;
-  for (PointContainer::iterator it = junction_points.begin();
+  for (PointConstIterator it = junction_points.begin();
        it != junction_points.end(); ++it) {
     unsigned num_of_close_snake = GetNumberOfSnakesCloseToPoint(*it);
     if (num_of_close_snake > 1)
@@ -721,7 +716,7 @@ void Multisnake::UpdateJunctions() {
   }
   // int size_diff = junction_points.size() - new_junction_points.size();
   // std::cout << "size diff: " << size_diff << std::endl;
-  junction_points = new_junction_points;
+  junctions_.set_junction_points(new_junction_points);
 }
 
 unsigned Multisnake::GetNumberOfSnakesCloseToPoint(const PointType &p) {

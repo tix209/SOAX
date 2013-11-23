@@ -241,13 +241,13 @@ void Snake::HandleHeadOverlap(const SnakeContainer &converged_snakes) {
       // std::cout << "head: total overlap!" << std::endl;
       viable_ = false;
     } else {
-      PointIterator new_head = first_detach - 1;
-      this->FindHookedSnakeAndIndex(*new_head, converged_snakes,
+      PointIterator last_touch = first_detach - 1;
+      this->FindHookedSnakeAndIndex(*last_touch, converged_snakes,
                                     head_hooked_snake_,
                                     head_hooked_index_);
       fixed_head_ = head_hooked_snake_->GetPoint(head_hooked_index_);
-      vertices_.erase(vertices_.begin(), new_head);
-      *new_head = fixed_head_;
+      vertices_.erase(vertices_.begin(), first_detach);
+      vertices_.push_front(fixed_head_);
       if (!open_)
         open_ = true;
       this->Resample();
@@ -269,13 +269,13 @@ void Snake::HandleTailOverlap(const SnakeContainer &converged_snakes) {
       // std::cout << "tail: total overlap!" << std::endl;
       viable_ = false;
     } else {
-      PointIterator new_tail = first_detach + 1;
-      this->FindHookedSnakeAndIndex(*new_tail, converged_snakes,
+      PointIterator last_touch = first_detach + 1;
+      this->FindHookedSnakeAndIndex(*last_touch, converged_snakes,
                                     tail_hooked_snake_,
                                     tail_hooked_index_);
       fixed_tail_ = tail_hooked_snake_->GetPoint(tail_hooked_index_);
-      vertices_.erase(new_tail+1, vertices_.end());
-      *new_tail = fixed_tail_;
+      vertices_.erase(last_touch, vertices_.end());
+      vertices_.push_back(fixed_tail_);
       if (!open_)
         open_ = true;
       this->Resample();

@@ -500,7 +500,8 @@ bool Multisnake::FindNextCandidate(
          c2 <= current_index[d2] + 1; ++c2) {
       index[d1] = c1;
       index[d2] = c2;
-      if (candidate_image->GetPixel(index)[direction])
+      if (candidate_image->GetLargestPossibleRegion().IsInside(index) &&
+          candidate_image->GetPixel(index)[direction])
         return true;
     }
   }

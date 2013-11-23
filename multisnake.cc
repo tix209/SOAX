@@ -31,6 +31,18 @@ Multisnake::~Multisnake() {
   delete solver_bank_;
 }
 
+void Multisnake::Reset() {
+  this->ClearSnakeContainer(initial_snakes_);
+  this->ClearSnakeContainer(converged_snakes_);
+  this->ClearSnakeContainer(comparing_snakes1_);
+  this->ClearSnakeContainer(comparing_snakes2_);
+  junctions_.Reset();
+  image_filename_ = "";
+  image_ = NULL;
+  external_force_ = NULL;
+  intensity_scaled_ = false;
+}
+
 void Multisnake::LoadImage(const std::string &filename) {
   typedef itk::ImageFileReader<ImageType> ReaderType;
   ReaderType::Pointer reader = ReaderType::New();
@@ -508,47 +520,6 @@ bool Multisnake::FindNextCandidate(
   return false;
 }
 
-void Multisnake::SaveSnakes(const SnakeContainer &snakes,
-                            const std::string &filename) const {
-  std::ofstream outfile;
-  outfile.open(filename.c_str());
-  if (!outfile.is_open()) {
-    std::cerr << "Couldn't open file: " << outfile << std::endl;
-    return;
-  }
-
-  const unsigned column_width = 20;
-  outfile << "image\t" << image_filename_ << std::endl;
-  WriteParameters(outfile);
-
-  if (snakes.empty()) {
-    std::cout << "No snakes to save!" << std::endl;
-    return;
-  }
-
-  unsigned snake_index = 0;
-  outfile << std::setprecision(12);
-
-  for (SnakeConstIterator it = snakes.begin(); it != snakes.end(); ++it) {
-    outfile << "#" << (*it)->open() << std::endl;
-    for (unsigned j = 0; j != (*it)->GetSize(); ++j) {
-      double intensity = interpolator_->Evaluate((*it)->GetPoint(j));
-      if (intensity_scaled_)
-        intensity /= intensity_scaling_;
-      outfile << snake_index << "\t" << j << "\t";
-      outfile << std::setw(column_width) << (*it)->GetX(j)
-              << std::setw(column_width) << (*it)->GetY(j)
-              << std::setw(column_width) << (*it)->GetZ(j)
-              << std::setw(column_width) << intensity
-              << std::endl;
-    }
-    snake_index++;
-  }
-
-  junctions_.PrintJunctionPoints(filename);
-  outfile.close();
-}
-
 void Multisnake::DeformSnakes(QProgressBar * progress_bar) {
   unsigned ncompleted = 0;
   std::cout << "Initial # snakes: " << initial_snakes_.size() << std::endl;
@@ -791,6 +762,7 @@ void Multisnake::LoadSnakes(const std::string &filename,
 
 void Multisnake::LoadJFilamentSnakes(const std::string &filename,
                                      SnakeContainer &snakes) {
+  snakes.clear();
   std::ifstream infile(filename.c_str());
   if (!infile) {
     std::cerr << "Couldn't open file: " << infile << std::endl;
@@ -854,6 +826,96 @@ void Multisnake::LoadPoint(const std::string &s, PointContainer &c) {
   p[2] = z;
   c.push_back(p);
 }
+
+void Multisnake::SaveSnakes(const SnakeContainer &snakes,
+                            const std::string &filename) const {
+  std::ofstream outfile;
+  outfile.open(filename.c_str());
+  if (!outfile.is_open()) {
+    std::cerr << "Couldn't open file: " << outfile << std::endl;
+    return;
+  }
+
+  const unsigned column_width = 20;
+  outfile << "image\t" << image_filename_ << std::endl;
+  this->WriteParameters(outfile);
+
+  if (snakes.empty()) {
+    std::cout << "No snakes to save!" << std::endl;
+    return;
+  }
+
+  unsigned snake_index = 0;
+  outfile << std::setprecision(12);
+
+  for (SnakeConstIterator it = snakes.begin(); it != snakes.end(); ++it) {
+    outfile << "#" << (*it)->open() << std::endl;
+    for (unsigned j = 0; j != (*it)->GetSize(); ++j) {
+      double intensity = interpolator_->Evaluate((*it)->GetPoint(j));
+      if (intensity_scaled_)
+        intensity /= intensity_scaling_;
+      outfile << snake_index << "\t" << j << "\t";
+      outfile << std::setw(column_width) << (*it)->GetX(j)
+              << std::setw(column_width) << (*it)->GetY(j)
+              << std::setw(column_width) << (*it)->GetZ(j)
+              << std::setw(column_width) << intensity
+              << std::endl;
+    }
+    snake_index++;
+  }
+
+  junctions_.PrintJunctionPoints(filename);
+  outfile.close();
+}
+
+void Multisnake::SaveJFilamentSnakes(const SnakeContainer &snakes,
+                                     const std::string &filename) const {
+  if (snakes.empty())  {
+    std::cerr << "No snakes to save as JFilament snakes!" << std::endl;
+    return;
+  }
+
+  std::ofstream outfile;
+  outfile.open(filename.c_str());
+  if (!outfile.is_open()) {
+    std::cerr << "Couldn't open file: " << outfile << std::endl;
+    return;
+  }
+
+  outfile << "gamma\t" << solver_bank_->gamma() << std::endl;
+  outfile << "weight\t" << Snake::external_factor() << std::endl;
+  outfile << "zresolution\t" << 1.0 << std::endl;
+  outfile << "background\t" << background_ << std::endl;
+  outfile << "alpha\t" << solver_bank_->alpha() << std::endl;
+  outfile << "smoothing\t" << sigma_ << std::endl;
+  outfile << "stretch\t" << Snake::stretch_factor() << std::endl;
+  outfile << "spacing\t" << Snake::desired_spacing() << std::endl;
+  outfile << "beta\t" << solver_bank_->beta() << std::endl;
+  outfile << "foreground\t" << foreground_ << std::endl;
+
+  for (SnakeConstIterator it = snakes.begin(); it != snakes.end(); ++it) {
+    outfile << "#\n0" << std::endl;
+
+    for (unsigned j = 0; j != (*it)->GetSize(); ++j) {
+      outfile << "0\t" << j << "\t";
+      outfile << (*it)->GetX(j) << "\t"
+              << (*it)->GetY(j) << "\t"
+              << (*it)->GetZ(j) << std::endl;
+    }
+  }
+  outfile.close();
+}
+
+void Multisnake::PrintSnakes(const SnakeContainer &snakes) const {
+  if (snakes.empty()) {
+    std::cout << "Snake container is empty!" << std::endl;
+    return;
+  }
+  for (SnakeConstIterator it = snakes.begin(); it != snakes.end(); ++it) {
+    (*it)->PrintSelf();
+  }
+}
+
 
 void Multisnake::EvaluateByVertexErrorHausdorffDistance(
     const std::string &snake_path,

@@ -19,7 +19,7 @@ class Multisnake {
  public:
   Multisnake();
   ~Multisnake();
-
+  void Reset();
   /*
    * Load the image and set image_filename_.
    */
@@ -83,8 +83,9 @@ class Multisnake {
   const SnakeContainer &comparing_snakes1() const {return comparing_snakes1_;}
   const SnakeContainer &comparing_snakes2() const {return comparing_snakes2_;}
 
-  void SaveSnakes(const SnakeContainer &snakes,
-                  const std::string &filename) const;
+  void SaveConvergedSnakesAsJFilamentFormat(const std::string &filename) const {
+    this->SaveJFilamentSnakes(converged_snakes_, filename);
+  }
 
   void DeformSnakes(QProgressBar * progress_bar = NULL);
   void CutSnakesAtTJunctions();
@@ -101,6 +102,19 @@ class Multisnake {
   void LoadGroundTruthSnakes(const std::string &filename) {
     this->LoadJFilamentSnakes(filename, comparing_snakes1_);
   }
+
+  void LoadComparingSnakes1(const std::string &filename) {
+    this->LoadSnakes(filename, comparing_snakes1_);
+  }
+
+  void LoadComparingSnakes2(const std::string &filename) {
+    this->LoadSnakes(filename, comparing_snakes2_);
+  }
+
+  void PrintSnakes(const SnakeContainer &snakes) const;
+
+  void SaveSnakes(const SnakeContainer &snakes,
+                  const std::string &filename) const;
 
   void EvaluateByVertexErrorHausdorffDistance(
       const std::string &snake_path, const std::string &filename) const;
@@ -173,6 +187,7 @@ class Multisnake {
   void LoadJFilamentSnakes(const std::string &filename,
                            SnakeContainer &snakes);
   void LoadPoint(const std::string &s, PointContainer &c);
+  void SaveJFilamentSnakes(const SnakeContainer &snakes, const std::string &filename) const;
 
   void ComputeErrorFromSnakesToComparingSnakes(DataContainer &errors) const;
   void ComputeErrorFromComparingSnakesToSnakes(DataContainer &errors) const;

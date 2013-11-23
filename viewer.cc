@@ -72,16 +72,27 @@ Viewer::Viewer() {
   comparing_snakes2_color_ = kCyan;
   snake_width_ = 3.0;
   comparing_snakes1_width_ = 6.0;
-  comparing_snakes2_width_ = 9.0;
+  comparing_snakes2_width_ = 10.0;
   snake_opacity_ = 0.8;
   comparing_snakes1_opacity_ = 0.5;
-  comparing_snakes2_opacity_ = 0.25;
+  comparing_snakes2_opacity_ = 0.3;
   junction_radius_ = 2.0;
   junction_color_ = kGreen;
 }
 
 Viewer::~Viewer() {
   delete qvtk_;
+}
+
+void Viewer::Reset() {
+  snake_filename_ = comparing_snake_filename1_ = comparing_snake_filename2_ = "";
+  this->RemoveSnakes();
+  this->RemoveJunctions();
+  orientation_marker_->SetEnabled(false);
+  corner_text_->ClearAllTexts();
+  renderer_->RemoveActor(cube_axes_);
+  renderer_->RemoveActor(bounding_box_);
+  renderer_->ResetCamera();
 }
 
 void Viewer::SetupImage(ImageType::Pointer image) {
@@ -302,6 +313,7 @@ void Viewer::SetupSnakes(const SnakeContainer &snakes, unsigned category) {
 }
 
 void Viewer::SetupSnake(Snake *snake, unsigned category) {
+  // Remove the old snake from the scene and actor-snake map
   SnakeActorMap::iterator it = snake_actors_.find(snake);
   if (it != snake_actors_.end()) {
     renderer_->RemoveActor(it->second);
@@ -462,6 +474,7 @@ void Viewer::SetupSphere(const PointType &point, vtkActor *sphere) {
   sphere->GetProperty()->SetColor(junction_color_);
   source->Delete();
   mapper->Delete();
+  renderer_->AddActor(sphere);
 }
 
 void Viewer::ToggleJunctions(bool state) {

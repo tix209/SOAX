@@ -367,10 +367,12 @@ void MainWindow::LoadSnakes() {
   unsigned num_snakes = multisnake_->GetNumberOfConvergedSnakes();
   QString msg = "Number of snakes loaded: " + QString::number(num_snakes);
   statusBar()->showMessage(msg, message_timeout_);
+  // multisnake_->PrintSnakes(multisnake_->converged_snakes());
   viewer_->RemoveJunctions();
   viewer_->RemoveSnakes();
   viewer_->SetupSnakes(multisnake_->converged_snakes());
   viewer_->SetupSnakes(multisnake_->comparing_snakes1(), 1);
+  viewer_->SetupSnakes(multisnake_->comparing_snakes2(), 2);
   toggle_snakes_->setChecked(true);
   viewer_->set_snake_filename(snake_filename_);
   viewer_->SetupUpperRightCornerText();
@@ -409,7 +411,9 @@ void MainWindow::LoadJFilamentSnakes() {
   statusBar()->showMessage(msg, message_timeout_);
   viewer_->RemoveSnakes();
   viewer_->SetupSnakes(multisnake_->converged_snakes());
+  // multisnake_->PrintSnakes(multisnake_->comparing_snakes1());
   viewer_->SetupSnakes(multisnake_->comparing_snakes1(), 1);
+  viewer_->SetupSnakes(multisnake_->comparing_snakes2(), 2);
   toggle_snakes_->setChecked(true);
   viewer_->set_comapring_snake_filename1(snake_filename_);
   viewer_->SetupUpperRightCornerText();
@@ -422,13 +426,78 @@ void MainWindow::LoadJFilamentSnakes() {
   toggle_snakes_->setEnabled(true);
 }
 
-void MainWindow::SaveJFilamentSnakes() {}
+void MainWindow::SaveJFilamentSnakes() {
+  QString dir = this->GetLastDirectory(snake_filename_);
+  snake_filename_ = QFileDialog::getSaveFileName(
+      this, tr("Save JFilament Snakes"), dir, "Text (*.txt)").toStdString();
+  if (snake_filename_.empty()) return;
+  multisnake_->SaveConvergedSnakesAsJFilamentFormat(snake_filename_);
+  statusBar()->showMessage(tr("Snakes are saved in JFilament format"), message_timeout_);
+}
 
-void MainWindow::CompareSnakes() {}
+void MainWindow::CompareSnakes() {
+  QString dir = this->GetLastDirectory(snake_filename_);
+  snake_filename_ = QFileDialog::getOpenFileName(
+      this, tr("Compare Snakes"), dir, "Text (*.txt)").toStdString();
+  if (snake_filename_.empty()) return;
+  multisnake_->LoadComparingSnakes1(snake_filename_);
+  unsigned num_snakes = multisnake_->GetNumberOfComparingSnakes1();
+  QString msg = "Number of comparing snakes loaded: " +
+      QString::number(num_snakes);
+  statusBar()->showMessage(msg, message_timeout_);
+  viewer_->RemoveSnakes();
+  viewer_->SetupSnakes(multisnake_->converged_snakes());
+  viewer_->SetupSnakes(multisnake_->comparing_snakes1(), 1);
+  viewer_->SetupSnakes(multisnake_->comparing_snakes2(), 2);
+  toggle_snakes_->setChecked(true);
+  viewer_->set_comapring_snake_filename1(snake_filename_);
+  viewer_->SetupUpperRightCornerText();
+  toggle_corner_text_->setChecked(true);
+  viewer_->Render();
 
-void MainWindow::CompareAnotherSnakes() {}
+  compare_another_snakes_->setEnabled(true);
+  toggle_snakes_->setEnabled(true);
+}
 
-void MainWindow::CloseSession() {}
+void MainWindow::CompareAnotherSnakes() {
+  QString dir = this->GetLastDirectory(snake_filename_);
+  snake_filename_ = QFileDialog::getOpenFileName(
+      this, tr("Compare other snakes"), dir, "Text (*.txt)").toStdString();
+  if (snake_filename_.empty()) return;
+  multisnake_->LoadComparingSnakes2(snake_filename_);
+  unsigned num_snakes = multisnake_->GetNumberOfComparingSnakes2();
+  QString msg = "Number of other comparing snakes loaded: " +
+      QString::number(num_snakes);
+  statusBar()->showMessage(msg, message_timeout_);
+  viewer_->RemoveSnakes();
+  viewer_->SetupSnakes(multisnake_->converged_snakes());
+  viewer_->SetupSnakes(multisnake_->comparing_snakes1(), 1);
+  viewer_->SetupSnakes(multisnake_->comparing_snakes2(), 2);
+  toggle_snakes_->setChecked(true);
+  viewer_->set_comapring_snake_filename2(snake_filename_);
+  viewer_->SetupUpperRightCornerText();
+  toggle_corner_text_->setChecked(true);
+  viewer_->Render();
+
+  toggle_snakes_->setEnabled(true);
+}
+
+void MainWindow::CloseSession() {
+  toggle_planes_->setChecked(false);
+  toggle_mip_->setChecked(false);
+  toggle_orientation_marker_->setChecked(false);
+  toggle_corner_text_->setChecked(false);
+  toggle_bounding_box_->setChecked(false);;
+  toggle_cube_axes_->setChecked(false);
+  toggle_snakes_->setChecked(false);
+  toggle_junctions_->setChecked(false);
+  viewer_->Reset();
+  viewer_->Render();
+  multisnake_->Reset();
+  this->ResetActions();
+  open_image_->setEnabled(true);
+  setWindowTitle("SOAX");
+}
 
 void MainWindow::InitializeSnakes() {
   std::cout << "============ Current Parameters ============" << std::endl;

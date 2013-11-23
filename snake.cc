@@ -7,7 +7,7 @@ namespace soax {
 
 SolverBank *Snake::solver_bank_ = NULL;
 double Snake::background_ = 0.0;
-double Snake::desired_spacing_ = 0.0;
+double Snake::desired_spacing_ = 1.0;
 unsigned Snake::max_iterations_ = 0;
 double Snake::change_threshold_ = 0.0;
 unsigned Snake::check_period_ = 0;

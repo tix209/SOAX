@@ -26,7 +26,7 @@ class Viewer : public QObject {
  public:
   Viewer();
   ~Viewer();
-
+  void Reset();
   QVTKWidget *qvtk() const {return qvtk_;}
 
   void SetupImage(ImageType::Pointer image);

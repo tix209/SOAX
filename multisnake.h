@@ -53,6 +53,10 @@ class Multisnake {
   double background() const {return background_;}
   void set_background(double background) {background_ = background;}
 
+  bool initialize_z() const {return initialize_z_;}
+  void set_initialize_z(bool init_z) {initialize_z_ = init_z;}
+
+  SolverBank *solver_bank() const {return solver_bank_;}
 
   /*
    * Multiply the image intensity by a constant factor.
@@ -83,7 +87,8 @@ class Multisnake {
   const SnakeContainer &comparing_snakes1() const {return comparing_snakes1_;}
   const SnakeContainer &comparing_snakes2() const {return comparing_snakes2_;}
 
-  void SaveConvergedSnakesAsJFilamentFormat(const std::string &filename) const {
+  void SaveConvergedSnakesAsJFilamentFormat(
+      const std::string &filename) const {
     this->SaveJFilamentSnakes(converged_snakes_, filename);
   }
 

@@ -41,6 +41,9 @@ void Multisnake::Reset() {
   image_ = NULL;
   external_force_ = NULL;
   intensity_scaled_ = false;
+  // delete solver_bank_;
+  // solver_bank_ = new SolverBank;
+  // Snake::set_solver_bank(solver_bank_);
 }
 
 void Multisnake::LoadImage(const std::string &filename) {

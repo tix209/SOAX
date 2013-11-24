@@ -31,7 +31,7 @@ set(gui_srcs
   soax.cc
   viewer.cc
   main_window.cc
-  # parameters_dialog.cc
+  parameters_dialog.cc
   # view_options_dialog.cc
   # analysis_options_dialog.cc
   )
@@ -57,7 +57,7 @@ set(common_srcs
 set(moc_gui_srcs
   main_window.h
   viewer.h
-  # parameters_dialog.h
+  parameters_dialog.h
   # view_options_dialog.h
   # analysis_options_dialog.h
   )

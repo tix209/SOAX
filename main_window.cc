@@ -3,6 +3,8 @@
 #include "main_window.h"
 #include "multisnake.h"
 #include "viewer.h"
+#include "parameters_dialog.h"
+#include "solver_bank.h"
 
 namespace soax {
 
@@ -10,6 +12,7 @@ MainWindow::MainWindow() {
   central_widget_ = new QWidget;
   multisnake_ = new Multisnake;
   viewer_ = new Viewer;
+  parameters_dialog_ = new ParametersDialog(this);
   QHBoxLayout* layout = new QHBoxLayout;
   layout->addWidget(viewer_->qvtk());
   central_widget_->setLayout(layout);
@@ -34,6 +37,7 @@ void MainWindow::CreateActions() {
   this->CreateFileMenuActions();
   this->CreateViewMenuActions();
   this->CreateProcessMenuActions();
+  this->CreateToolsMenuActions();
   this->CreateHelpMenuActions();
 }
 
@@ -170,6 +174,23 @@ void MainWindow::CreateProcessMenuActions() {
   connect(group_snakes_, SIGNAL(triggered()), this, SLOT(GroupSnakes()));
 }
 
+void MainWindow::CreateToolsMenuActions() {
+  show_parameters_ = new QAction(tr("&Parameters"), this);
+  show_parameters_->setIcon(QIcon(":/icon/Settings.png"));
+  show_parameters_->setShortcut(Qt::CTRL + Qt::Key_P);
+  connect(show_parameters_, SIGNAL(triggered()),
+          this, SLOT(ShowParametersDialog()));
+
+  load_viewpoint_ = new QAction(tr("Load Viewpoint"), this);
+  connect(load_viewpoint_, SIGNAL(triggered()), this, SLOT(LoadViewpoint()));
+
+  save_viewpoint_ = new QAction(tr("Save Viewpoint"), this);
+  connect(save_viewpoint_, SIGNAL(triggered()), this, SLOT(SaveViewpoint()));
+
+  save_snapshot_ = new QAction(tr("Save Snapshot"), this);
+  connect(save_snapshot_, SIGNAL(triggered()), this, SLOT(SaveSnapshot()));
+}
+
 void MainWindow::CreateHelpMenuActions() {
   about_soax_ = new QAction(tr("About SOAX"), this);
   about_soax_->setStatusTip(tr("About SOAX"));
@@ -213,6 +234,12 @@ void MainWindow::CreateMenus() {
   process_->addAction(cut_snakes_);
   process_->addAction(group_snakes_);
 
+  tools_ = menuBar()->addMenu(tr("&Tools"));
+  tools_->addAction(show_parameters_);
+  tools_->addAction(load_viewpoint_);
+  tools_->addAction(save_viewpoint_);
+  tools_->addAction(save_snapshot_);
+
   help_ = menuBar()->addMenu(tr("&Help"));
   help_->addAction(about_soax_);
   help_->addAction(about_qt_);
@@ -236,6 +263,9 @@ void MainWindow::CreateToolBar() {
   toolbar_->addAction(cut_snakes_);
   toolbar_->addAction(group_snakes_);
   toolbar_->addAction(deform_one_snake_);
+
+  toolbar_->addSeparator();
+  toolbar_->addAction(show_parameters_);
 
   toolbar_->addSeparator();
   toolbar_->addAction(close_session_);
@@ -571,6 +601,81 @@ void MainWindow::GroupSnakes() {
   toggle_junctions_->setEnabled(true);
   save_snakes_->setEnabled(true);
   save_jfilament_snakes_->setEnabled(true);
+}
+
+void MainWindow::ShowParametersDialog() {
+  parameters_dialog_->SetCurrentParameters(multisnake_);
+  if (parameters_dialog_->exec()) {
+    this->SetParameters();
+    parameters_dialog_->DisableOKButton();
+  }
+}
+
+void MainWindow::SetParameters() {
+  multisnake_->set_intensity_scaling(
+      parameters_dialog_->GetIntensityScaling());
+  multisnake_->set_sigma(parameters_dialog_->GetSigma());
+  multisnake_->set_ridge_threshold(parameters_dialog_->GetRidgeThreshold());
+  multisnake_->set_foreground(parameters_dialog_->GetForeground());
+  multisnake_->set_background(parameters_dialog_->GetBackground());
+  Snake::set_background(multisnake_->background() *
+                        multisnake_->intensity_scaling());
+  Snake::set_desired_spacing(parameters_dialog_->GetSpacing());
+  multisnake_->set_initialize_z(parameters_dialog_->InitializeZ());
+  Snake::set_minimum_length(parameters_dialog_->GetMinSnakeLength());
+  Snake::set_max_iterations(parameters_dialog_->GetMaxIterations());
+  Snake::set_change_threshold(parameters_dialog_->GetChangeThreshold());
+  Snake::set_check_period(parameters_dialog_->GetCheckPeriod());
+  Snake::set_iterations_per_press(parameters_dialog_->GetIterationsPerPress());
+  multisnake_->solver_bank()->set_alpha(parameters_dialog_->GetAlpha());
+  multisnake_->solver_bank()->set_beta(parameters_dialog_->GetBeta());
+  multisnake_->solver_bank()->set_gamma(parameters_dialog_->GetGamma());
+  Snake::set_gamma(multisnake_->solver_bank()->gamma());
+  Snake::set_external_factor(parameters_dialog_->GetExternalFactor());
+  Snake::set_stretch_factor(parameters_dialog_->GetStretchFactor());
+  Snake::set_number_of_sectors(parameters_dialog_->GetNumberOfSectors());
+  Snake::set_radial_near(parameters_dialog_->GetRadialNear());
+  Snake::set_radial_far(parameters_dialog_->GetRadialFar());
+  Snake::set_delta(parameters_dialog_->GetDelta());
+  Snake::set_overlap_threshold(parameters_dialog_->GetOverlapThreshold());
+  Snake::set_grouping_distance_threshold(
+      parameters_dialog_->GetGroupingDistanceThreshold());
+  Snake::set_grouping_delta(parameters_dialog_->GetGroupingDelta());
+  Snake::set_direction_threshold(parameters_dialog_->GetDirectionThreshold());
+  Snake::set_damp_z(parameters_dialog_->DampZ());
+}
+
+void MainWindow::LoadViewpoint() {
+  QString dir = this->GetLastDirectory(viewpoint_filename_);
+  viewpoint_filename_ = QFileDialog::getOpenFileName(
+      this, tr("Load viewpoint"), dir,
+      tr("Camera files (*.cam)")).toStdString();
+  if (viewpoint_filename_.empty()) return;
+  viewer_->LoadViewpoint(viewpoint_filename_);
+  statusBar()->showMessage(tr("Viewpoint loaded."), message_timeout_);
+}
+
+void MainWindow::SaveViewpoint() {
+  QString dir = this->GetLastDirectory(viewpoint_filename_);
+  viewpoint_filename_ = QFileDialog::getSaveFileName(
+      this, tr("Save viewpoint"), dir,
+      tr("Camera files (*.cam)")).toStdString();
+  if (viewpoint_filename_.empty()) return;
+  viewer_->SaveViewpoint(viewpoint_filename_);
+  statusBar()->showMessage("Viewpoint saved.", message_timeout_);
+}
+
+void MainWindow::SaveSnapshot() {
+  QString dir = this->GetLastDirectory(snapshot_filename_);
+  snapshot_filename_ = QFileDialog::getSaveFileName(
+      this, tr("Save snapshot"), dir,
+      tr("Image files (*.png *.tif)")).toStdString();
+  if (snapshot_filename_.empty()) return;
+
+  viewer_->PrintScreenAsPNGImage(snapshot_filename_);
+  viewer_->PrintScreenAsTIFFImage(snapshot_filename_);
+  // viewer_->PrintScreenAsVectorImage(snapshot_filename_);
+  statusBar()->showMessage("Snapshots saved.", message_timeout_);
 }
 
 void MainWindow::AboutSOAX() {

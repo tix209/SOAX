@@ -48,6 +48,12 @@ class Viewer : public QObject {
   void Render();
   void ResetCamera();
 
+  void LoadViewpoint(const std::string &filename);
+  void SaveViewpoint(const std::string &filename) const;
+  void PrintScreenAsPNGImage(const std::string &filename) const;
+  void PrintScreenAsTIFFImage(const std::string &filename) const;
+  void PrintScreenAsVectorImage(const std::string &filename) const;
+
  public slots:
   void ToggleSlicePlanes(bool state);
   void ToggleMIPRendering(bool state);

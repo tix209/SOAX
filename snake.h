@@ -54,6 +54,9 @@ class Snake {
     desired_spacing_ = spacing;
   }
 
+  static double minimum_length() {return minimum_length_;}
+  static void set_minimum_length(double length) {minimum_length_ = length;}
+
   static unsigned max_iterations() {return max_iterations_;}
   static void set_max_iterations(unsigned n) {max_iterations_ = n;}
 
@@ -63,8 +66,10 @@ class Snake {
   static unsigned check_period() {return check_period_;}
   static void set_check_period(unsigned v) {check_period_ = v;}
 
-  static double minimum_length() {return minimum_length_;}
-  static void set_minimum_length(double length) {minimum_length_ = length;}
+  static unsigned iterations_per_press() {return iterations_per_press_;}
+  static void set_iterations_per_press(unsigned n) {
+    iterations_per_press_ = n;
+  }
 
   static void set_gamma(double g) {gamma_ = g;}
 
@@ -276,6 +281,7 @@ class Snake {
    */
   static unsigned check_period_;
 
+  static unsigned iterations_per_press_;
   /*
    * Minimum length for the final snake.
    */

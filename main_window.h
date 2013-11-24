@@ -11,6 +11,7 @@ namespace soax {
 
 class Multisnake;
 class Viewer;
+class ParametersDialog;
 
 /*
  * SOAX GUI main window.
@@ -37,7 +38,6 @@ class MainWindow : public QMainWindow {
   void LoadJFilamentSnakes();
   void SaveJFilamentSnakes();
   void CloseSession();
-  void AboutSOAX();
 
   void InitializeSnakes();
   void DeformSnakes();
@@ -46,12 +46,19 @@ class MainWindow : public QMainWindow {
   void CutSnakes();
   void GroupSnakes();
 
+  void ShowParametersDialog();
+  void LoadViewpoint();
+  void SaveViewpoint();
+  void SaveSnapshot();
+
+  void AboutSOAX();
 
  private:
   void CreateActions();
   void CreateFileMenuActions();
   void CreateViewMenuActions();
   void CreateProcessMenuActions();
+  void CreateToolsMenuActions();
   void CreateHelpMenuActions();
 
   void CreateMenus();
@@ -60,9 +67,10 @@ class MainWindow : public QMainWindow {
 
   void ResetActions();
   QString GetLastDirectory(const std::string &filename);
-
+  void SetParameters();
 
   QWidget *central_widget_;
+  ParametersDialog *parameters_dialog_;
 
   // Actions in File menu
   QAction *open_image_;
@@ -96,6 +104,12 @@ class MainWindow : public QMainWindow {
   QAction *cut_snakes_;
   QAction *group_snakes_;
 
+  // Actions in Tools menu
+  QAction *show_parameters_;
+  QAction *load_viewpoint_;
+  QAction *save_viewpoint_;
+  QAction *save_snapshot_;
+
   // Actions in Help menu
   QAction *about_soax_;
   QAction *about_qt_;
@@ -104,6 +118,7 @@ class MainWindow : public QMainWindow {
   QMenu *file_;
   QMenu *view_;
   QMenu *process_;
+  QMenu *tools_;
   QMenu *help_;
 
   QToolBar *toolbar_;
@@ -114,6 +129,8 @@ class MainWindow : public QMainWindow {
   std::string image_filename_;
   std::string parameter_filename_;
   std::string snake_filename_;
+  std::string viewpoint_filename_;
+  std::string snapshot_filename_;
   Multisnake *multisnake_;
   Viewer *viewer_;
 

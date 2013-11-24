@@ -24,7 +24,10 @@
 #include "vtkDataSetMapper.h"
 #include "vtkCellArray.h"
 #include "vtkSphereSource.h"
-
+#include "vtkWindowToImageFilter.h"
+#include "vtkPNGWriter.h"
+#include "vtkTIFFWriter.h"
+#include "vtkGL2PSExporter.h"
 #include "itkStatisticsImageFilter.h"
 #include "snake.h"
 
@@ -85,7 +88,8 @@ Viewer::~Viewer() {
 }
 
 void Viewer::Reset() {
-  snake_filename_ = comparing_snake_filename1_ = comparing_snake_filename2_ = "";
+  snake_filename_ = comparing_snake_filename1_ =
+      comparing_snake_filename2_ = "";
   this->RemoveSnakes();
   this->RemoveJunctions();
   orientation_marker_->SetEnabled(false);
@@ -509,4 +513,106 @@ void Viewer::Render() {
 void Viewer::ResetCamera() {
   renderer_->ResetCamera();
 }
+
+void Viewer::LoadViewpoint(const std::string &filename) {
+  std::ifstream infile(filename.c_str());
+  std::string str;
+  double x,y,z;
+
+  infile>>str;
+  if (str == "ClippingRange") {
+    infile >> x >> y;
+    camera_->SetClippingRange(x, y);
+  }
+
+  infile >> str;
+  if (str=="CameraPosition") {
+    infile >> x >> y >> z;
+    camera_->SetPosition(x,y,z);
+  }
+
+  infile >> str;
+  if (str=="CameraFocalPoint") {
+    infile >> x >> y >> z;
+    camera_->SetFocalPoint(x,y,z);
+  }
+
+  infile >> str;
+  if (str=="CameraViewUp") {
+    infile >> x >> y >> z;
+    camera_->SetViewUp(x,y,z);
+  }
+
+  infile.close();
+  this->Render();
+}
+
+void Viewer::SaveViewpoint(const std::string &filename) const {
+  std::ofstream outfile(filename.c_str());
+  double *pval;
+  pval = camera_->GetClippingRange();
+  outfile << "ClippingRange" << std::endl;
+  outfile << pval[0] << " " << pval[1] << std::endl;
+
+  pval = camera_->GetPosition();
+  outfile << "CameraPosition" << std::endl;
+  outfile << pval[0] << " " << pval[1] << " " << pval[2] << std::endl;
+
+  pval = camera_->GetFocalPoint();
+  outfile << "CameraFocalPoint" << std::endl;
+  outfile << pval[0] << " " << pval[1] << " " << pval[2] << std::endl;
+
+  pval = camera_->GetViewUp();
+  outfile << "CameraViewUp" << std::endl;
+  outfile << pval[0] << " " << pval[1] << " " << pval[2] << std::endl;
+
+  outfile.close();
+}
+
+
+void Viewer::PrintScreenAsPNGImage(const std::string &filename) const {
+  vtkNew<vtkWindowToImageFilter> filter;
+  filter->SetInput(qvtk_->GetRenderWindow());
+  filter->Update();
+  vtkNew<vtkPNGWriter> png_writer;
+  png_writer->SetInputConnection(filter->GetOutputPort());
+  png_writer->SetFileName(filename.c_str());
+  png_writer->Write();
+}
+
+void Viewer::PrintScreenAsTIFFImage(const std::string &filename) const {
+  vtkNew<vtkWindowToImageFilter> filter;
+  filter->SetInput(qvtk_->GetRenderWindow());
+  filter->Update();
+
+  std::string name = filename;
+  name.replace(name.length()-3, 3, "tif");
+
+  vtkNew<vtkTIFFWriter> tiff_writer;
+  tiff_writer->SetInputConnection(filter->GetOutputPort());
+  tiff_writer->SetFileName(name.c_str());
+  tiff_writer->Write();
+}
+
+void Viewer::PrintScreenAsVectorImage(const std::string &filename) const {
+  std::string::size_type dot_position = filename.find_last_of(".");
+  std::string name = filename;
+  if (dot_position == std::string::npos) {
+    std::cerr << "No suffix specified! Abort." << std::endl;
+    return;
+  } else {
+    name = filename.substr(0, dot_position);
+  }
+
+  vtkNew<vtkGL2PSExporter> exp;
+  exp->SetRenderWindow(qvtk_->GetRenderWindow());
+  exp->CompressOff();
+  exp->SetSortToBSP();
+  exp->SetFilePrefix(name.c_str());
+  exp->SetTitle("SOAX Screenshot");
+  exp->TextAsPathOn();
+  exp->SetFileFormatToEPS();
+  exp->Write();
+}
+
 } // namespace soax

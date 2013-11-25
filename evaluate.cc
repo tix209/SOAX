@@ -24,14 +24,15 @@ int main(int argc, char **argv) {
     required.add_options()
         ("snake,s", po::value<std::string>(&snake_path)->required(),
          "Snake file path")
-        ("function,f",
-         po::value<std::string>(&function_path)->required(),
+        ("output,o", po::value<std::string>(&function_path)->required(),
          "Evaluation function output file path")
         ;
 
     std::string comparing_snake_path;
     double snr_threshold(0.0);
     double penalizer(0.0);
+    int radial_near(3);
+    int radial_far(6);
 
     po::options_description optional("Optional options");
     optional.add_options()
@@ -41,6 +42,10 @@ int main(int argc, char **argv) {
          "Low SNR threshold")
         ("penalizer,p", po::value<double>(&penalizer),
          "Constant c for penalizing the low SNR snake points.")
+        ("near,n", po::value<int>(&radial_near),
+         "Inner radius of annulus for local SNR estimation.")
+        ("far,f", po::value<int>(&radial_far),
+         "Outer radius of annulus for local SNR estimation.")
         ;
 
     po::options_description all("Allowed options");
@@ -72,8 +77,8 @@ int main(int argc, char **argv) {
       multisnake.EvaluateByVertexErrorHausdorffDistance(snake_path,
                                                         function_path);
     } else {
-      multisnake.EvaluateByFFunction(snr_threshold, penalizer,
-                                     snake_path, function_path);
+      multisnake.EvaluateByFFunction(snr_threshold, penalizer, radial_near,
+                                     radial_far, snake_path, function_path);
     }
   } catch (std::exception &e) {
     std::cout << e.what() << std::endl;

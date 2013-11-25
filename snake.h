@@ -122,6 +122,8 @@ class Snake {
   void CopySubSnakes(SnakeContainer &c);
   bool PassThrough(const PointType &p, double threshold) const;
 
+  bool ComputeLocalSNR(unsigned index, int radial_near, int radial_far,
+                       double &local_snr);
 
  private:
   typedef std::vector<std::pair<double, double> > PairContainer;
@@ -210,6 +212,10 @@ class Snake {
 
   void AddJunctionIndex(unsigned index);
 
+  bool ComputeLocalBackgroundMeanStd(unsigned index,int radial_near,
+                                     int radial_far, double &mean,
+                                     double &std);
+  VectorType ComputeUnitTangentVector(unsigned index);
 
 
   PointContainer vertices_;

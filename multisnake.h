@@ -124,6 +124,7 @@ class Multisnake {
   void EvaluateByVertexErrorHausdorffDistance(
       const std::string &snake_path, const std::string &filename) const;
   void EvaluateByFFunction(double threshold, double penalizer,
+                           int radial_near, int radial_far,
                            const std::string &snake_path,
                            const std::string &filename) const;
 

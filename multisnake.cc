@@ -994,8 +994,50 @@ double Multisnake::ComputeShortestDistance(
 
 
 void Multisnake::EvaluateByFFunction(double threshold, double penalizer,
+                                     int radial_near, int radial_far,
                                      const std::string &snake_path,
                                      const std::string &filename) const {
+  std::ofstream outfile;
+  outfile.open(filename.c_str(), std::ios::out | std::ios::app);
+  if (!outfile.is_open()) {
+    std::cerr << "Couldn't open f-function file: " << filename << std::endl;
+    return;
+  }
+
+  double fvalue = 0.0;
+  if (!converged_snakes_.empty()) {
+    interpolator_->SetInputImage(image_);
+    unsigned total_npoints = 0;
+    unsigned npoints_low_snr = 0;
+    for (SnakeConstIterator it = converged_snakes_.begin();
+         it != converged_snakes_.end(); it++) {
+      for (unsigned i = 0; i < (*it)->GetSize(); i++) {
+        double local_snr = 0.0;
+        bool local_bg_defined = (*it)->ComputeLocalSNR(
+            i, radial_near, radial_far, local_snr);
+        if (local_bg_defined) {
+          total_npoints++;
+          if (local_snr < threshold) npoints_low_snr++;
+        }
+      }
+    }
+    ImageType::SizeType size = image_->GetLargestPossibleRegion().GetSize();
+    double normalizer = std::sqrt(static_cast<double>(
+        size[1]*size[1]+size[2]*size[2]+size[0]*size[0]));
+    fvalue = (penalizer * npoints_low_snr - total_npoints) *
+        Snake::desired_spacing() / normalizer;
+  }
+
+  const unsigned width = 10;
+  outfile << std::setw(width) << ridge_threshold_
+          << std::setw(width) << Snake::stretch_factor()
+          << std::setw(width) << fvalue
+          << std::setw(width) << threshold
+          << std::setw(width) << penalizer
+          << std::setw(width) << radial_near
+          << std::setw(width) << radial_far
+          << std::endl;
+  outfile.close();
 }
 
 } // namespace soax

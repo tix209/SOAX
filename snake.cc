@@ -480,7 +480,6 @@ double Snake::ComputeCircularMeanIntensity(bool is_head, bool is_fg) {
       PointType sample_point;
       this->ComputeSamplePoint(sample_point, vertex, radial, normal, d, s);
       if (this->IsInsideImage(sample_point)) {
-        // double intensity = this->ComputeVertexIntensity(sample_point);
         intensities.push_back(interpolator_->Evaluate(sample_point));
       }
     }
@@ -717,6 +716,61 @@ const PointType &Snake::GetTip(bool is_head) const {
     return this->GetHead();
   else
     return this->GetTail();
+}
+
+bool Snake::ComputeLocalSNR(unsigned index, int radial_near, int radial_far,
+                            double &local_snr) {
+  double foreground = interpolator_->Evaluate(this->GetPoint(index));
+  double bg_mean(0.0), bg_std(0.0);
+  bool local_bg_defined = this->ComputeLocalBackgroundMeanStd(
+      index, radial_near, radial_far, bg_mean, bg_std);
+  if (local_bg_defined) {
+    local_snr = (foreground - bg_mean) / bg_std;
+  }
+  return local_bg_defined;
+}
+
+bool Snake::ComputeLocalBackgroundMeanStd(unsigned index,int radial_near,
+                                          int radial_far, double &mean,
+                                          double &std) {
+  DataContainer bgs;
+  const VectorType normal = this->ComputeUnitTangentVector(index);
+  PointType &vertex = vertices_.at(index);
+  VectorType radial;
+  this->GetStartingRadialDirection(radial, normal, vertex);
+
+  const int number_of_sectors = 8;
+
+  for (int s = 0; s < number_of_sectors; s++) {
+    for (int d = radial_near; d < radial_far; d++) {
+      PointType sample_point;
+      this->ComputeSamplePoint(sample_point, vertex, radial, normal, d, s);
+      if (this->IsInsideImage(sample_point)) {
+        bgs.push_back(interpolator_->Evaluate(sample_point));
+      }
+    }
+  }
+  bool local_bg_defined = bgs.size() > 3; // why 3? Greater than a quadrant
+  if (local_bg_defined) {
+    mean = Mean(bgs);
+    std = StandardDeviation(bgs, mean);
+  }
+  return local_bg_defined;
+}
+
+VectorType Snake::ComputeUnitTangentVector(unsigned index) {
+  if (index == 0) {
+    this->UpdateHeadTangent();
+    return head_tangent_;
+  } else if (index == vertices_.size() - 1) {
+    this->UpdateTailTangent();
+    return tail_tangent_;
+  } else {
+    VectorType tangent;
+    tangent = vertices_.at(index-1) - vertices_.at(index+1);
+    tangent.Normalize();
+    return tangent;
+  }
 }
 
 } // namespace soax

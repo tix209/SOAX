@@ -76,6 +76,7 @@ int main(int argc, char **argv) {
       multisnake.LoadGroundTruthSnakes(comparing_snake_path);
       multisnake.EvaluateByVertexErrorHausdorffDistance(snake_path,
                                                         function_path);
+      // multisnake.PrintGroundTruthLocalSNRValues(radial_near, radial_far);
     } else {
       multisnake.EvaluateByFFunction(snr_threshold, penalizer, radial_near,
                                      radial_far, snake_path, function_path);

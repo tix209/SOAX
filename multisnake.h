@@ -128,6 +128,8 @@ class Multisnake {
                            const std::string &snake_path,
                            const std::string &filename) const;
 
+  void PrintGroundTruthLocalSNRValues(int radial_near, int radial_far);
+
  private:
   typedef itk::Vector<bool, kDimension> BoolVectorType;
   typedef itk::Image<BoolVectorType, kDimension> BoolVectorImageType;

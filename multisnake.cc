@@ -1036,4 +1036,27 @@ void Multisnake::EvaluateByFFunction(double threshold, double penalizer,
   outfile.close();
 }
 
+void Multisnake::PrintGroundTruthLocalSNRValues(int radial_near, int radial_far) {
+  if (comparing_snakes1_.empty()) return;
+  interpolator_->SetInputImage(image_);
+  DataContainer snrs;
+  for (SnakeConstIterator it = comparing_snakes1_.begin();
+       it != comparing_snakes1_.end(); ++it) {
+    for (unsigned i = 0; i < (*it)->GetSize(); i++) {
+      double local_snr = 0.0;
+      bool local_bg_defined = (*it)->ComputeLocalSNR(
+          i, radial_near, radial_far, local_snr);
+      if (local_bg_defined) {
+        snrs.push_back(local_snr);
+      }
+    }
+  }
+
+  std::cout << "========= Local SNR Info =========" << std::endl;
+  std::cout << "Min: " << Minimum(snrs) << "\tMax: " << Maximum(snrs) << std::endl;
+  double mean_snr = Mean(snrs);
+  std::cout << "Mean: " << mean_snr << "\t Median: " << Median(snrs)
+            << "\t Std: " << StandardDeviation(snrs, mean_snr) << std::endl;
+}
+
 } // namespace soax

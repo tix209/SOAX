@@ -19,6 +19,20 @@ void SolverBank::ClearSolvers(SolverContainer &solvers) {
   solvers.clear();
 }
 
+void SolverBank::Reset() {
+  this->DestroySolutionVectors(open_solvers_);
+  this->DestroySolutionVectors(closed_solvers_);
+}
+
+void SolverBank::DestroySolutionVectors(SolverContainer &solvers) {
+  if (solvers.empty()) return;
+  for (SolverContainer::iterator it = solvers.begin();
+       it != solvers.end(); ++it) {
+    if (*it)
+      (*it)->DestroySolution(0);
+  }
+}
+
 void SolverBank::SolveSystem(const VectorContainer &vectors, unsigned dim,
                              bool open) {
   SolverContainer &solvers = open ? open_solvers_ : closed_solvers_;
@@ -27,10 +41,17 @@ void SolverBank::SolveSystem(const VectorContainer &vectors, unsigned dim,
   if (position >= solvers.size()) {
     this->ExpandSolverContainer(solvers, position);
   }
+
   if (!solvers[position]) {
     solvers[position] = new SolverType;
     this->InitializeSolver(solvers[position], vectors.size(), open);
   }
+
+  if (!solvers[position]->IsSolutionInitialized(0)) {
+    solvers[position]->SetNumberOfSolutions(1);
+    solvers[position]->InitializeSolution(0);
+  }
+
   for (unsigned i = 0; i < vectors.size(); ++i) {
     solvers[position]->SetVectorValue(i, vectors[i][dim], 0);
     // std::cout << solvers[position]->GetVectorValue(i, 0) << std::endl;

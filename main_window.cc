@@ -549,6 +549,7 @@ void MainWindow::InitializeSnakes() {
   toggle_snakes_->setChecked(true);
 
   initialize_snakes_->setEnabled(false);
+  save_snakes_->setEnabled(true);
   toggle_snakes_->setEnabled(true);
   deform_snakes_->setEnabled(true);
   deform_snakes_in_action_->setEnabled(true);

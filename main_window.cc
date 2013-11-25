@@ -330,6 +330,8 @@ void MainWindow::OpenImage() {
   toggle_cube_axes_->setChecked(false);
   statusBar()->showMessage(tr("Image loaded."), message_timeout_);
 
+  this->SetParameters();
+
   open_image_->setEnabled(false);
   save_as_isotropic_image_->setEnabled(true);
   load_snakes_->setEnabled(true);
@@ -513,6 +515,8 @@ void MainWindow::CompareAnotherSnakes() {
 }
 
 void MainWindow::CloseSession() {
+  parameters_dialog_->SetCurrentParameters(multisnake_);
+
   toggle_planes_->setChecked(false);
   toggle_mip_->setChecked(false);
   toggle_orientation_marker_->setChecked(false);

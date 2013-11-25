@@ -41,9 +41,9 @@ void Multisnake::Reset() {
   image_ = NULL;
   external_force_ = NULL;
   intensity_scaled_ = false;
-  // delete solver_bank_;
-  // solver_bank_ = new SolverBank;
-  // Snake::set_solver_bank(solver_bank_);
+  delete solver_bank_;
+  solver_bank_ = new SolverBank;
+  Snake::set_solver_bank(solver_bank_);
 }
 
 void Multisnake::LoadImage(const std::string &filename) {
@@ -58,10 +58,10 @@ void Multisnake::LoadImage(const std::string &filename) {
     std::cerr << e << std::endl;
   }
   image_filename_ = filename;
-  const ImageType::SizeType &size =
-      image_->GetLargestPossibleRegion().GetSize();
-  std::cout << "Image size: " << size << std::endl;
-  std::cout << image_filename_ << std::endl;
+  // const ImageType::SizeType &size =
+  //     image_->GetLargestPossibleRegion().GetSize();
+  // std::cout << "Image size: " << size << std::endl;
+  // std::cout << image_filename_ << std::endl;
 }
 
 void Multisnake::SaveAsIsotropicImage(const std::string &filename,
@@ -930,10 +930,8 @@ void Multisnake::EvaluateByVertexErrorHausdorffDistance(
     return;
   }
 
-  double vertex_error = static_cast<double>(
-      image_->GetLargestPossibleRegion().GetSize()[0]);
-  double hausdorff = static_cast<double>(
-      image_->GetLargestPossibleRegion().GetSize()[0]);
+  double vertex_error = 20.0;
+  double hausdorff = 60.0;
   if (!converged_snakes_.empty()) {
     DataContainer errors1, errors2;
     this->ComputeErrorFromSnakesToComparingSnakes(errors1);
@@ -1028,7 +1026,7 @@ void Multisnake::EvaluateByFFunction(double threshold, double penalizer,
         Snake::desired_spacing() / normalizer;
   }
 
-  const unsigned width = 10;
+  const unsigned width = 15;
   outfile << std::setw(width) << ridge_threshold_
           << std::setw(width) << Snake::stretch_factor()
           << std::setw(width) << fvalue

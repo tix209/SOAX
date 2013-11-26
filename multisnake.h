@@ -134,6 +134,8 @@ class Multisnake {
 
   void ComputeRadialOrientation(const PointType &center,
                                 const std::string &filename) const;
+  void ComputePointDensity(const PointType &center, double radius,
+                           const std::string &filename);
 
  private:
   typedef itk::Vector<bool, kDimension> BoolVectorType;
@@ -200,7 +202,8 @@ class Multisnake {
   void LoadJFilamentSnakes(const std::string &filename,
                            SnakeContainer &snakes);
   void LoadPoint(const std::string &s, PointContainer &c);
-  void SaveJFilamentSnakes(const SnakeContainer &snakes, const std::string &filename) const;
+  void SaveJFilamentSnakes(const SnakeContainer &snakes,
+                           const std::string &filename) const;
 
   void ComputeErrorFromSnakesToComparingSnakes(DataContainer &errors) const;
   void ComputeErrorFromComparingSnakesToSnakes(DataContainer &errors) const;

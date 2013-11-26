@@ -379,6 +379,7 @@ void MainWindow::OpenImage() {
   statusBar()->showMessage(tr("Image loaded."), message_timeout_);
 
   this->SetParameters();
+  analysis_options_dialog_->SetImageCenter(multisnake_->GetImageCenter());
 
   open_image_->setEnabled(false);
   save_as_isotropic_image_->setEnabled(true);
@@ -626,10 +627,6 @@ void MainWindow::DeformSnakes() {
   save_jfilament_snakes_->setEnabled(true);
   compare_snakes_->setEnabled(true);
   cut_snakes_->setEnabled(true);
-  compute_spherical_orientation_->setEnabled(true);
-  compute_radial_orientation_->setEnabled(true);
-  compute_point_density_->setEnabled(true);
-  compute_curvature_->setEnabled(true);
   show_analysis_options_->setEnabled(true);
 }
 
@@ -676,16 +673,27 @@ void MainWindow::ComputeRadialOrientation() {
 
   PointType center;
   analysis_options_dialog_->GetImageCenter(center);
+  std::cout << "Image center: " << center << std::endl;
   multisnake_->ComputeRadialOrientation(center, filename.toStdString());
   statusBar()->showMessage(tr("Radial orientation file saved."));
 }
 
-void MainWindow::ComputePointDensity() {}
+void MainWindow::ComputePointDensity() {
+  QString filename = QFileDialog::getSaveFileName(
+      this, tr("Save snake point density file"), "..", tr("Text (*.txt)"));
+  if (filename.isEmpty()) return;
+  PointType center;
+  analysis_options_dialog_->GetImageCenter(center);
+  std::cout << "Image center: " << center << std::endl;
+  double radius = analysis_options_dialog_->GetRadius();
+  std::cout << "Radius: " << radius << std::endl;
+  multisnake_->ComputePointDensity(center, radius, filename.toStdString());
+  statusBar()->showMessage(tr("Snake point density file saved."));
+}
 
 void MainWindow::ComputeCurvature() {}
 
 void MainWindow::ShowAnalysisOptions() {
-  analysis_options_dialog_->SetImageCenter(multisnake_->GetImageCenter());
   if (analysis_options_dialog_->exec()) {
     analysis_options_dialog_->DisableOKButton();
   }

@@ -1082,6 +1082,7 @@ void Multisnake::ComputeRadialOrientation(const PointType &center,
               << std::endl;
     return;
   }
+
   for (SnakeConstIterator it = converged_snakes_.begin();
        it != converged_snakes_.end(); ++it) {
     for (unsigned i = 0; i < (*it)->GetSize() - 1; ++i) {
@@ -1111,5 +1112,86 @@ void Multisnake::ComputeRTheta(const PointType &point1,
   theta = theta > 90.0 ? (180.0 - theta) : theta;
 }
 
+void Multisnake::ComputePointDensity(const PointType &center, double radius,
+                                     const std::string &filename) {
+  if (converged_snakes_.empty()) return;
+
+  std::ofstream outfile;
+  outfile.open(filename.c_str());
+  if (!outfile.is_open()) {
+    std::cerr << "Cannot open file for snake point density results."
+              << std::endl;
+    return;
+  }
+
+  unsigned max_r = static_cast<unsigned>(radius);
+  double *snake_intensities = new double[max_r];
+  unsigned *snaxel_counts = new unsigned[max_r];
+  double *voxel_intensities = new double[max_r];
+  unsigned *voxel_counts = new unsigned[max_r];
+  for (unsigned i = 0; i < max_r; ++i) {
+    snake_intensities[i] = 0.0;
+    snaxel_counts[i] = 0;
+    voxel_intensities[i] = 0.0;
+    voxel_counts[i] = 0;
+  }
+
+  interpolator_->SetInputImage(image_);
+
+  for (SnakeConstIterator it = converged_snakes_.begin();
+       it != converged_snakes_.end(); ++it) {
+    for (unsigned i = 0; i < (*it)->GetSize(); ++i) {
+      const PointType &p = (*it)->GetPoint(i);
+      double r = center.EuclideanDistanceTo(p);
+      unsigned index_r = static_cast<unsigned>(r);
+      double intensity = intensity_scaled_ ?
+          interpolator_->Evaluate(p) / intensity_scaling_ :
+          interpolator_->Evaluate(p);
+      // std::cout << intensity << std::endl;
+      if (index_r < max_r) {
+        snaxel_counts[index_r]++;
+        snake_intensities[index_r] += intensity;
+      }
+    }
+  }
+
+  // Compute voxel average intensity along radial direction
+  itk::ImageRegionConstIteratorWithIndex<ImageType> iter(
+      image_, image_->GetLargestPossibleRegion());
+  iter.GoToBegin();
+  while (!iter.IsAtEnd()) {
+    ImageType::IndexType index = iter.GetIndex();
+    PointType point;
+    point[0] = index[0];
+    point[1] = index[1];
+    point[2] = index[2];
+
+    double r = center.EuclideanDistanceTo(point);
+    unsigned index_r = static_cast<unsigned>(r);
+    if (index_r < max_r) {
+      voxel_counts[index_r]++;
+      if (intensity_scaled_)
+        voxel_intensities[index_r] += iter.Value() / intensity_scaling_;
+      else
+        voxel_intensities[index_r] += iter.Value();
+    }
+    ++iter;
+  }
+
+  for (unsigned i = 0; i < max_r; ++i) {
+    if (snaxel_counts[i] > 0)
+      snake_intensities[i] /= snaxel_counts[i];
+    voxel_intensities[i] /= voxel_counts[i];
+    double density = snaxel_counts[i] / (4 * kPi * (i+1) * (i+1));
+    outfile << density << "\t" << snake_intensities[i]
+            << "\t" << voxel_intensities[i] << std::endl;
+  }
+  outfile.close();
+
+  delete [] snake_intensities;
+  delete [] snaxel_counts;
+  delete [] voxel_intensities;
+  delete [] voxel_counts;
+}
 
 } // namespace soax

@@ -691,7 +691,15 @@ void MainWindow::ComputePointDensity() {
   statusBar()->showMessage(tr("Snake point density file saved."));
 }
 
-void MainWindow::ComputeCurvature() {}
+void MainWindow::ComputeCurvature() {
+  QString filename = QFileDialog::getSaveFileName(
+      this, tr("Save curvature file"), "..", tr("Text (*.txt)"));
+  if (filename.isEmpty()) return;
+  int coarse_graining = analysis_options_dialog_->GetCoarseGraining();
+  std::cout << coarse_graining << std::endl;
+  multisnake_->ComputeCurvature(coarse_graining, filename.toStdString());
+  statusBar()->showMessage(tr("Curvature file saved."));
+}
 
 void MainWindow::ShowAnalysisOptions() {
   if (analysis_options_dialog_->exec()) {

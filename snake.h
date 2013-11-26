@@ -20,6 +20,7 @@ class Snake {
   bool open() const {return open_;}
   bool viable() const {return viable_;}
   double length() const {return length_;}
+  double spacing() const {return spacing_;}
 
   bool initial_state() const {return initial_state_;}
   void set_initial_state(bool initial) {initial_state_ = initial;}

@@ -135,7 +135,9 @@ class Multisnake {
   void ComputeRadialOrientation(const PointType &center,
                                 const std::string &filename) const;
   void ComputePointDensity(const PointType &center, double radius,
-                           const std::string &filename);
+                           const std::string &filename) const;
+  void ComputeCurvature(int coarse_graining,
+                        const std::string &filename) const;
 
  private:
   typedef itk::Vector<bool, kDimension> BoolVectorType;

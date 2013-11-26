@@ -1113,7 +1113,7 @@ void Multisnake::ComputeRTheta(const PointType &point1,
 }
 
 void Multisnake::ComputePointDensity(const PointType &center, double radius,
-                                     const std::string &filename) {
+                                     const std::string &filename) const {
   if (converged_snakes_.empty()) return;
 
   std::ofstream outfile;
@@ -1193,5 +1193,35 @@ void Multisnake::ComputePointDensity(const PointType &center, double radius,
   delete [] voxel_intensities;
   delete [] voxel_counts;
 }
+
+void Multisnake::ComputeCurvature(int coarse_graining,
+                                  const std::string &filename) const {
+  std::ofstream outfile;
+  outfile.open(filename.c_str());
+  if (!outfile.is_open()) {
+    std::cerr << "Cannot open file for snake point density results."
+              << std::endl;
+    return;
+  }
+
+  for (SnakeConstIterator it = converged_snakes_.begin();
+       it != converged_snakes_.end(); ++it) {
+    const int end_index = (*it)->GetSize() - 2*coarse_graining;
+    for (int i = 0; i < end_index; i += coarse_graining) {
+      PointType p0 = (*it)->GetPoint(i);
+      PointType p1 = (*it)->GetPoint(i + coarse_graining);
+      PointType p2 = (*it)->GetPoint(i + 2*coarse_graining);
+      VectorType vec1 = p1 - p0;
+      vec1.Normalize();
+      VectorType vec2 = p2 - p1;
+      vec2.Normalize();
+      double length = coarse_graining * (*it)->spacing();
+      double curvature = (vec1 - vec2).GetNorm() / length;
+      outfile << curvature << std::endl;
+    }
+  }
+  outfile.close();
+}
+
 
 } // namespace soax

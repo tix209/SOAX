@@ -62,6 +62,17 @@ void Multisnake::LoadImage(const std::string &filename) {
   // std::cout << image_filename_ << std::endl;
 }
 
+PointType Multisnake::GetImageCenter() const {
+  PointType center;
+  center.Fill(0.0);
+  if (image_) {
+    ImageType::SizeType size = image_->GetLargestPossibleRegion().GetSize();
+    for (unsigned i = 0; i < kDimension; ++i)
+      center[i] = size[i] / 2.0;
+  }
+  return center;
+}
+
 void Multisnake::SaveAsIsotropicImage(const std::string &filename,
                                       double z_spacing) {
   if (intensity_scaled_) {
@@ -1058,5 +1069,47 @@ void Multisnake::PrintGroundTruthLocalSNRValues(int radial_near, int radial_far)
   std::cout << "Mean: " << mean_snr << "\t Median: " << Median(snrs)
             << "\t Std: " << StandardDeviation(snrs, mean_snr) << std::endl;
 }
+
+
+void Multisnake::ComputeRadialOrientation(const PointType &center,
+                                          const std::string &filename) const {
+  if (converged_snakes_.empty()) return;
+
+  std::ofstream outfile;
+  outfile.open(filename.c_str());
+  if (!outfile.is_open()) {
+    std::cerr << "Cannot open file for radial orientation results."
+              << std::endl;
+    return;
+  }
+  for (SnakeConstIterator it = converged_snakes_.begin();
+       it != converged_snakes_.end(); ++it) {
+    for (unsigned i = 0; i < (*it)->GetSize() - 1; ++i) {
+      double r, theta;
+      this->ComputeRTheta((*it)->GetPoint(i), (*it)->GetPoint(i+1),
+                          center, r, theta);
+      outfile << r << "\t" << theta << std::endl;
+    }
+  }
+
+  outfile.close();
+}
+
+void Multisnake::ComputeRTheta(const PointType &point1,
+                               const PointType &point2,
+                               const PointType &center,
+                               double &r, double &theta) const {
+  PointType mid;
+  mid.SetToMidPoint(point1, point2);
+  r = mid.EuclideanDistanceTo(center);
+
+  VectorType vector = point1 - point2;
+  VectorType radial = mid - center;
+  vector.Normalize();
+  radial.Normalize();
+  theta = std::acos(vector * radial) * 180 / kPi;
+  theta = theta > 90.0 ? (180.0 - theta) : theta;
+}
+
 
 } // namespace soax

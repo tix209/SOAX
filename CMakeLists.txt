@@ -33,7 +33,7 @@ set(gui_srcs
   main_window.cc
   parameters_dialog.cc
   # view_options_dialog.cc
-  # analysis_options_dialog.cc
+  analysis_options_dialog.cc
   )
 
 set(common_srcs
@@ -59,7 +59,7 @@ set(moc_gui_srcs
   viewer.h
   parameters_dialog.h
   # view_options_dialog.h
-  # analysis_options_dialog.h
+  analysis_options_dialog.h
   )
 
 set(rcc_srcs icons.qrc)

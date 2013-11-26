@@ -12,6 +12,7 @@ namespace soax {
 class Multisnake;
 class Viewer;
 class ParametersDialog;
+class AnalysisOptionsDialog;
 
 /*
  * SOAX GUI main window.
@@ -46,6 +47,12 @@ class MainWindow : public QMainWindow {
   void CutSnakes();
   void GroupSnakes();
 
+  void ComputeSphericalOrientation();
+  void ComputeRadialOrientation();
+  void ComputePointDensity();
+  void ComputeCurvature();
+  void ShowAnalysisOptions();
+
   void ShowParametersDialog();
   void LoadViewpoint();
   void SaveViewpoint();
@@ -58,6 +65,7 @@ class MainWindow : public QMainWindow {
   void CreateFileMenuActions();
   void CreateViewMenuActions();
   void CreateProcessMenuActions();
+  void CreateAnalysisMenuActions();
   void CreateToolsMenuActions();
   void CreateHelpMenuActions();
 
@@ -71,6 +79,7 @@ class MainWindow : public QMainWindow {
 
   QWidget *central_widget_;
   ParametersDialog *parameters_dialog_;
+  AnalysisOptionsDialog *analysis_options_dialog_;
 
   // Actions in File menu
   QAction *open_image_;
@@ -104,6 +113,13 @@ class MainWindow : public QMainWindow {
   QAction *cut_snakes_;
   QAction *group_snakes_;
 
+  // Actions in Analysis menu
+  QAction *compute_spherical_orientation_;
+  QAction *compute_radial_orientation_;
+  QAction *compute_point_density_;
+  QAction *compute_curvature_;
+  QAction *show_analysis_options_;
+
   // Actions in Tools menu
   QAction *show_parameters_;
   QAction *load_viewpoint_;
@@ -118,6 +134,11 @@ class MainWindow : public QMainWindow {
   QMenu *file_;
   QMenu *view_;
   QMenu *process_;
+  QMenu *analysis_;
+  QMenu *actin_cable_submenu_;
+  QMenu *contractile_ring_submenu_;
+  QMenu *fibrin_submenu_;
+  QMenu *droplet_submenu_;
   QMenu *tools_;
   QMenu *help_;
 

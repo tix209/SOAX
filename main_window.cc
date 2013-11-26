@@ -5,6 +5,7 @@
 #include "viewer.h"
 #include "parameters_dialog.h"
 #include "solver_bank.h"
+#include "analysis_options_dialog.h"
 
 namespace soax {
 
@@ -13,6 +14,7 @@ MainWindow::MainWindow() {
   multisnake_ = new Multisnake;
   viewer_ = new Viewer;
   parameters_dialog_ = new ParametersDialog(this);
+  analysis_options_dialog_ = new AnalysisOptionsDialog(this);
   QHBoxLayout* layout = new QHBoxLayout;
   layout->addWidget(viewer_->qvtk());
   central_widget_->setLayout(layout);
@@ -37,6 +39,7 @@ void MainWindow::CreateActions() {
   this->CreateFileMenuActions();
   this->CreateViewMenuActions();
   this->CreateProcessMenuActions();
+  this->CreateAnalysisMenuActions();
   this->CreateToolsMenuActions();
   this->CreateHelpMenuActions();
 }
@@ -174,6 +177,30 @@ void MainWindow::CreateProcessMenuActions() {
   connect(group_snakes_, SIGNAL(triggered()), this, SLOT(GroupSnakes()));
 }
 
+void MainWindow::CreateAnalysisMenuActions() {
+  compute_spherical_orientation_ = new QAction(
+      tr("Compute Spherical Orientation"), this);
+  connect(compute_spherical_orientation_, SIGNAL(triggered()),
+          this, SLOT(ComputeSphericalOrientation()));
+
+  compute_radial_orientation_ = new QAction(
+      tr("Compute Radial Orientation"), this);
+  connect(compute_radial_orientation_, SIGNAL(triggered()),
+          this, SLOT(ComputeRadialOrientation()));
+
+  compute_point_density_ = new QAction(tr("Compute Point Density"), this);
+  connect(compute_point_density_, SIGNAL(triggered()),
+          this, SLOT(ComputePointDensity()));
+
+  compute_curvature_ = new QAction(tr("Compute Curvature"), this);
+  connect(compute_curvature_, SIGNAL(triggered()),
+          this, SLOT(ComputeCurvature()));
+
+  show_analysis_options_ = new QAction(tr("Options"), this);
+  connect(show_analysis_options_, SIGNAL(triggered()),
+          this, SLOT(ShowAnalysisOptions()));
+}
+
 void MainWindow::CreateToolsMenuActions() {
   show_parameters_ = new QAction(tr("&Parameters"), this);
   show_parameters_->setIcon(QIcon(":/icon/Settings.png"));
@@ -233,6 +260,17 @@ void MainWindow::CreateMenus() {
   process_->addAction(deform_one_snake_);
   process_->addAction(cut_snakes_);
   process_->addAction(group_snakes_);
+
+  analysis_ = menuBar()->addMenu(tr("Analysis"));
+  actin_cable_submenu_ = analysis_->addMenu(tr("Actin Cable"));
+  contractile_ring_submenu_ = analysis_->addMenu(tr("Contractile Ring"));
+  fibrin_submenu_ = analysis_->addMenu(tr("Fibrin Network"));
+  fibrin_submenu_->addAction(compute_spherical_orientation_);
+  droplet_submenu_ = analysis_->addMenu(tr("Droplet"));
+  droplet_submenu_->addAction(compute_radial_orientation_);
+  droplet_submenu_->addAction(compute_point_density_);
+  droplet_submenu_->addAction(compute_curvature_);
+  analysis_->addAction(show_analysis_options_);
 
   tools_ = menuBar()->addMenu(tr("&Tools"));
   tools_->addAction(show_parameters_);
@@ -301,6 +339,16 @@ void MainWindow::ResetActions() {
   deform_one_snake_->setEnabled(false);
   cut_snakes_->setEnabled(false);
   group_snakes_->setEnabled(false);
+
+  compute_spherical_orientation_->setEnabled(false);
+  compute_radial_orientation_->setEnabled(false);
+  compute_point_density_->setEnabled(false);
+  compute_curvature_->setEnabled(false);
+  show_analysis_options_->setEnabled(false);
+
+  load_viewpoint_->setEnabled(false);
+  save_viewpoint_->setEnabled(false);
+  save_snapshot_->setEnabled(false);
 }
 
 QString MainWindow::GetLastDirectory(const std::string &filename) {
@@ -420,6 +468,11 @@ void MainWindow::LoadSnakes() {
   deform_one_snake_->setEnabled(true);
   toggle_snakes_->setEnabled(true);
   toggle_junctions_->setEnabled(true);
+  compute_spherical_orientation_->setEnabled(true);
+  compute_radial_orientation_->setEnabled(true);
+  compute_point_density_->setEnabled(true);
+  compute_curvature_->setEnabled(true);
+  show_analysis_options_->setEnabled(true);
 }
 
 void MainWindow::SaveSnakes() {
@@ -573,6 +626,11 @@ void MainWindow::DeformSnakes() {
   save_jfilament_snakes_->setEnabled(true);
   compare_snakes_->setEnabled(true);
   cut_snakes_->setEnabled(true);
+  compute_spherical_orientation_->setEnabled(true);
+  compute_radial_orientation_->setEnabled(true);
+  compute_point_density_->setEnabled(true);
+  compute_curvature_->setEnabled(true);
+  show_analysis_options_->setEnabled(true);
 }
 
 void MainWindow::DeformSnakesInAction() {}
@@ -606,6 +664,31 @@ void MainWindow::GroupSnakes() {
   toggle_junctions_->setEnabled(true);
   save_snakes_->setEnabled(true);
   save_jfilament_snakes_->setEnabled(true);
+}
+
+void MainWindow::ComputeSphericalOrientation() {
+}
+
+void MainWindow::ComputeRadialOrientation() {
+  QString filename = QFileDialog::getSaveFileName(
+      this, tr("Save radial orientation file"), "..", tr("Text (*.txt)"));
+  if (filename.isEmpty()) return;
+
+  PointType center;
+  analysis_options_dialog_->GetImageCenter(center);
+  multisnake_->ComputeRadialOrientation(center, filename.toStdString());
+  statusBar()->showMessage(tr("Radial orientation file saved."));
+}
+
+void MainWindow::ComputePointDensity() {}
+
+void MainWindow::ComputeCurvature() {}
+
+void MainWindow::ShowAnalysisOptions() {
+  analysis_options_dialog_->SetImageCenter(multisnake_->GetImageCenter());
+  if (analysis_options_dialog_->exec()) {
+    analysis_options_dialog_->DisableOKButton();
+  }
 }
 
 void MainWindow::ShowParametersDialog() {

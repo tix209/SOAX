@@ -25,6 +25,8 @@ class Multisnake {
    */
   void LoadImage(const std::string &filename);
 
+  PointType GetImageCenter() const;
+
   /*
    * Resample and save as an isotropic 16-bit image.
    */
@@ -130,6 +132,9 @@ class Multisnake {
 
   void PrintGroundTruthLocalSNRValues(int radial_near, int radial_far);
 
+  void ComputeRadialOrientation(const PointType &center,
+                                const std::string &filename) const;
+
  private:
   typedef itk::Vector<bool, kDimension> BoolVectorType;
   typedef itk::Image<BoolVectorType, kDimension> BoolVectorImageType;
@@ -201,6 +206,12 @@ class Multisnake {
   void ComputeErrorFromComparingSnakesToSnakes(DataContainer &errors) const;
   double ComputeShortestDistance(const PointType &p,
                                  const SnakeContainer &snakes) const;
+
+
+  void ComputeRTheta(const PointType &point1, const PointType &point2,
+                     const PointType &center, double &r, double &theta) const;
+
+
 
 
   std::string image_filename_;

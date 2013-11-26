@@ -138,6 +138,7 @@ class Multisnake {
                            const std::string &filename) const;
   void ComputeCurvature(int coarse_graining,
                         const std::string &filename) const;
+  void ComputeSphericalOrientation(const std::string &filename) const;
 
  private:
   typedef itk::Vector<bool, kDimension> BoolVectorType;
@@ -216,7 +217,7 @@ class Multisnake {
   void ComputeRTheta(const PointType &point1, const PointType &point2,
                      const PointType &center, double &r, double &theta) const;
 
-
+  void ComputeThetaPhi(VectorType vector, double &theta, double &phi) const;
 
 
   std::string image_filename_;

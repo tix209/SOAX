@@ -664,6 +664,12 @@ void MainWindow::GroupSnakes() {
 }
 
 void MainWindow::ComputeSphericalOrientation() {
+  QString filename = QFileDialog::getSaveFileName(
+      this, tr("Save spherical orientation"), "..",
+      tr("Text (*.txt)"));
+  if (filename.isEmpty()) return;
+  multisnake_->ComputeSphericalOrientation(filename.toStdString());
+  statusBar()->showMessage(tr("Spherical orientation file saved."));
 }
 
 void MainWindow::ComputeRadialOrientation() {

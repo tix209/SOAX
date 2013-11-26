@@ -1223,5 +1223,53 @@ void Multisnake::ComputeCurvature(int coarse_graining,
   outfile.close();
 }
 
+void Multisnake::ComputeSphericalOrientation(
+    const std::string &filename) const {
+  std::ofstream outfile;
+  outfile.open(filename.c_str());
+  if (!outfile.is_open()) {
+    std::cerr << "Cannot open file for snake point density results."
+              << std::endl;
+    return;
+  }
+
+  for (SnakeConstIterator it = converged_snakes_.begin();
+       it != converged_snakes_.end(); ++it) {
+    for (unsigned i = 0; i < (*it)->GetSize() - 1; ++i) {
+      VectorType vector = (*it)->GetPoint(i) - (*it)->GetPoint(i+1);
+      double theta, phi;
+      this->ComputeThetaPhi(vector, theta, phi);
+    }
+  }
+  outfile.close();
+}
+
+void Multisnake::ComputeThetaPhi(VectorType vector,
+                                 double &theta, double &phi) const {
+  // phi is (-pi/2, +pi/2]
+  // theta is [0, pi)
+  const double r = vector.GetNorm();
+
+  if (std::abs(vector[0]) < kEpsilon && std::abs(vector[1]) < kEpsilon) {
+    // x = y = 0
+    phi = 0;
+    theta = 0;
+  } else if (std::abs(vector[0]) < kEpsilon) {
+    // x = 0, y != 0
+    if (vector[1] < -kEpsilon)
+      vector = -vector;
+
+    phi = 90;
+    theta = std::acos(vector[2]/r) * 180 / kPi;
+  } else {
+    // x != 0
+    if (vector[0] < -kEpsilon)
+      vector = -vector;
+
+    theta = std::acos(vector[2]/r) * 180 / kPi;
+    phi = std::atan(vector[1] / vector[0]) * 180 / kPi;
+  }
+}
+
 
 } // namespace soax

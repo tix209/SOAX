@@ -4,6 +4,7 @@
 #include "multisnake.h"
 #include "viewer.h"
 #include "parameters_dialog.h"
+#include "view_options_dialog.h"
 #include "solver_bank.h"
 #include "analysis_options_dialog.h"
 
@@ -14,6 +15,7 @@ MainWindow::MainWindow() {
   multisnake_ = new Multisnake;
   viewer_ = new Viewer;
   parameters_dialog_ = new ParametersDialog(this);
+  view_options_dialog_ = new ViewOptionsDialog(this);
   analysis_options_dialog_ = new AnalysisOptionsDialog(this);
   QHBoxLayout* layout = new QHBoxLayout;
   layout->addWidget(viewer_->qvtk());
@@ -144,6 +146,29 @@ void MainWindow::CreateViewMenuActions() {
   toggle_junctions_->setCheckable(true);
   connect(toggle_junctions_, SIGNAL(toggled(bool)),
           viewer_, SLOT(ToggleJunctions(bool)));
+
+  toggle_clip_ = new QAction(tr("Show Snakes Locally"), this);
+  toggle_clip_->setCheckable(true);
+  toggle_clip_->setIcon(QIcon(":/icon/Search.png"));
+  connect(toggle_clip_, SIGNAL(toggled(bool)),
+          viewer_, SLOT(ToggleClipSnakes(bool)));
+  connect(toggle_clip_, SIGNAL(toggled(bool)),
+          this, SLOT(ToggleSnakeDisplay(bool)));
+
+  toggle_color_azimuthal_ = new QAction(
+      tr("Color Snakes by Azimuthal Angle)"), this);
+  toggle_color_azimuthal_->setCheckable(true);
+  connect(toggle_color_azimuthal_, SIGNAL(toggled(bool)),
+          viewer_, SLOT(ColorByAzimuthalAngle(bool)));
+
+  toggle_color_polar_ = new QAction(tr("Color Snakes by Polar Angle"), this);
+  toggle_color_polar_->setCheckable(true);
+  connect(toggle_color_polar_, SIGNAL(toggled(bool)),
+          viewer_, SLOT(ColorByPolarAngle(bool)));
+
+  show_view_options_ = new QAction(tr("Options"), this);
+  connect(show_view_options_, SIGNAL(triggered()),
+          this, SLOT(ShowViewOptions()));
 }
 
 void MainWindow::CreateProcessMenuActions() {
@@ -252,6 +277,10 @@ void MainWindow::CreateMenus() {
   view_->addAction(toggle_cube_axes_);
   view_->addAction(toggle_snakes_);
   view_->addAction(toggle_junctions_);
+  view_->addAction(toggle_clip_);
+  view_->addAction(toggle_color_azimuthal_);
+  view_->addAction(toggle_color_polar_);
+  view_->addAction(show_view_options_);
 
   process_ = menuBar()->addMenu(tr("&Process"));
   process_->addAction(initialize_snakes_);
@@ -294,6 +323,7 @@ void MainWindow::CreateToolBar() {
   toolbar_->addAction(toggle_mip_);
   toolbar_->addAction(toggle_snakes_);
   toolbar_->addAction(toggle_junctions_);
+  toolbar_->addAction(toggle_clip_);
 
   toolbar_->addSeparator();
   toolbar_->addAction(initialize_snakes_);
@@ -332,6 +362,10 @@ void MainWindow::ResetActions() {
   toggle_cube_axes_->setEnabled(false);
   toggle_snakes_->setEnabled(false);
   toggle_junctions_->setEnabled(false);
+  toggle_clip_->setEnabled(false);
+  toggle_color_azimuthal_->setEnabled(false);
+  toggle_color_polar_->setEnabled(false);
+  show_view_options_->setEnabled(false);
 
   initialize_snakes_->setEnabled(false);
   deform_snakes_->setEnabled(false);
@@ -379,6 +413,12 @@ void MainWindow::OpenImage() {
   statusBar()->showMessage(tr("Image loaded."), message_timeout_);
 
   this->SetParameters();
+
+  view_options_dialog_->SetWindow(viewer_->window());
+  view_options_dialog_->SetLevel(viewer_->level());
+  view_options_dialog_->SetMinIntensity(viewer_->mip_min_intensity());
+  view_options_dialog_->SetMaxIntensity(viewer_->mip_max_intensity());
+
   analysis_options_dialog_->SetImageCenter(multisnake_->GetImageCenter());
 
   open_image_->setEnabled(false);
@@ -393,7 +433,11 @@ void MainWindow::OpenImage() {
   toggle_corner_text_->setEnabled(true);
   toggle_bounding_box_->setEnabled(true);
   toggle_cube_axes_->setEnabled(true);
+  show_view_options_->setEnabled(true);
   initialize_snakes_->setEnabled(true);
+  load_viewpoint_->setEnabled(true);
+  save_viewpoint_->setEnabled(true);
+  save_snapshot_->setEnabled(true);
 }
 
 void MainWindow::SaveAsIsotropicImage() {
@@ -469,6 +513,9 @@ void MainWindow::LoadSnakes() {
   deform_one_snake_->setEnabled(true);
   toggle_snakes_->setEnabled(true);
   toggle_junctions_->setEnabled(true);
+  toggle_clip_->setEnabled(true);
+  toggle_color_azimuthal_->setChecked(true);
+  toggle_color_polar_->setChecked(true);
   compute_spherical_orientation_->setEnabled(true);
   compute_radial_orientation_->setEnabled(true);
   compute_point_density_->setEnabled(true);
@@ -510,6 +557,9 @@ void MainWindow::LoadJFilamentSnakes() {
   save_jfilament_snakes_->setEnabled(true);
   compare_snakes_->setEnabled(true);
   toggle_snakes_->setEnabled(true);
+  toggle_clip_->setEnabled(true);
+  toggle_color_azimuthal_->setChecked(true);
+  toggle_color_polar_->setChecked(true);
 }
 
 void MainWindow::SaveJFilamentSnakes() {
@@ -579,12 +629,35 @@ void MainWindow::CloseSession() {
   toggle_cube_axes_->setChecked(false);
   toggle_snakes_->setChecked(false);
   toggle_junctions_->setChecked(false);
+  toggle_clip_->setChecked(false);
+  toggle_color_azimuthal_->setChecked(false);
+  toggle_color_polar_->setChecked(false);
+
   viewer_->Reset();
   viewer_->Render();
   multisnake_->Reset();
   this->ResetActions();
   open_image_->setEnabled(true);
   setWindowTitle("SOAX");
+}
+
+void MainWindow::ToggleSnakeDisplay(bool state) {
+  toggle_snakes_->setChecked(!state);
+}
+
+void MainWindow::ShowViewOptions() {
+  if (view_options_dialog_->exec()) {
+    double window = view_options_dialog_->GetWindow();
+    double level = view_options_dialog_->GetLevel();
+    //std::cout << window << "\t" << level << std::endl;
+    viewer_->UpdateWindowLevel(window, level);
+    double min_intensity = view_options_dialog_->GetMinIntensity();
+    double max_intensity = view_options_dialog_->GetMaxIntensity();
+    //std::cout << min_intensity << "\t" << max_intensity << std::endl;
+    viewer_->UpdateMIPIntensityRange(min_intensity, max_intensity);
+    view_options_dialog_->DisableOKButton();
+  }
+  viewer_->Render();
 }
 
 void MainWindow::InitializeSnakes() {
@@ -605,6 +678,7 @@ void MainWindow::InitializeSnakes() {
   initialize_snakes_->setEnabled(false);
   save_snakes_->setEnabled(true);
   toggle_snakes_->setEnabled(true);
+  toggle_clip_->setEnabled(true);
   deform_snakes_->setEnabled(true);
   deform_snakes_in_action_->setEnabled(true);
   deform_one_snake_->setEnabled(true);

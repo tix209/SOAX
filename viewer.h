@@ -30,6 +30,22 @@ class Viewer : public QObject {
   QVTKWidget *qvtk() const {return qvtk_;}
 
   void SetupImage(ImageType::Pointer image);
+
+  double window() const {return window_;}
+  void set_window(double window) {window_ = window;}
+
+  double level() const {return level_;}
+  void set_level(double level) {level_ = level;}
+
+  double mip_min_intensity() const {return mip_min_intensity_;}
+  void set_mip_min_intensity(double mip_min) {mip_min_intensity_ = mip_min;}
+
+  double mip_max_intensity() const {return mip_max_intensity_;}
+  void set_mip_max_intensity(double mip_max) {mip_max_intensity_ = mip_max;}
+
+  void UpdateWindowLevel(double window, double level);
+  void UpdateMIPIntensityRange(double min, double max);
+
   void SetupSnakes(const SnakeContainer &snakes, unsigned category = 0);
   void RemoveSnakes();
   void SetupJunctions(const PointContainer &points);
@@ -63,6 +79,9 @@ class Viewer : public QObject {
   void ToggleCubeAxes(bool state);
   void ToggleSnakes(bool state);
   void ToggleJunctions(bool state);
+  void ToggleClipSnakes(bool state);
+  void ColorByAzimuthalAngle(bool state);
+  void ColorByPolarAngle(bool state);
 
  private:
   typedef std::map<vtkActor *, Snake *> ActorSnakeMap;
@@ -70,11 +89,8 @@ class Viewer : public QObject {
   typedef std::map<vtkActor *, PointType> ActorPointMap;
 
 
-  void SetupSlicePlanes(vtkImageData *data, double min_intensity,
-                        double max_intensity);
-  void SetupMIPRendering(vtkImageData *data,
-                                 double min_intensity,
-                                 double max_intensity);
+  void SetupSlicePlanes(vtkImageData *data);
+  void SetupMIPRendering(vtkImageData *data);
   void SetupOrientationMarker();
   void SetupUpperLeftCornerText(unsigned min_intensity,
                                 unsigned max_intensity);
@@ -99,6 +115,11 @@ class Viewer : public QObject {
   vtkSmartPointer<vtkCornerAnnotation> corner_text_;
   vtkSmartPointer<vtkCubeAxesActor> cube_axes_;
   vtkSmartPointer<vtkActor> bounding_box_;
+
+  double window_;
+  double level_;
+  double mip_min_intensity_;
+  double mip_max_intensity_;
 
   ActorSnakeMap actor_snakes_;
   SnakeActorMap snake_actors_;

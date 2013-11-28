@@ -13,6 +13,8 @@ class Multisnake;
 class Viewer;
 class ParametersDialog;
 class AnalysisOptionsDialog;
+class ViewOptionsDialog;
+
 
 /*
  * SOAX GUI main window.
@@ -39,6 +41,9 @@ class MainWindow : public QMainWindow {
   void LoadJFilamentSnakes();
   void SaveJFilamentSnakes();
   void CloseSession();
+
+  void ToggleSnakeDisplay(bool state);
+  void ShowViewOptions();
 
   void InitializeSnakes();
   void DeformSnakes();
@@ -79,6 +84,7 @@ class MainWindow : public QMainWindow {
 
   QWidget *central_widget_;
   ParametersDialog *parameters_dialog_;
+  ViewOptionsDialog *view_options_dialog_;
   AnalysisOptionsDialog *analysis_options_dialog_;
 
   // Actions in File menu
@@ -104,6 +110,11 @@ class MainWindow : public QMainWindow {
   QAction *toggle_cube_axes_;
   QAction *toggle_snakes_;
   QAction *toggle_junctions_;
+  QAction *toggle_clip_;
+  QAction *toggle_color_azimuthal_;
+  QAction *toggle_color_polar_;
+  QAction *show_view_options_;
+
 
   // Actions in Process menu
   QAction *initialize_snakes_;

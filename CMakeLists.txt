@@ -32,7 +32,7 @@ set(gui_srcs
   viewer.cc
   main_window.cc
   parameters_dialog.cc
-  # view_options_dialog.cc
+  view_options_dialog.cc
   analysis_options_dialog.cc
   )
 
@@ -58,7 +58,7 @@ set(moc_gui_srcs
   main_window.h
   viewer.h
   parameters_dialog.h
-  # view_options_dialog.h
+  view_options_dialog.h
   analysis_options_dialog.h
   )
 

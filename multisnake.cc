@@ -1239,6 +1239,7 @@ void Multisnake::ComputeSphericalOrientation(
       VectorType vector = (*it)->GetPoint(i) - (*it)->GetPoint(i+1);
       double theta, phi;
       this->ComputeThetaPhi(vector, theta, phi);
+      outfile << theta << "\t" << phi << std::endl;
     }
   }
   outfile.close();

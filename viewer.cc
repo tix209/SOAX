@@ -42,7 +42,8 @@ double Viewer::kGreen[3] = {0.0, 1.0, 0.0};
 double Viewer::kCyan[3] = {0.0, 1.0, 1.0};
 double Viewer::kBlue[3] = {0.0, 0.0, 1.0};
 
-Viewer::Viewer() {
+Viewer::Viewer(): window_(0.0), level_(0.0), mip_min_intensity_(0.0),
+                  mip_max_intensity_(0.0) {
   qvtk_ = new QVTKWidget;
   renderer_ = vtkSmartPointer<vtkRenderer>::New();
   qvtk_->GetRenderWindow()->AddRenderer(renderer_);
@@ -88,6 +89,7 @@ Viewer::~Viewer() {
 }
 
 void Viewer::Reset() {
+  window_ = level_ = mip_min_intensity_ = mip_max_intensity_ = 0.0;
   snake_filename_ = comparing_snake_filename1_ =
       comparing_snake_filename2_ = "";
   this->RemoveSnakes();
@@ -115,27 +117,25 @@ void Viewer::SetupImage(ImageType::Pointer image) {
   filter->Update();
   double min_intensity = filter->GetMinimum();
   double max_intensity = filter->GetMaximum();
+  window_ = max_intensity - min_intensity;
+  level_ = min_intensity + window_ / 2;
+  mip_min_intensity_ = min_intensity + 0.05 * (max_intensity - min_intensity);
+  mip_max_intensity_ = max_intensity;
 
-  this->SetupSlicePlanes(caster->GetOutput(), min_intensity,
-                         max_intensity);
-  this->SetupMIPRendering(caster->GetOutput(), min_intensity,
-                          max_intensity);
+  this->SetupSlicePlanes(caster->GetOutput());
+  this->SetupMIPRendering(caster->GetOutput());
   this->SetupOrientationMarker();
   this->SetupUpperLeftCornerText(min_intensity, max_intensity);
   this->SetupBoundingBox();
   this->SetupCubeAxes(caster->GetOutput());
 }
 
-void Viewer::SetupSlicePlanes(vtkImageData *data, double min_intensity,
-                              double max_intensity) {
-  double window = max_intensity - min_intensity;
-  double level = min_intensity + window/2;
-
+void Viewer::SetupSlicePlanes(vtkImageData *data) {
   for (unsigned i = 0; i < kDimension; ++i) {
     slice_planes_[i]->SetInputData(data);
     slice_planes_[i]->SetPlaneOrientation(i);
     slice_planes_[i]->UpdatePlacement();
-    slice_planes_[i]->SetWindowLevel(window, level);
+    slice_planes_[i]->SetWindowLevel(window_, level_);
   }
 }
 
@@ -153,14 +153,12 @@ void Viewer::ToggleSlicePlanes(bool state) {
   this->Render();
 }
 
-void Viewer::SetupMIPRendering(vtkImageData *data, double min_intensity,
-                               double max_intensity) {
+void Viewer::SetupMIPRendering(vtkImageData *data) {
   vtkSmartPointer<vtkPiecewiseFunction> opacity_function =
       vtkSmartPointer<vtkPiecewiseFunction>::New();
-  double starting_transparent_intensity = min_intensity +
-      0.05 * (max_intensity - min_intensity);
-  opacity_function->AddPoint(starting_transparent_intensity, 0.0);
-  opacity_function->AddPoint(max_intensity, 1.0);
+
+  opacity_function->AddPoint(mip_min_intensity_, 0.0);
+  opacity_function->AddPoint(mip_max_intensity_, 1.0);
 
   vtkSmartPointer<vtkColorTransferFunction> color_function =
       vtkSmartPointer<vtkColorTransferFunction>::New();
@@ -194,6 +192,23 @@ void Viewer::ToggleMIPRendering(bool state) {
   }
   this->Render();
 }
+
+void Viewer::UpdateWindowLevel(double window, double level) {
+  window_ = window;
+  level_ = level;
+  for (unsigned i = 0; i < kDimension; ++i) {
+    slice_planes_[i]->SetWindowLevel(window, level);
+  }
+}
+
+void Viewer::UpdateMIPIntensityRange(double min, double max) {
+  mip_min_intensity_ = min;
+  mip_max_intensity_ = max;
+  volume_->GetProperty()->GetScalarOpacity()->RemoveAllPoints();
+  volume_->GetProperty()->GetScalarOpacity()->AddPoint(min, 0.0);
+  volume_->GetProperty()->GetScalarOpacity()->AddPoint(max, 1.0);
+}
+
 
 void Viewer::SetupOrientationMarker() {
   vtkSmartPointer<vtkAxesActor> axes = vtkSmartPointer<vtkAxesActor>::New();
@@ -505,6 +520,12 @@ void Viewer::RemoveJunctions() {
   junctions_.clear();
   selected_junctions_.clear();
 }
+
+void Viewer::ToggleClipSnakes(bool state) {}
+
+void Viewer::ColorByAzimuthalAngle(bool state) {}
+void Viewer::ColorByPolarAngle(bool state) {}
+
 
 void Viewer::Render() {
   qvtk_->GetRenderWindow()->Render();

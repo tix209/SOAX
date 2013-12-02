@@ -16,17 +16,20 @@ class ViewOptionsDialog : public QDialog {
  public:
   ViewOptionsDialog(QWidget * parent = NULL);
 
-  double GetWindow();
-  double GetLevel();
+  double GetWindow() const;
+  double GetLevel() const;
 
   void SetWindow(double window);
   void SetLevel(double level);
 
-  double GetMinIntensity();
-  double GetMaxIntensity();
+  double GetMinIntensity() const;
+  double GetMaxIntensity() const;
 
   void SetMinIntensity(double min);
   void SetMaxIntensity(double max);
+
+  double GetClipSpan() const;
+  void SetClipSpan(double span);
 
  public slots:
   void EnableOKButton();
@@ -35,11 +38,13 @@ class ViewOptionsDialog : public QDialog {
  private:
   QGroupBox *CreateSlicePlanesGroup();
   QGroupBox *CreateMIPGroup();
+  QGroupBox *CreateClipGroup();
 
   QLineEdit *window_edit_;
   QLineEdit *level_edit_;
   QLineEdit *min_intensity_edit_;
   QLineEdit *max_intensity_edit_;
+  QLineEdit *clip_span_edit_;
 
   QDialogButtonBox *button_box_;
 

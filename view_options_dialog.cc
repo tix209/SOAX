@@ -7,6 +7,7 @@ ViewOptionsDialog::ViewOptionsDialog(QWidget *parent) : QDialog(parent) {
   QVBoxLayout *layout = new QVBoxLayout;
   layout->addWidget(this->CreateSlicePlanesGroup());
   layout->addWidget(this->CreateMIPGroup());
+  layout->addWidget(this->CreateClipGroup());
   button_box_ = new QDialogButtonBox(QDialogButtonBox::Ok |
                                      QDialogButtonBox::Cancel);
 
@@ -58,7 +59,20 @@ QGroupBox * ViewOptionsDialog::CreateMIPGroup() {
   layout->addWidget(min_intensity_edit_);
   layout->addWidget(max_intensity_label);
   layout->addWidget(max_intensity_edit_);
-  //layout->addStretch();
+  gb->setLayout(layout);
+  return gb;
+}
+
+QGroupBox * ViewOptionsDialog::CreateClipGroup() {
+  QGroupBox *gb = new QGroupBox(tr("Span for Clipping Snake "));
+  clip_span_edit_ = new QLineEdit("0.0");
+  connect(clip_span_edit_, SIGNAL(textChanged(const QString &)),
+          this, SLOT(EnableOKButton()));
+  QLabel *label = new QLabel(tr("Span"));
+  QHBoxLayout *layout = new QHBoxLayout;
+  layout->addWidget(label);
+  layout->addWidget(clip_span_edit_);
+  layout->addStretch();
   gb->setLayout(layout);
   return gb;
 }
@@ -72,11 +86,11 @@ void ViewOptionsDialog::DisableOKButton() {
 }
 
 
-double ViewOptionsDialog::GetWindow() {
+double ViewOptionsDialog::GetWindow() const {
   return window_edit_->text().toDouble();
 }
 
-double ViewOptionsDialog::GetLevel() {
+double ViewOptionsDialog::GetLevel() const {
   return level_edit_->text().toDouble();
 }
 
@@ -92,11 +106,11 @@ void ViewOptionsDialog::SetLevel(double level) {
   level_edit_->setText(s);
 }
 
-double ViewOptionsDialog::GetMinIntensity() {
+double ViewOptionsDialog::GetMinIntensity() const {
   return min_intensity_edit_->text().toDouble();
 }
 
-double ViewOptionsDialog::GetMaxIntensity() {
+double ViewOptionsDialog::GetMaxIntensity() const {
   return max_intensity_edit_->text().toDouble();
 }
 
@@ -110,6 +124,16 @@ void ViewOptionsDialog::SetMaxIntensity(double max) {
   QString s;
   s.setNum(max);
   max_intensity_edit_->setText(s);
+}
+
+double ViewOptionsDialog::GetClipSpan() const {
+  return clip_span_edit_->text().toDouble();
+}
+
+void ViewOptionsDialog::SetClipSpan(double span) {
+  QString s;
+  s.setNum(span);
+  clip_span_edit_->setText(s);
 }
 
 } // namespace soax

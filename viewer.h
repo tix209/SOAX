@@ -16,6 +16,8 @@ class vtkCubeAxesActor;
 class vtkActor;
 class vtkImageData;
 class vtkPolyData;
+class vtkEventQtSlotConnect;
+class vtkObject;
 
 
 namespace soax {
@@ -42,6 +44,9 @@ class Viewer : public QObject {
 
   double mip_max_intensity() const {return mip_max_intensity_;}
   void set_mip_max_intensity(double mip_max) {mip_max_intensity_ = mip_max;}
+
+  double clip_span() const {return clip_span_;}
+  void set_clip_span(double span) {clip_span_ = span;}
 
   void UpdateWindowLevel(double window, double level);
   void UpdateMIPIntensityRange(double min, double max);
@@ -83,6 +88,9 @@ class Viewer : public QObject {
   void ColorByAzimuthalAngle(bool state);
   void ColorByPolarAngle(bool state);
 
+ private slots:
+  void SetupClippedSnakes(vtkObject *obj);
+
  private:
   typedef std::map<vtkActor *, Snake *> ActorSnakeMap;
   typedef std::map<Snake *, vtkActor *> SnakeActorMap;
@@ -105,6 +113,7 @@ class Viewer : public QObject {
   void SetupAnotherComparingActorProperty(vtkActor *actor);
   void SetupSphere(const PointType &point, vtkActor *sphere);
 
+  vtkPolyData * MakeClippedPolyData(unsigned axis, double position);
 
   QVTKWidget *qvtk_;
   vtkSmartPointer<vtkRenderer> renderer_;
@@ -115,11 +124,14 @@ class Viewer : public QObject {
   vtkSmartPointer<vtkCornerAnnotation> corner_text_;
   vtkSmartPointer<vtkCubeAxesActor> cube_axes_;
   vtkSmartPointer<vtkActor> bounding_box_;
+  vtkSmartPointer<vtkEventQtSlotConnect> slot_connector_;
+  vtkSmartPointer<vtkActor> clipped_actor_;
 
   double window_;
   double level_;
   double mip_min_intensity_;
   double mip_max_intensity_;
+  double clip_span_;
 
   ActorSnakeMap actor_snakes_;
   SnakeActorMap snake_actors_;

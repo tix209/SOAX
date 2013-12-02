@@ -28,6 +28,8 @@
 #include "vtkPNGWriter.h"
 #include "vtkTIFFWriter.h"
 #include "vtkGL2PSExporter.h"
+#include "vtkEventQtSlotConnect.h"
+
 #include "itkStatisticsImageFilter.h"
 #include "snake.h"
 
@@ -43,7 +45,7 @@ double Viewer::kCyan[3] = {0.0, 1.0, 1.0};
 double Viewer::kBlue[3] = {0.0, 0.0, 1.0};
 
 Viewer::Viewer(): window_(0.0), level_(0.0), mip_min_intensity_(0.0),
-                  mip_max_intensity_(0.0) {
+                  mip_max_intensity_(0.0), clip_span_(6.0) {
   qvtk_ = new QVTKWidget;
   renderer_ = vtkSmartPointer<vtkRenderer>::New();
   qvtk_->GetRenderWindow()->AddRenderer(renderer_);
@@ -70,6 +72,8 @@ Viewer::Viewer(): window_(0.0), level_(0.0), mip_min_intensity_(0.0),
   corner_text_ = vtkSmartPointer<vtkCornerAnnotation>::New();
   cube_axes_ = vtkSmartPointer<vtkCubeAxesActor>::New();
   bounding_box_ = vtkSmartPointer<vtkActor>::New();
+  slot_connector_ = vtkSmartPointer<vtkEventQtSlotConnect>::New();
+  clipped_actor_ = vtkSmartPointer<vtkActor>::New();
 
   snake_color_ = kMagenta;
   comparing_snakes1_color_ = kYellow;
@@ -524,7 +528,81 @@ void Viewer::RemoveJunctions() {
   selected_junctions_.clear();
 }
 
-void Viewer::ToggleClipSnakes(bool state) {}
+void Viewer::ToggleClipSnakes(bool state) {
+  if (state) {
+    for (unsigned i = 0; i < kDimension; ++i) {
+      slot_connector_->Connect(
+          slice_planes_[i], vtkCommand::EndInteractionEvent,
+          this, SLOT(SetupClippedSnakes(vtkObject *)));
+    }
+  } else {
+    for (unsigned i = 0; i < kDimension; ++i) {
+      slot_connector_->Disconnect(
+          slice_planes_[i], vtkCommand::EndInteractionEvent,
+          this, SLOT(SetupClippedSnakes(vtkObject *)));
+    }
+    renderer_->RemoveActor(clipped_actor_);
+  }
+  this->Render();
+}
+
+void Viewer::SetupClippedSnakes(vtkObject *obj) {
+  vtkImagePlaneWidget *plane = vtkImagePlaneWidget::SafeDownCast(obj);
+  unsigned axis = plane->GetPlaneOrientation();
+  double position = slice_planes_[axis]->GetSlicePosition();
+  vtkPolyData *data = this->MakeClippedPolyData(axis, position);
+  vtkDataSetMapper *mapper = vtkDataSetMapper::New();
+  mapper->SetInputData(data);
+  clipped_actor_->SetMapper(mapper);
+  mapper->Update();
+  data->Delete();
+  this->SetupEvolvingActorProperty(clipped_actor_);
+  renderer_->AddActor(clipped_actor_);
+}
+
+vtkPolyData * Viewer::MakeClippedPolyData(unsigned axis, double position) {
+  vtkPolyData *curve = vtkPolyData::New();
+  vtkPoints *points = vtkPoints::New();
+  vtkCellArray *cells = vtkCellArray::New();
+
+  unsigned int index = 0;
+  vtkIdType cell_index[2];
+  vtkFloatingPointType coordinates[3];
+
+  for (SnakeActorMap::const_iterator it = snake_actors_.begin();
+       it != snake_actors_.end(); ++it) {
+    for (unsigned i = 0; i < it->first->GetSize(); ++i) {
+      coordinates[0] = it->first->GetX(i);
+      coordinates[1] = it->first->GetY(i);
+      coordinates[2] = it->first->GetZ(i);
+
+      if (coordinates[axis] < position - clip_span_ ||
+          coordinates[axis] > position + clip_span_)
+        continue;
+
+      points->InsertPoint(index, coordinates);
+
+      if (i != it->first->GetSize() - 1) {
+        double next_coordinate = it->first->GetPoint(i+1)[axis];
+        if (next_coordinate >= position - clip_span_ &&
+            next_coordinate <= position + clip_span_) {
+          cell_index[0] = index;
+          cell_index[1] = index + 1;
+          cells->InsertNextCell(2, cell_index);
+        }
+      }
+      index++;
+    }
+  }
+  curve->SetPoints(points);
+  curve->SetLines(cells);
+  points->Delete();
+  cells->Delete();
+
+  return curve;
+
+}
+
 
 void Viewer::ColorByAzimuthalAngle(bool state) {}
 void Viewer::ColorByPolarAngle(bool state) {}

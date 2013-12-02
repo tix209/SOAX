@@ -418,6 +418,7 @@ void MainWindow::OpenImage() {
   view_options_dialog_->SetLevel(viewer_->level());
   view_options_dialog_->SetMinIntensity(viewer_->mip_min_intensity());
   view_options_dialog_->SetMaxIntensity(viewer_->mip_max_intensity());
+  view_options_dialog_->SetClipSpan(viewer_->clip_span());
 
   analysis_options_dialog_->SetImageCenter(multisnake_->GetImageCenter());
 
@@ -655,6 +656,7 @@ void MainWindow::ShowViewOptions() {
     double max_intensity = view_options_dialog_->GetMaxIntensity();
     //std::cout << min_intensity << "\t" << max_intensity << std::endl;
     viewer_->UpdateMIPIntensityRange(min_intensity, max_intensity);
+    viewer_->set_clip_span(view_options_dialog_->GetClipSpan());
     view_options_dialog_->DisableOKButton();
   }
   viewer_->Render();

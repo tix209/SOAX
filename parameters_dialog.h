@@ -27,8 +27,8 @@ class ParametersDialog : public QDialog {
   double GetRidgeThreshold() {
     return ridge_threshold_edit_->text().toDouble();
   }
-  double GetForeground() {return foreground_edit_->text().toDouble();}
-  double GetBackground() {return background_edit_->text().toDouble();}
+  unsigned short GetForeground() {return foreground_edit_->text().toUShort();}
+  unsigned short GetBackground() {return background_edit_->text().toUShort();}
   double GetSpacing() {return spacing_edit_->text().toDouble();}
   bool InitializeZ() {return initialize_z_check_->isChecked();}
   unsigned GetMinSnakeLength() {

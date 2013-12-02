@@ -106,10 +106,10 @@ void Viewer::SetupImage(ImageType::Pointer image) {
   ConnectorType::Pointer connector = ConnectorType::New();
   connector->SetInput(image);
   connector->Update();
-  vtkSmartPointer<vtkImageCast> caster = vtkSmartPointer<vtkImageCast>::New();
-  caster->SetInputData(connector->GetOutput());
-  caster->SetOutputScalarTypeToUnsignedShort();
-  caster->Update();
+  // vtkSmartPointer<vtkImageCast> caster = vtkSmartPointer<vtkImageCast>::New();
+  // caster->SetInputData(connector->GetOutput());
+  // caster->SetOutputScalarTypeToUnsignedShort();
+  // caster->Update();
 
   typedef itk::StatisticsImageFilter<ImageType> FilterType;
   FilterType::Pointer filter = FilterType::New();
@@ -122,12 +122,15 @@ void Viewer::SetupImage(ImageType::Pointer image) {
   mip_min_intensity_ = min_intensity + 0.05 * (max_intensity - min_intensity);
   mip_max_intensity_ = max_intensity;
 
-  this->SetupSlicePlanes(caster->GetOutput());
-  this->SetupMIPRendering(caster->GetOutput());
+  // this->SetupSlicePlanes(caster->GetOutput());
+  // this->SetupMIPRendering(caster->GetOutput());
+  this->SetupSlicePlanes(connector->GetOutput());
+  this->SetupMIPRendering(connector->GetOutput());
   this->SetupOrientationMarker();
   this->SetupUpperLeftCornerText(min_intensity, max_intensity);
   this->SetupBoundingBox();
-  this->SetupCubeAxes(caster->GetOutput());
+  // this->SetupCubeAxes(caster->GetOutput());
+  this->SetupCubeAxes(connector->GetOutput());
 }
 
 void Viewer::SetupSlicePlanes(vtkImageData *data) {

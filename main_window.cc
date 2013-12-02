@@ -665,7 +665,7 @@ void MainWindow::InitializeSnakes() {
   multisnake_->WriteParameters(std::cout);
   std::cout << "============================================" << std::endl;
 
-  multisnake_->ScaleImageIntensity();
+  // multisnake_->ScaleImageIntensity();
   multisnake_->ComputeImageGradient();
   multisnake_->InitializeSnakes();
   QString msg = QString::number(multisnake_->GetNumberOfInitialSnakes()) +
@@ -798,12 +798,12 @@ void MainWindow::ShowParametersDialog() {
 void MainWindow::SetParameters() {
   multisnake_->set_intensity_scaling(
       parameters_dialog_->GetIntensityScaling());
+  Snake::set_intensity_scaling(multisnake_->intensity_scaling());
   multisnake_->set_sigma(parameters_dialog_->GetSigma());
   multisnake_->set_ridge_threshold(parameters_dialog_->GetRidgeThreshold());
   multisnake_->set_foreground(parameters_dialog_->GetForeground());
   multisnake_->set_background(parameters_dialog_->GetBackground());
-  Snake::set_background(multisnake_->background() *
-                        multisnake_->intensity_scaling());
+  Snake::set_background(multisnake_->background());
   Snake::set_desired_spacing(parameters_dialog_->GetSpacing());
   multisnake_->set_initialize_z(parameters_dialog_->InitializeZ());
   Snake::set_minimum_length(parameters_dialog_->GetMinSnakeLength());

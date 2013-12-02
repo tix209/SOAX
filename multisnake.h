@@ -41,7 +41,6 @@ class Multisnake {
 
   double intensity_scaling() const  {return intensity_scaling_;}
   void set_intensity_scaling(double scale) {intensity_scaling_ = scale;}
-  bool intensity_scaled() const {return intensity_scaled_;}
 
   double sigma() const {return sigma_;}
   void set_sigma(double sigma) {sigma_ = sigma;}
@@ -49,21 +48,21 @@ class Multisnake {
   double ridge_threshold() const {return ridge_threshold_;}
   void set_ridge_threshold(double threshold) {ridge_threshold_ = threshold;}
 
-  double foreground() const {return foreground_;}
-  void set_foreground(double foreground) {foreground_ = foreground;}
+  unsigned short foreground() const {return foreground_;}
+  void set_foreground(unsigned short foreground) {foreground_ = foreground;}
 
-  double background() const {return background_;}
-  void set_background(double background) {background_ = background;}
+  unsigned short background() const {return background_;}
+  void set_background(unsigned short background) {background_ = background;}
 
   bool initialize_z() const {return initialize_z_;}
   void set_initialize_z(bool init_z) {initialize_z_ = init_z;}
 
   SolverBank *solver_bank() const {return solver_bank_;}
 
-  /*
-   * Multiply the image intensity by a constant factor.
-   */
-  void ScaleImageIntensity();
+  // /*
+  //  * Multiply the image intensity by a constant factor.
+  //  */
+  // void ScaleImageIntensity();
 
   /*
    * Compute image gradient field for both snake initialization and
@@ -245,11 +244,6 @@ class Multisnake {
   double intensity_scaling_;
 
   /*
-   * True if image intensity is scaled.
-   */
-  bool intensity_scaled_;
-
-  /*
    * Gaussian kernel size for smoothing the image.
    */
   double sigma_;
@@ -267,8 +261,8 @@ class Multisnake {
    * stretch, voxels with intensity below background_ are not used as
    * samples.
    */
-  double foreground_;
-  double background_;
+  unsigned short foreground_;
+  unsigned short background_;
 
   // /*
   //  * The distance between adjacent snake points the snakes try to maintain.

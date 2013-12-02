@@ -27,8 +27,8 @@ typedef itk::Point<double, kDimension> PointType;
 typedef std::deque<PointType>  PointContainer;
 typedef PointContainer::iterator PointIterator;
 typedef PointContainer::const_iterator PointConstIterator;
-typedef itk::Image<double, kDimension> ImageType;
-typedef itk::Image<unsigned short, kDimension> OutputImageType;
+// typedef itk::Image<double, kDimension> ImageType;
+typedef itk::Image<unsigned short, kDimension> ImageType;
 typedef itk::Image<VectorType, kDimension> VectorImageType;
 
 class Snake;

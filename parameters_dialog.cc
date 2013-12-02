@@ -66,33 +66,33 @@ void ParametersDialog::DisableOKButton() {
 
 QGroupBox * ParametersDialog::CreateSnakeGroup() {
   QGroupBox *gp = new QGroupBox("");
-  intensity_scaling_edit_ = new QLineEdit("0.002");
-  sigma_edit_ = new QLineEdit("1.0");
-  ridge_threshold_edit_ = new QLineEdit("0.005");
-  foreground_edit_ = new QLineEdit("1000");
+  intensity_scaling_edit_ = new QLineEdit("0.0");
+  sigma_edit_ = new QLineEdit("0.0");
+  ridge_threshold_edit_ = new QLineEdit("0.0");
+  foreground_edit_ = new QLineEdit("0");
   background_edit_ = new QLineEdit("0");
   spacing_edit_ = new QLineEdit("1.0");
-  min_snake_length_edit_ = new QLineEdit("10");
-  max_iterations_edit_ = new QLineEdit("5000");
-  change_threshold_edit_ = new QLineEdit("0.05");
-  check_period_edit_ = new QLineEdit("100");
-  iterations_per_press_edit_ = new QLineEdit("100");
-  alpha_edit_ = new QLineEdit("0.04");
-  beta_edit_ = new QLineEdit("0.04");
-  gamma_edit_ = new QLineEdit("2.0");
-  external_factor_edit_ = new QLineEdit("4.0");
-  stretch_factor_edit_ = new QLineEdit("3.0");
-  number_of_sectors_edit_ = new QLineEdit("8");
-  radial_near_edit_ = new QLineEdit("3");
-  radial_far_edit_ = new QLineEdit("6");
-  delta_edit_ = new QLineEdit("4");
-  overlap_threshold_edit_ = new QLineEdit("1.0");
-  grouping_distance_threshold_edit_ = new QLineEdit("4.0");
-  grouping_delta_edit_ = new QLineEdit("6");
-  direction_threshold_edit_ = new QLineEdit("2.1");
+  min_snake_length_edit_ = new QLineEdit("0.0");
+  max_iterations_edit_ = new QLineEdit("0");
+  change_threshold_edit_ = new QLineEdit("0.0");
+  check_period_edit_ = new QLineEdit("0");
+  iterations_per_press_edit_ = new QLineEdit("0");
+  alpha_edit_ = new QLineEdit("0.0");
+  beta_edit_ = new QLineEdit("0.0");
+  gamma_edit_ = new QLineEdit("0.0");
+  external_factor_edit_ = new QLineEdit("0.0");
+  stretch_factor_edit_ = new QLineEdit("0.0");
+  number_of_sectors_edit_ = new QLineEdit("0");
+  radial_near_edit_ = new QLineEdit("0");
+  radial_far_edit_ = new QLineEdit("0");
+  delta_edit_ = new QLineEdit("0");
+  overlap_threshold_edit_ = new QLineEdit("0.0");
+  grouping_distance_threshold_edit_ = new QLineEdit("0.0");
+  grouping_delta_edit_ = new QLineEdit("0");
+  direction_threshold_edit_ = new QLineEdit("0.0");
 
   initialize_z_check_ = new QCheckBox(tr("Init z"));
-  initialize_z_check_->setChecked(true);
+  initialize_z_check_->setChecked(false);
   damp_z_check_ = new QCheckBox(tr("Damp z"));
   damp_z_check_->setChecked(false);
 

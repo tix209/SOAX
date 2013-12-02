@@ -18,8 +18,8 @@ namespace soax {
 
 Multisnake::Multisnake() :
     image_(NULL), external_force_(NULL), intensity_scaling_(0.0),
-    intensity_scaled_(false), sigma_(0.0), ridge_threshold_(0.0),
-    foreground_(0.0), background_(0.0), initialize_z_(false) {
+    sigma_(0.0), ridge_threshold_(0.0), foreground_(0), background_(0),
+    initialize_z_(false) {
   interpolator_ = InterpolatorType::New();
   vector_interpolator_ = VectorInterpolatorType::New();
   transform_ = TransformType::New();
@@ -40,7 +40,6 @@ void Multisnake::Reset() {
   image_filename_ = "";
   image_ = NULL;
   external_force_ = NULL;
-  intensity_scaled_ = false;
   solver_bank_->Reset();
 }
 
@@ -56,6 +55,7 @@ void Multisnake::LoadImage(const std::string &filename) {
     std::cerr << e << std::endl;
   }
   image_filename_ = filename;
+  interpolator_->SetInputImage(image_);
   // const ImageType::SizeType &size =
   //     image_->GetLargestPossibleRegion().GetSize();
   // std::cout << "Image size: " << size << std::endl;
@@ -75,17 +75,11 @@ PointType Multisnake::GetImageCenter() const {
 
 void Multisnake::SaveAsIsotropicImage(const std::string &filename,
                                       double z_spacing) {
-  if (intensity_scaled_) {
-    std::cerr << "Please save as isotropic right after loading an image."
-              << std::endl;
-    return;
-  }
-
   typedef itk::BSplineInterpolateImageFunction<ImageType, double, double>
       InterpolatorType;
   InterpolatorType::Pointer interp = InterpolatorType::New();
   interp->SetSplineOrder(3);
-  typedef itk::ResampleImageFilter<ImageType, OutputImageType> ResamplerType;
+  typedef itk::ResampleImageFilter<ImageType, ImageType> ResamplerType;
   ResamplerType::Pointer resampler = ResamplerType::New();
   resampler->SetInterpolator(interp);
   resampler->SetOutputOrigin(image_->GetOrigin());
@@ -112,7 +106,7 @@ void Multisnake::SaveAsIsotropicImage(const std::string &filename,
   resampler->SetDefaultPixelValue(0.0);
   resampler->SetInput(image_);
 
-  typedef itk::ImageFileWriter<OutputImageType> WriterType;
+  typedef itk::ImageFileWriter<ImageType> WriterType;
   WriterType::Pointer writer = WriterType::New();
   writer->SetFileName(filename);
   writer->SetInput(resampler->GetOutput());
@@ -141,21 +135,23 @@ void Multisnake::LoadParameters(const std::string &filename) {
     converter >> name >> value;
     this->AssignParameters(name, value);
   }
-  Snake::set_background(background_ * intensity_scaling_);
+  // Snake::set_background(background_ * intensity_scaling_);
 }
 
 void Multisnake::AssignParameters(const std::string &name,
                                   const std::string &value) {
   if (name == "intensity-scaling") {
     intensity_scaling_ = String2Double(value);
+    Snake::set_intensity_scaling(intensity_scaling_);
   } else if (name == "smoothing") {
     sigma_ = String2Double(value);
   } else if (name == "grad-diff") {
     ridge_threshold_ = String2Double(value);
   } else if (name == "foreground") {
-    foreground_ = String2Double(value);
+    foreground_ = String2UShort(value);
   } else if (name == "background") {
-    background_ = String2Double(value);
+    background_ = String2UShort(value);
+    Snake::set_background(background_);
   } else if (name == "spacing") {
     Snake::set_desired_spacing(String2Double(value));
   } else if (name == "init-z") {
@@ -201,31 +197,6 @@ void Multisnake::AssignParameters(const std::string &name,
 }
 
 
-// void Multisnake::UpdateSnakeParameters() {
-//   Snake::set_background(background_ * intensity_scaling_);
-//   Snake::set_desired_spacing(desired_spacing_);
-//   Snake::set_minimum_length(minimum_length_);
-//   Snake::set_max_iterations(max_iterations_);
-//   Snake::set_change_threshold(change_threshold_);
-//   Snake::set_check_period(check_period_);
-//   Snake::set_gamma(gamma_);
-//   Snake::set_external_factor(external_factor_);
-//   Snake::set_stretch_factor(stretch_factor_);
-//   Snake::set_number_of_sectors(number_of_sectors_);
-//   Snake::set_radial_near(radial_near_);
-//   Snake::set_radial_far(radial_far_);
-//   Snake::set_delta(delta_);
-//   Snake::set_overlap_threshold(overlap_threshold_);
-//   Snake::set_grouping_distance_threshold(grouping_distance_threshold_);
-//   Snake::set_grouping_delta(grouping_delta_);
-//   Snake::set_direction_threshold(direction_threshold_);
-//   Snake::set_damp_z(damp_z_);
-//   Snake::set_solver_bank(solver_bank_);
-//   solver_bank_->set_alpha(alpha_);
-//   solver_bank_->set_beta(beta_);
-//   solver_bank_->set_gamma(gamma_);
-// }
-
 void Multisnake::SaveParameters(const std::string &filename) const {
   std::ofstream outfile;
   outfile.open(filename.c_str());
@@ -268,61 +239,20 @@ void Multisnake::WriteParameters(std::ostream &os) const {
   os << std::noboolalpha;
 }
 
-// void Multisnake::PrintParameters() const {
-//   std::cout << "============ Current Parameters ============" << std::endl;
-//   std::cout << std::boolalpha;
-//   std::cout << "intensity-scaling: " << intensity_scaling_ << std::endl;
-//   std::cout << "smoothing: " << sigma_ << std::endl;
-//   std::cout << "grad-diff: " << ridge_threshold_ << std::endl;
-//   std::cout << "foreground: " << foreground_ << std::endl;
-//   std::cout << "background: " << background_ << std::endl;
-//   std::cout << "init-z: " << initialize_z_ << std::endl;
-//   std::cout << "spacing: " << desired_spacing_ << std::endl;
-//   std::cout << "minimum-size: " << minimum_length_ << std::endl;
-//   std::cout << "max-iterations: " << max_iterations_ << std::endl;
-//   std::cout << "change-threshold: " << change_threshold_ << std::endl;
-//   std::cout << "check-period: " << check_period_ << std::endl;
-//   std::cout << "alpha: " << alpha_ << std::endl;
-//   std::cout << "beta: " << beta_ << std::endl;
-//   std::cout << "gamma: " << gamma_ << std::endl;
-//   std::cout << "weight: " << external_factor_ << std::endl;
-//   std::cout << "stretch: " << stretch_factor_ << std::endl;
-//   std::cout << "nsector: " << number_of_sectors_ << std::endl;
-//   std::cout << "radial-near: " << radial_near_ << std::endl;
-//   std::cout << "radial-far: " << radial_far_ << std::endl;
-//   std::cout << "delta: " << delta_ << std::endl;
-//   std::cout << "overlap-threshold: " << overlap_threshold_ << std::endl;
-//   std::cout << "grouping-distance-threshold: " << grouping_distance_threshold_
-//             << std::endl;
-//   std::cout << "grouping-delta: " << grouping_delta_ << std::endl;
-//   std::cout << "direction-threshold: " << direction_threshold_ << std::endl;
-//   std::cout << "damp-z: " << damp_z_ << std::endl;
-//   std::cout << "============================================" << std::endl;
-//   std::cout << std::noboolalpha;
-// }
-
-void Multisnake::ScaleImageIntensity() {
-  typedef itk::ShiftScaleImageFilter<ImageType, ImageType> FilterType;
-  FilterType::Pointer filter = FilterType::New();
-  filter->SetInput(image_);
-  filter->SetScale(intensity_scaling_);
-  filter->SetShift(0.0);
-  image_ = filter->GetOutput();
-  try {
-    filter->Update();
-  } catch (itk::ExceptionObject &e) {
-    std::cerr << "Exception caught when scaling image intensity!\n"
-              << e << std::endl;
-  }
-  intensity_scaled_ = true;
-  interpolator_->SetInputImage(image_);
-}
-
 void Multisnake::ComputeImageGradient() {
+  typedef itk::Image<double, kDimension> InternalImageType;
+  typedef itk::ShiftScaleImageFilter<ImageType, InternalImageType> ScalerType;
+  ScalerType::Pointer scaler = ScalerType::New();
+  scaler->SetInput(image_);
+  scaler->SetScale(intensity_scaling_);
+  scaler->SetShift(0.0);
+  scaler->Update();
+
   if (sigma_ < 0.01) { // no smoothing
-    typedef itk::GradientImageFilter<ImageType> FilterType;
+    typedef itk::GradientImageFilter<InternalImageType> FilterType;
     FilterType::Pointer filter = FilterType::New();
-    filter->SetInput(image_);
+    // filter->SetInput(image_);
+    filter->SetInput(scaler->GetOutput());
     typedef itk::VectorCastImageFilter<FilterType::OutputImageType,
                                        VectorImageType> CasterType;
     CasterType::Pointer caster = CasterType::New();
@@ -337,10 +267,11 @@ void Multisnake::ComputeImageGradient() {
     external_force_->DisconnectPipeline();
   } else {
     typedef itk::GradientRecursiveGaussianImageFilter<
-      ImageType, VectorImageType> FilterType;
+      InternalImageType, VectorImageType> FilterType;
     FilterType::Pointer filter = FilterType::New();
     filter->SetSigma(sigma_);
-    filter->SetInput(image_);
+    // filter->SetInput(image_);
+    filter->SetInput(scaler->GetOutput());
     try {
       filter->Update();
     } catch( itk::ExceptionObject & e ) {
@@ -436,12 +367,9 @@ void Multisnake::GenerateCandidates(
                           candidate_image->GetLargestPossibleRegion());
   ConstIteratorType iter2(image_, image_->GetLargestPossibleRegion());
 
-  const double foreground = foreground_ * intensity_scaling_;
-  const double background = background_ * intensity_scaling_;
-
   for (iter.GoToBegin(), iter2.GoToBegin(); !iter.IsAtEnd();
        ++iter, ++iter2) {
-    if (iter2.Value() > foreground || iter2.Value() < background)
+    if (iter2.Value() > foreground_ || iter2.Value() < background_)
       continue;
     BoolVectorImageType::IndexType index = iter.GetIndex();
 
@@ -864,8 +792,6 @@ void Multisnake::SaveSnakes(const SnakeContainer &snakes,
     outfile << "#" << (*it)->open() << std::endl;
     for (unsigned j = 0; j != (*it)->GetSize(); ++j) {
       double intensity = interpolator_->Evaluate((*it)->GetPoint(j));
-      if (intensity_scaled_)
-        intensity /= intensity_scaling_;
       outfile << snake_index << "\t" << j << "\t";
       outfile << std::setw(column_width) << (*it)->GetX(j)
               << std::setw(column_width) << (*it)->GetY(j)
@@ -1013,7 +939,7 @@ void Multisnake::EvaluateByFFunction(double threshold, double penalizer,
 
   double fvalue = 0.0;
   if (!converged_snakes_.empty()) {
-    interpolator_->SetInputImage(image_);
+    // interpolator_->SetInputImage(image_);
     unsigned total_npoints = 0;
     unsigned npoints_low_snr = 0;
     for (SnakeConstIterator it = converged_snakes_.begin();
@@ -1049,7 +975,7 @@ void Multisnake::EvaluateByFFunction(double threshold, double penalizer,
 
 void Multisnake::PrintGroundTruthLocalSNRValues(int radial_near, int radial_far) {
   if (comparing_snakes1_.empty()) return;
-  interpolator_->SetInputImage(image_);
+  // interpolator_->SetInputImage(image_);
   DataContainer snrs;
   for (SnakeConstIterator it = comparing_snakes1_.begin();
        it != comparing_snakes1_.end(); ++it) {
@@ -1136,7 +1062,7 @@ void Multisnake::ComputePointDensity(const PointType &center, double radius,
     voxel_counts[i] = 0;
   }
 
-  interpolator_->SetInputImage(image_);
+  // interpolator_->SetInputImage(image_);
 
   for (SnakeConstIterator it = converged_snakes_.begin();
        it != converged_snakes_.end(); ++it) {
@@ -1144,13 +1070,10 @@ void Multisnake::ComputePointDensity(const PointType &center, double radius,
       const PointType &p = (*it)->GetPoint(i);
       double r = center.EuclideanDistanceTo(p);
       unsigned index_r = static_cast<unsigned>(r);
-      double intensity = intensity_scaled_ ?
-          interpolator_->Evaluate(p) / intensity_scaling_ :
-          interpolator_->Evaluate(p);
-      // std::cout << intensity << std::endl;
+
       if (index_r < max_r) {
         snaxel_counts[index_r]++;
-        snake_intensities[index_r] += intensity;
+        snake_intensities[index_r] += interpolator_->Evaluate(p);
       }
     }
   }
@@ -1170,10 +1093,7 @@ void Multisnake::ComputePointDensity(const PointType &center, double radius,
     unsigned index_r = static_cast<unsigned>(r);
     if (index_r < max_r) {
       voxel_counts[index_r]++;
-      if (intensity_scaled_)
-        voxel_intensities[index_r] += iter.Value() / intensity_scaling_;
-      else
-        voxel_intensities[index_r] += iter.Value();
+      voxel_intensities[index_r] += iter.Value();
     }
     ++iter;
   }

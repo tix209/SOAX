@@ -47,8 +47,15 @@ class Snake {
 
   static void set_solver_bank(SolverBank *bank) {solver_bank_ = bank;}
 
-  // static double background() {return background_;}
-  static void set_background(double background) {background_ = background;}
+  static double intensity_scaling() {return intensity_scaling_;}
+  static void set_intensity_scaling(double scale) {
+    intensity_scaling_ = scale;
+  }
+
+  static unsigned short background() {return background_;}
+  static void set_background(unsigned short background) {
+    background_ = background;
+  }
 
   static double desired_spacing() {return desired_spacing_;}
   static void set_desired_spacing(double spacing) {
@@ -267,7 +274,8 @@ class Snake {
 
   static SolverBank *solver_bank_;
 
-  static double background_;
+  static double intensity_scaling_;
+  static unsigned short background_;
 
   static double desired_spacing_;
 

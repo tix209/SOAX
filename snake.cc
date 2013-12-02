@@ -6,7 +6,8 @@
 namespace soax {
 
 SolverBank *Snake::solver_bank_ = NULL;
-double Snake::background_ = 0.0;
+double Snake::intensity_scaling_ = 0.0;
+unsigned short Snake::background_ = 0.0;
 double Snake::desired_spacing_ = 1.0;
 double Snake::minimum_length_ = 0.0;
 unsigned Snake::max_iterations_ = 0;
@@ -457,7 +458,7 @@ double Snake::ComputeLocalStretch(bool is_head) {
   // and actin rings.
   double fg = this->ComputeCircularMeanIntensity(is_head, true);
 
-  if (fg < background_ + kEpsilon)
+  if (fg < background_ * intensity_scaling_ + kEpsilon)
     return 0.0;
 
   double bg = this->ComputeCircularMeanIntensity(is_head, false);
@@ -480,7 +481,8 @@ double Snake::ComputeCircularMeanIntensity(bool is_head, bool is_fg) {
       PointType sample_point;
       this->ComputeSamplePoint(sample_point, vertex, radial, normal, d, s);
       if (this->IsInsideImage(sample_point)) {
-        intensities.push_back(interpolator_->Evaluate(sample_point));
+        double intensity = interpolator_->Evaluate(sample_point);
+        intensities.push_back(intensity_scaling_ * intensity);
       }
     }
   }

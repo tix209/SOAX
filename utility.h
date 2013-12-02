@@ -8,6 +8,7 @@ namespace soax {
 
 double String2Double(const std::string &s);
 unsigned String2Unsigned(const std::string &s);
+unsigned short String2UShort(const std::string &s);
 std::string GetImagePath(const std::string &snake_path);
 double Mean(const DataContainer &data);
 double StandardDeviation(const DataContainer &data, double mean);

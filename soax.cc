@@ -78,7 +78,6 @@ int main(int argc, char **argv) {
     multisnake.WriteParameters(std::cout);
     std::cout << "============================================" << std::endl;
 
-    multisnake.ScaleImageIntensity();
     multisnake.ComputeImageGradient();
     multisnake.InitializeSnakes();
 

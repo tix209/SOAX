@@ -23,6 +23,15 @@ unsigned String2Unsigned(const std::string &s) {
   return 0;
 }
 
+unsigned short String2UShort(const std::string &s) {
+  std::stringstream converter(s);
+  unsigned short value;
+  if (converter >> value)
+    return value;
+  std::cerr << "Conversion to unsigned failed!" << std::endl;
+  return 0;
+}
+
 std::string GetImagePath(const std::string &snake_path) {
   std::ifstream infile(snake_path.c_str());
   if (!infile) {

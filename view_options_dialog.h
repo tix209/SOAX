@@ -31,6 +31,9 @@ class ViewOptionsDialog : public QDialog {
   double GetClipSpan() const;
   void SetClipSpan(double span);
 
+  unsigned GetColorSegmentStep() const;
+  void SetColorSegmentStep(unsigned step);
+
  public slots:
   void EnableOKButton();
   void DisableOKButton();
@@ -39,12 +42,14 @@ class ViewOptionsDialog : public QDialog {
   QGroupBox *CreateSlicePlanesGroup();
   QGroupBox *CreateMIPGroup();
   QGroupBox *CreateClipGroup();
+  QGroupBox *CreateColorOrientationGroup();
 
   QLineEdit *window_edit_;
   QLineEdit *level_edit_;
   QLineEdit *min_intensity_edit_;
   QLineEdit *max_intensity_edit_;
   QLineEdit *clip_span_edit_;
+  QLineEdit *color_segment_step_edit_;
 
   QDialogButtonBox *button_box_;
 

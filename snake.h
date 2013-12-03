@@ -21,6 +21,7 @@ class Snake {
   bool viable() const {return viable_;}
   double length() const {return length_;}
   double spacing() const {return spacing_;}
+  bool converged() const {return converged_;}
 
   bool initial_state() const {return initial_state_;}
   void set_initial_state(bool initial) {initial_state_ = initial;}
@@ -44,6 +45,11 @@ class Snake {
 
   void PrintSelf() const;
   void PrintVectorContainer(const VectorContainer &vc);
+
+  void Trim(unsigned start, unsigned end);
+  void ExtendHead(const PointType &p);
+  void ExtendTail(const PointType &p);
+  void TrimAndInsert(unsigned start, unsigned end, const PointType &p);
 
   static void set_solver_bank(SolverBank *bank) {solver_bank_ = bank;}
 
@@ -125,7 +131,7 @@ class Snake {
   const SnakeContainer &subsnakes() const {return subsnakes_;}
 
   void Evolve(const SnakeContainer &converged_snakes, unsigned max_iter);
-  void EvolveWithTipFixed(unsigned max_iter);
+  void EvolveWithTipFixed(unsigned max_iter = iterations_per_press_);
   void UpdateHookedIndices();
   void CopySubSnakes(SnakeContainer &c);
   bool PassThrough(const PointType &p, double threshold) const;

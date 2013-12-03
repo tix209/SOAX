@@ -13,7 +13,7 @@ double Snake::minimum_length_ = 0.0;
 unsigned Snake::max_iterations_ = 0;
 double Snake::change_threshold_ = 0.0;
 unsigned Snake::check_period_ = 0;
-unsigned Snake::iterations_per_press_ = 0;
+unsigned Snake::iterations_per_press_ = 100;
 double Snake::gamma_ = 0.0;
 double Snake::external_factor_ = 0.0;
 double Snake::stretch_factor_ = 0.0;
@@ -773,6 +773,29 @@ VectorType Snake::ComputeUnitTangentVector(unsigned index) {
     tangent.Normalize();
     return tangent;
   }
+}
+
+void Snake::Trim(unsigned start, unsigned end) {
+  vertices_.erase(vertices_.begin() + start,
+                  vertices_.begin() + end);
+}
+
+void Snake::ExtendHead(const PointType &p) {
+  vertices_.push_front(p);
+}
+
+void Snake::ExtendTail(const PointType &p) {
+  vertices_.push_back(p);
+}
+
+void Snake::TrimAndInsert(unsigned start, unsigned end, const PointType &p) {
+  if (start > end) {
+    unsigned temp = start;
+    start = end;
+    end = temp;
+  }
+  vertices_.insert(vertices_.erase(vertices_.begin() + start,
+                                   vertices_.begin() + end), p);
 }
 
 } // namespace soax

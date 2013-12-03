@@ -33,6 +33,7 @@ class Multisnake {
   void SaveAsIsotropicImage(const std::string &filename, double z_spacing);
 
   ImageType::Pointer image() const {return image_;}
+  VectorImageType::Pointer external_force() const {return external_force_;}
 
   void LoadParameters(const std::string &filename);
   void UpdateSnakeParameters();
@@ -97,6 +98,7 @@ class Multisnake {
   void CutSnakesAtTJunctions();
   void GroupSnakes();
 
+  Junctions & junctions() {return junctions_;}
   const PointContainer &GetJunctions() const {
     return junctions_.junction_points();
   }
@@ -139,11 +141,17 @@ class Multisnake {
                         const std::string &filename) const;
   void ComputeSphericalOrientation(const std::string &filename) const;
 
+  void DeleteSnakes(const SnakeSet &snakes);
+
+  Snake * PopLastInitialSnake();
+
+  void AddInitialSnake(Snake *s) {initial_snakes_.push_back(s);}
+  void AddConvergedSnake(Snake *s) {converged_snakes_.push_back(s);}
+  void AddSubsnakesToInitialSnakes(Snake *s);
+
  private:
   typedef itk::Vector<bool, kDimension> BoolVectorType;
   typedef itk::Image<BoolVectorType, kDimension> BoolVectorImageType;
-  typedef std::set<Snake *> SnakeSet;
-
 
   /*
    * Initialize a new bool vector image used for snake initialization.

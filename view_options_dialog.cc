@@ -8,6 +8,7 @@ ViewOptionsDialog::ViewOptionsDialog(QWidget *parent) : QDialog(parent) {
   layout->addWidget(this->CreateSlicePlanesGroup());
   layout->addWidget(this->CreateMIPGroup());
   layout->addWidget(this->CreateClipGroup());
+  layout->addWidget(this->CreateColorOrientationGroup());
   button_box_ = new QDialogButtonBox(QDialogButtonBox::Ok |
                                      QDialogButtonBox::Cancel);
 
@@ -77,6 +78,20 @@ QGroupBox * ViewOptionsDialog::CreateClipGroup() {
   return gb;
 }
 
+QGroupBox *ViewOptionsDialog::CreateColorOrientationGroup() {
+  QGroupBox *gb = new QGroupBox(tr("Color Snake Orientation"));
+  color_segment_step_edit_ = new QLineEdit("0");
+  connect(color_segment_step_edit_, SIGNAL(textChanged(const QString &)),
+          this, SLOT(EnableOKButton()));
+  QLabel *label = new QLabel(tr("Snake segment size"));
+  QHBoxLayout *layout = new QHBoxLayout;
+  layout->addWidget(label);
+  layout->addWidget(color_segment_step_edit_);
+  layout->addStretch();
+  gb->setLayout(layout);
+  return gb;
+}
+
 void ViewOptionsDialog::EnableOKButton() {
   button_box_->button(QDialogButtonBox::Ok)->setEnabled(true);
 }
@@ -134,6 +149,16 @@ void ViewOptionsDialog::SetClipSpan(double span) {
   QString s;
   s.setNum(span);
   clip_span_edit_->setText(s);
+}
+
+unsigned ViewOptionsDialog::GetColorSegmentStep() const {
+  return color_segment_step_edit_->text().toUInt();
+}
+
+void ViewOptionsDialog::SetColorSegmentStep(unsigned step) {
+  QString s;
+  s.setNum(step);
+  color_segment_step_edit_->setText(s);
 }
 
 } // namespace soax

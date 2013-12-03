@@ -1192,5 +1192,31 @@ void Multisnake::ComputeThetaPhi(VectorType vector,
   }
 }
 
+void Multisnake::DeleteSnakes(const SnakeSet &snakes) {
+  for (SnakeSet::const_iterator it = snakes.begin();
+       it != snakes.end(); ++it) {
+    SnakeIterator it2 = std::find(converged_snakes_.begin(),
+                                  converged_snakes_.end(), *it);
+    if (it2 != converged_snakes_.end()) {
+      converged_snakes_.erase(it2);
+    } else {
+      std::cout << "Couldn't locate snake " << *it << " in converged snakes."
+                << std::endl;
+    }
+  }
+}
+
+Snake * Multisnake::PopLastInitialSnake() {
+  Snake *s = initial_snakes_.back();
+  initial_snakes_.pop_back();
+  return s;
+}
+
+
+void Multisnake::AddSubsnakesToInitialSnakes(Snake *s) {
+  initial_snakes_.insert(initial_snakes_.end(),
+                         s->subsnakes().begin(), s->subsnakes().end());
+}
+
 
 } // namespace soax

@@ -29,6 +29,7 @@
 #include "vtkTIFFWriter.h"
 #include "vtkGL2PSExporter.h"
 #include "vtkEventQtSlotConnect.h"
+#include "vtkPointPicker.h"
 
 #include "itkStatisticsImageFilter.h"
 #include "snake.h"
@@ -44,8 +45,12 @@ double Viewer::kGreen[3] = {0.0, 1.0, 0.0};
 double Viewer::kCyan[3] = {0.0, 1.0, 1.0};
 double Viewer::kBlue[3] = {0.0, 0.0, 1.0};
 
-Viewer::Viewer(): window_(0.0), level_(0.0), mip_min_intensity_(0.0),
-                  mip_max_intensity_(0.0), clip_span_(6.0) {
+Viewer::Viewer():
+    window_(0.0), level_(0.0), mip_min_intensity_(0.0),
+    mip_max_intensity_(0.0), clip_span_(6.0), color_segment_step_(3),
+    trimmed_actor_(NULL), selected_snake_(NULL), trimmed_snake_(NULL),
+    trim_tip_index_(kBigNumber), trim_body_index1_(kBigNumber),
+    trim_body_index2_(kBigNumber), is_trim_body_second_click_(false) {
   qvtk_ = new QVTKWidget;
   renderer_ = vtkSmartPointer<vtkRenderer>::New();
   qvtk_->GetRenderWindow()->AddRenderer(renderer_);
@@ -53,7 +58,7 @@ Viewer::Viewer(): window_(0.0), level_(0.0), mip_min_intensity_(0.0),
   renderer_->SetActiveCamera(camera_);
 
   for (unsigned i = 0; i < kDimension; i++) {
-    slice_planes_[i] = vtkSmartPointer<vtkImagePlaneWidget>::New();
+    slice_planes_[i] = vtkImagePlaneWidget::New();
     slice_planes_[i]->SetResliceInterpolateToCubic();
     slice_planes_[i]->DisplayTextOn();
     slice_planes_[i]->SetInteractor(qvtk_->GetInteractor());
@@ -74,10 +79,18 @@ Viewer::Viewer(): window_(0.0), level_(0.0), mip_min_intensity_(0.0),
   bounding_box_ = vtkSmartPointer<vtkActor>::New();
   slot_connector_ = vtkSmartPointer<vtkEventQtSlotConnect>::New();
   clipped_actor_ = vtkSmartPointer<vtkActor>::New();
+  picker_ = vtkSmartPointer<vtkPointPicker>::New();
+  picker_->SetTolerance(0.01);
+  qvtk_->GetInteractor()->SetPicker(picker_);
+  on_snake_sphere1_ = vtkActor::New();
+  on_snake_sphere2_ = vtkActor::New();
+  off_snake_sphere_ = vtkActor::New();
+  inserted_point_.Fill(-1.0);
 
   snake_color_ = kMagenta;
   comparing_snakes1_color_ = kYellow;
   comparing_snakes2_color_ = kCyan;
+  selected_snake_color_ = kCyan;
   snake_width_ = 3.0;
   comparing_snakes1_width_ = 6.0;
   comparing_snakes2_width_ = 10.0;
@@ -86,9 +99,17 @@ Viewer::Viewer(): window_(0.0), level_(0.0), mip_min_intensity_(0.0),
   comparing_snakes2_opacity_ = 0.3;
   junction_radius_ = 2.0;
   junction_color_ = kGreen;
+  selected_junction_color_ = kBlue;
+  sphere_color_ = kRed;
 }
 
 Viewer::~Viewer() {
+  on_snake_sphere1_->Delete();
+  on_snake_sphere2_->Delete();
+  off_snake_sphere_->Delete();
+  for (unsigned i = 0; i < kDimension; i++) {
+    slice_planes_[i]->Delete();
+  }
   delete qvtk_;
 }
 
@@ -102,6 +123,14 @@ void Viewer::Reset() {
   corner_text_->ClearAllTexts();
   renderer_->RemoveActor(cube_axes_);
   renderer_->RemoveActor(bounding_box_);
+  this->RemoveColorSegments();
+  trimmed_actor_ = NULL;
+  trimmed_snake_ = NULL;
+  trim_tip_index_ = kBigNumber;
+  trim_body_index1_ = kBigNumber;
+  trim_body_index2_ = kBigNumber;
+  is_trim_body_second_click_ = false;
+  inserted_point_.Fill(-1);
   renderer_->ResetCamera();
 }
 
@@ -368,10 +397,11 @@ void Viewer::SetupSnake(Snake *snake, unsigned category) {
 }
 
 vtkActor * Viewer::ActSnake(Snake *snake) {
-  return this->ActSnakeCell(snake, 0, snake->GetSize());
+  return this->ActSnakeSegments(snake, 0, snake->GetSize());
 }
 
-vtkActor * Viewer::ActSnakeCell(Snake *snake, unsigned start, unsigned end) {
+vtkActor * Viewer::ActSnakeSegments(Snake *snake,
+                                    unsigned start, unsigned end) {
   vtkDataSetMapper *mapper = vtkDataSetMapper::New();
   vtkPolyData *curve = this->MakePolyData(snake, start, end);
   mapper->SetInputData(curve);
@@ -454,6 +484,10 @@ void Viewer::SetupAnotherComparingActorProperty(vtkActor *actor) {
   actor->GetProperty()->SetLineWidth(comparing_snakes2_width_);
 }
 
+void Viewer::ChangeSnakeColor(Snake *s, double *color) {
+  snake_actors_[s]->GetProperty()->SetColor(color);
+}
+
 void Viewer::ToggleSnakes(bool state) {
   if (state) {
     for (ActorSnakeMap::iterator it = actor_snakes_.begin();
@@ -477,19 +511,33 @@ void Viewer::RemoveSnakes() {
   }
   snake_actors_.clear();
   actor_snakes_.clear();
-  actor_selected_snakes_.clear();
+  selected_snakes_.clear();
+}
+
+void Viewer::RemoveSnake(Snake *snake) {
+  SnakeActorMap::iterator it = snake_actors_.find(snake);
+  if (it == snake_actors_.end()) {
+    return;
+  }
+
+  vtkActor *actor = it->second;
+  renderer_->RemoveActor(actor);
+  snake_actors_.erase(snake);
+  actor_snakes_.erase(actor);
+  actor->Delete();
 }
 
 void Viewer::SetupJunctions(const PointContainer &points) {
   if (points.empty()) return;
   for (PointConstIterator it = points.begin(); it != points.end(); ++it) {
     vtkActor *s = vtkActor::New();
-    this->SetupSphere(*it, s);
-    junctions_[s] = *it;
+    this->SetupSphere(*it, s, junction_color_);
+    actor_junctions_[s] = *it;
   }
 }
 
-void Viewer::SetupSphere(const PointType &point, vtkActor *sphere) {
+void Viewer::SetupSphere(const PointType &point, vtkActor *sphere,
+                         double *color) {
   vtkSphereSource *source = vtkSphereSource::New();
   source->SetCenter(point[0], point[1], point[2]);
   source->SetRadius(junction_radius_);
@@ -497,7 +545,7 @@ void Viewer::SetupSphere(const PointType &point, vtkActor *sphere) {
   vtkPolyDataMapper *mapper = vtkPolyDataMapper::New();
   mapper->SetInputConnection(source->GetOutputPort());
   sphere->SetMapper(mapper);
-  sphere->GetProperty()->SetColor(junction_color_);
+  sphere->GetProperty()->SetColor(color);
   source->Delete();
   mapper->Delete();
   renderer_->AddActor(sphere);
@@ -505,13 +553,13 @@ void Viewer::SetupSphere(const PointType &point, vtkActor *sphere) {
 
 void Viewer::ToggleJunctions(bool state) {
   if (state) {
-    for (ActorPointMap::const_iterator it = junctions_.begin();
-         it != junctions_.end(); ++it) {
+    for (ActorPointMap::const_iterator it = actor_junctions_.begin();
+         it != actor_junctions_.end(); ++it) {
       renderer_->AddActor(it->first);
     }
   } else {
-    for (ActorPointMap::const_iterator it = junctions_.begin();
-         it != junctions_.end(); ++it) {
+    for (ActorPointMap::const_iterator it = actor_junctions_.begin();
+         it != actor_junctions_.end(); ++it) {
       renderer_->RemoveActor(it->first);
     }
   }
@@ -519,12 +567,12 @@ void Viewer::ToggleJunctions(bool state) {
 }
 
 void Viewer::RemoveJunctions() {
-  for (ActorPointMap::iterator it = junctions_.begin();
-       it != junctions_.end(); ++it) {
+  for (ActorPointMap::iterator it = actor_junctions_.begin();
+       it != actor_junctions_.end(); ++it) {
     renderer_->RemoveActor(it->first);
     it->first->Delete();
   }
-  junctions_.clear();
+  actor_junctions_.clear();
   selected_junctions_.clear();
 }
 
@@ -604,8 +652,616 @@ vtkPolyData * Viewer::MakeClippedPolyData(unsigned axis, double position) {
 }
 
 
-void Viewer::ColorByAzimuthalAngle(bool state) {}
-void Viewer::ColorByPolarAngle(bool state) {}
+void Viewer::ColorByAzimuthalAngle(bool state) {
+  this->ColorSnakes(state, true);
+}
+
+void Viewer::ColorByPolarAngle(bool state) {
+  this->ColorSnakes(state, false);
+}
+
+void Viewer::ColorSnakes(bool state, bool azimuthal) {
+  if (state) {
+    this->SetupColorSegments(azimuthal);
+  } else {
+    for (unsigned i = 0; i < color_segments_.size(); ++i) {
+      renderer_->RemoveActor(color_segments_[i]);
+    }
+  }
+  this->Render();
+}
+
+void Viewer::SetupColorSegments(bool azimuthal) {
+  if (actor_snakes_.empty()) return;
+  for (ActorSnakeMap::const_iterator it = actor_snakes_.begin();
+       it != actor_snakes_.end(); ++it) {
+    unsigned step = color_segment_step_ > it->second->GetSize() - 1 ?
+        it->second->GetSize() - 1 : color_segment_step_;
+    unsigned i = 0;
+    while (i < it->second->GetSize() - step) {
+      // for (unsigned i = 0; i < it->second->GetSize() - step; i += step) {
+      vtkActor *actor = this->ActSnakeSegments(it->second, i, i + step + 1);
+      this->SetupEvolvingActorProperty(actor);
+      double color[3];
+      VectorType vector = it->second->GetPoint(i) -
+          it->second->GetPoint(i + step);
+      this->ComputeColor(vector, azimuthal, color);
+      actor->GetProperty()->SetColor(color);
+      color_segments_.push_back(actor);
+      renderer_->AddActor(actor);
+      i += step;
+    }
+    if (i < it->second->GetSize() - 1) {
+      vtkActor *actor = this->ActSnakeSegments(it->second, i,
+                                               it->second->GetSize());
+      this->SetupEvolvingActorProperty(actor);
+      double color[3];
+      VectorType vector = it->second->GetPoint(i) -
+          it->second->GetTail();
+      this->ComputeColor(vector, azimuthal, color);
+      actor->GetProperty()->SetColor(color);
+      color_segments_.push_back(actor);
+      renderer_->AddActor(actor);
+    }
+  }
+}
+
+void Viewer::ComputeColor(VectorType &vector, bool azimuthal, double *color) {
+  double theta(0.0), phi(0.0);
+  this->ComputeThetaPhi(vector, theta, phi);
+  double hue = 0.0;
+  if (azimuthal) {
+    hue = phi * 2 + 180;
+  } else {
+    hue = theta * 2;
+  }
+  this->ComputeRGBFromHue(hue, color[0], color[1], color[2]);
+}
+
+void Viewer::ComputeThetaPhi(VectorType &vector,
+                             double &theta,
+                             double &phi) {
+  // phi is (-pi/2, +pi/2]
+  // theta is [0, pi)
+
+  const double r = vector.GetNorm();
+  if (std::abs(vector[0]) < kEpsilon && std::abs(vector[1]) < kEpsilon) {
+    // x = y = 0
+    phi = 0;
+    theta = 0;
+  } else if (std::abs(vector[0]) < kEpsilon) {
+    // x = 0, y != 0
+    if (vector[1] < -kEpsilon)
+      vector = -vector;
+
+    phi = 90;
+    theta = std::acos(vector[2]/r) * 180 / kPi;
+  } else {
+    // x != 0
+    if (vector[0] < -kEpsilon)
+      vector = -vector;
+
+    theta = std::acos(vector[2]/r) * 180 / kPi;
+    phi = std::atan(vector[1] / vector[0]) * 180 / kPi;
+  }
+}
+
+void Viewer::ComputeRGBFromHue(double hue, double &red, double &green,
+                               double &blue) {
+  double intensity = 0.5;
+  if (hue < 120) {
+    blue = 0;
+    red = intensity * (1 + std::cos(hue*kPi/180.0) /
+                       std::cos((60-hue)*kPi/180));
+    green = 3*intensity - red - blue;
+  } else if (hue < 240) {
+    double hue1 = hue - 120;
+    red = 0;
+    green = intensity * (1 + std::cos(hue1*kPi/180.0) /
+                         std::cos((60-hue1)*kPi/180));
+    blue = 3*intensity - red -green;
+  } else {
+    double hue1 = hue - 240;
+    green = 0;
+    blue = intensity * (1 + std::cos(hue1*kPi/180.0) /
+                        std::cos((60-hue1)*kPi/180));
+    red = 3*intensity - green - blue;
+  }
+}
+
+void Viewer::RemoveColorSegments() {
+  for (ActorContainer::iterator it = color_segments_.begin();
+       it != color_segments_.end(); ++it) {
+    renderer_->RemoveActor(*it);
+    (*it)->Delete();
+  }
+  color_segments_.clear();
+}
+
+void Viewer::ToggleNone(bool state) {
+  if (state) {
+    slot_connector_->Connect(qvtk_->GetInteractor(),
+                             vtkCommand::LeftButtonPressEvent,
+                             this, SLOT(SelectSnakeForView()));
+    slot_connector_->Connect(qvtk_->GetInteractor(),
+                             vtkCommand::RightButtonPressEvent,
+                             this, SLOT(DeselectSnakeForView()));
+  } else {
+    slot_connector_->Disconnect(qvtk_->GetInteractor(),
+                                vtkCommand::LeftButtonPressEvent,
+                                this, SLOT(SelectSnakeForView()));
+    slot_connector_->Disconnect(qvtk_->GetInteractor(),
+                                vtkCommand::RightButtonPressEvent,
+                                this, SLOT(DeselectSnakeForView()));
+  }
+}
+
+void Viewer::SelectSnakeForView() {
+  picker_->Pick(qvtk_->GetInteractor()->GetEventPosition()[0],
+                qvtk_->GetInteractor()->GetEventPosition()[1],
+                0, renderer_);
+  vtkActor *actor = picker_->GetActor();
+  if (actor) {
+    ActorSnakeMap::const_iterator it = actor_snakes_.find(actor);
+    if (it != actor_snakes_.end()) {
+      actor->GetProperty()->SetColor(selected_snake_color_);
+      selected_snake_ = it->second;
+      it->second->PrintSelf();
+    }
+  }
+}
+
+void Viewer::DeselectSnakeForView() {
+  picker_->Pick(qvtk_->GetInteractor()->GetEventPosition()[0],
+                qvtk_->GetInteractor()->GetEventPosition()[1],
+                0, renderer_);
+  vtkActor *actor = picker_->GetActor();
+  if (actor) {
+    ActorSnakeMap::const_iterator it = actor_snakes_.find(actor);
+    if (it != actor_snakes_.end()) {
+      actor->GetProperty()->SetColor(snake_color_);
+      selected_snake_ = NULL;
+    }
+  }
+}
+
+void Viewer::ToggleDeleteSnake(bool state) {
+  if (state) {
+    slot_connector_->Connect(qvtk_->GetInteractor(),
+                             vtkCommand::LeftButtonPressEvent,
+                             this, SLOT(SelectSnakeForDeletion()));
+    slot_connector_->Connect(qvtk_->GetInteractor(),
+                             vtkCommand::RightButtonPressEvent,
+                             this, SLOT(DeselectSnakeForDeletion()));
+  } else {
+    slot_connector_->Disconnect(qvtk_->GetInteractor(),
+                                vtkCommand::LeftButtonPressEvent,
+                                this, SLOT(SelectSnakeForDeletion()));
+    slot_connector_->Disconnect(qvtk_->GetInteractor(),
+                                vtkCommand::RightButtonPressEvent,
+                                this, SLOT(DeselectSnakeForDeletion()));
+  }
+}
+
+void Viewer::SelectSnakeForDeletion() {
+  picker_->Pick(qvtk_->GetInteractor()->GetEventPosition()[0],
+                qvtk_->GetInteractor()->GetEventPosition()[1],
+                0, renderer_);
+  vtkActor *actor = picker_->GetActor();
+  if (actor) {
+    ActorSnakeMap::const_iterator it = actor_snakes_.find(actor);
+    if (it != actor_snakes_.end()) {
+      actor->GetProperty()->SetColor(selected_snake_color_);
+      selected_snakes_.insert(it->second);
+      it->second->PrintSelf();
+    }
+  }
+}
+
+void Viewer::DeselectSnakeForDeletion() {
+  picker_->Pick(qvtk_->GetInteractor()->GetEventPosition()[0],
+                qvtk_->GetInteractor()->GetEventPosition()[1],
+                0, renderer_);
+  vtkActor *actor = picker_->GetActor();
+  if (actor) {
+    ActorSnakeMap::const_iterator it = actor_snakes_.find(actor);
+    if (it != actor_snakes_.end()) {
+      actor->GetProperty()->SetColor(snake_color_);
+      selected_snakes_.erase(it->second);
+    }
+  }
+}
+
+void Viewer::RemoveSelectedSnakes() {
+  if (selected_snakes_.empty()) return;
+  for (SnakeSet::const_iterator it = selected_snakes_.begin();
+       it != selected_snakes_.end(); ++it) {
+    SnakeActorMap::const_iterator snake_actor_it = snake_actors_.find(*it);
+    if (snake_actor_it != snake_actors_.end()) {
+      renderer_->RemoveActor(snake_actor_it->second);
+      actor_snakes_.erase(snake_actor_it->second);
+      snake_actors_.erase(*it);
+      snake_actor_it->second->Delete();
+    }
+  }
+  selected_snakes_.clear();
+}
+
+void Viewer::ToggleTrimTip(bool state) {
+  if (state) {
+    slot_connector_->Connect(qvtk_->GetInteractor(),
+                             vtkCommand::LeftButtonPressEvent,
+                             this, SLOT(SelectVertex()));
+    slot_connector_->Connect(qvtk_->GetInteractor(),
+                             vtkCommand::RightButtonPressEvent,
+                             this, SLOT(DeselectVertex()));
+  } else {
+    slot_connector_->Disconnect(qvtk_->GetInteractor(),
+                                vtkCommand::LeftButtonPressEvent,
+                                this, SLOT(SelectVertex()));
+    slot_connector_->Disconnect(qvtk_->GetInteractor(),
+                                vtkCommand::RightButtonPressEvent,
+                                this, SLOT(DeselectVertex()));
+    this->ResetTrimTip();
+  }
+  this->Render();
+}
+
+void Viewer::ResetTrimTip() {
+  if (trimmed_actor_)
+    trimmed_actor_->GetProperty()->SetColor(snake_color_);
+  trimmed_actor_ = NULL;
+  trimmed_snake_ = NULL;
+  trim_tip_index_ = kBigNumber;
+  renderer_->RemoveActor(on_snake_sphere1_);
+}
+
+void Viewer::SelectVertex() {
+  picker_->Pick(qvtk_->GetInteractor()->GetEventPosition()[0],
+                qvtk_->GetInteractor()->GetEventPosition()[1],
+                0, renderer_);
+  vtkActor *actor = picker_->GetActor();
+  if (actor) {
+    ActorSnakeMap::const_iterator it = actor_snakes_.find(actor);
+    if (it != actor_snakes_.end()) {
+      unsigned index = static_cast<unsigned>(picker_->GetPointId());
+      this->SetupSphere(it->second->GetPoint(index), on_snake_sphere1_,
+                        sphere_color_);
+      it->first->GetProperty()->SetColor(selected_snake_color_);
+      if (trimmed_actor_ && trimmed_actor_ != it->first) {
+        // reset previously selected snake
+        trimmed_actor_->GetProperty()->SetColor(snake_color_);
+      }
+      trimmed_actor_ = it->first;
+      trimmed_snake_ = it->second;
+      trim_tip_index_ = index;
+      // trimmed_snake_->PrintSelf();
+    }
+  }
+}
+
+void Viewer::DeselectVertex() {
+  picker_->Pick(qvtk_->GetInteractor()->GetEventPosition()[0],
+                qvtk_->GetInteractor()->GetEventPosition()[1],
+                0, renderer_);
+  vtkActor *actor = picker_->GetActor();
+  if (actor == on_snake_sphere1_) {
+    renderer_->RemoveActor(on_snake_sphere1_);
+    trimmed_actor_->GetProperty()->SetColor(snake_color_);
+    trimmed_actor_ = NULL;
+    trimmed_snake_ = NULL;
+    trim_tip_index_ = kBigNumber;
+  }
+}
+
+void Viewer::TrimTip() {
+  if (!trimmed_snake_) return;
+  unsigned mid = trimmed_snake_->GetSize()/2;
+  if (trim_tip_index_ < mid) {
+    trimmed_snake_->Trim(0, trim_tip_index_);
+  } else {
+    trimmed_snake_->Trim(trim_tip_index_, trimmed_snake_->GetSize());
+  }
+  this->SetupSnake(trimmed_snake_, 0);
+  trim_tip_index_ = kBigNumber;
+  //trimmed_snake_ = NULL;
+  trimmed_actor_ = NULL;
+  renderer_->RemoveActor(on_snake_sphere1_);
+}
+
+void Viewer::ToggleExtendTip(bool state) {
+  if (state) {
+    slot_connector_->Connect(qvtk_->GetInteractor(),
+                             vtkCommand::LeftButtonPressEvent,
+                             this, SLOT(SelectVertex()));
+    slot_connector_->Connect(qvtk_->GetInteractor(),
+                             vtkCommand::RightButtonPressEvent,
+                             this, SLOT(DeselectVertex()));
+
+    for (unsigned i = 0; i < kDimension; ++i) {
+      slot_connector_->Connect(slice_planes_[i],
+                               vtkCommand::EndInteractionEvent,
+                               this, SLOT(SelectExtendVertex(vtkObject *)));
+    }
+    slot_connector_->Connect(qvtk_->GetInteractor(),
+                             vtkCommand::RightButtonPressEvent,
+                             this, SLOT(DeselectExtendVertex(vtkObject *)));
+  } else {
+    slot_connector_->Disconnect(qvtk_->GetInteractor(),
+                                vtkCommand::LeftButtonPressEvent,
+                                this, SLOT(SelectVertex()));
+    slot_connector_->Disconnect(qvtk_->GetInteractor(),
+                                vtkCommand::RightButtonPressEvent,
+                                this, SLOT(DeselectVertex()));
+    for (unsigned i = 0; i < kDimension; ++i) {
+      slot_connector_->Disconnect(slice_planes_[i],
+                                  vtkCommand::EndInteractionEvent,
+                                  this,
+                                  SLOT(SelectExtendVertex(vtkObject *)));
+    }
+    slot_connector_->Disconnect(qvtk_->GetInteractor(),
+                                vtkCommand::RightButtonPressEvent,
+                                this, SLOT(DeselectVertex(vtkObject *)));
+    this->ResetExtendTip();
+  }
+  this->Render();
+}
+
+void Viewer::ResetExtendTip() {
+  if (trimmed_actor_)
+    trimmed_actor_->GetProperty()->SetColor(snake_color_);
+  trimmed_actor_ = NULL;
+  trimmed_snake_ = NULL;
+  renderer_->RemoveActor(on_snake_sphere1_);
+  renderer_->RemoveActor(off_snake_sphere_);
+  inserted_point_.Fill(-1.0);
+}
+
+void Viewer::SelectExtendVertex(vtkObject *obj) {
+  vtkImagePlaneWidget *p = vtkImagePlaneWidget::SafeDownCast(obj);
+  double point[3];
+  p->GetCurrentCursorPosition(point);
+
+  if (point[0] >= 0 && trim_tip_index_ != kBigNumber) {
+    inserted_point_[0] = point[0];
+    inserted_point_[1] = point[1];
+    inserted_point_[2] = point[2];
+
+    this->SetupSphere(inserted_point_, off_snake_sphere_, sphere_color_);
+  }
+}
+
+void Viewer::DeselectExtendVertex(vtkObject *obj) {
+  this->DeselectInsertedVertex(obj);
+}
+
+void Viewer::ExtendTip() {
+  if (!trimmed_snake_ || inserted_point_[0] < 0) return;
+  unsigned mid = trimmed_snake_->GetSize()/2;
+  if (trim_tip_index_ < mid) {
+    trimmed_snake_->ExtendHead(inserted_point_);
+  } else {
+    trimmed_snake_->ExtendTail(inserted_point_);
+  }
+  trimmed_snake_->Resample();
+  this->SetupSnake(trimmed_snake_, 0);
+  inserted_point_.Fill(-1.0);
+  trim_tip_index_ = kBigNumber;
+  //trimmed_snake_ = NULL;
+  trimmed_actor_ = NULL;
+  renderer_->RemoveActor(on_snake_sphere1_);
+  renderer_->RemoveActor(off_snake_sphere_);
+}
+
+void Viewer::ToggleTrimBody(bool state) {
+  if (state) {
+    slot_connector_->Connect(qvtk_->GetInteractor(),
+                             vtkCommand::LeftButtonPressEvent,
+                             this, SLOT(SelectBodyVertex()));
+    slot_connector_->Connect(qvtk_->GetInteractor(),
+                             vtkCommand::RightButtonPressEvent,
+                             this, SLOT(DeselectBodyVertex()));
+
+    for (unsigned i = 0; i < kDimension; ++i) {
+      slot_connector_->Connect(slice_planes_[i],
+                               vtkCommand::EndInteractionEvent,
+                               this, SLOT(SelectInsertedVertex(vtkObject *)));
+    }
+    slot_connector_->Connect(qvtk_->GetInteractor(),
+                             vtkCommand::RightButtonPressEvent,
+                             this, SLOT(DeselectInsertedVertex(vtkObject *)));
+  } else {
+    slot_connector_->Disconnect(qvtk_->GetInteractor(),
+                                vtkCommand::LeftButtonPressEvent,
+                                this, SLOT(SelectBodyVertex()));
+    slot_connector_->Disconnect(qvtk_->GetInteractor(),
+                                vtkCommand::RightButtonPressEvent,
+                                this, SLOT(DeselectBodyVertex()));
+    for (unsigned i = 0; i < kDimension; ++i) {
+      slot_connector_->Disconnect(slice_planes_[i],
+                                  vtkCommand::EndInteractionEvent,
+                                  this,
+                                  SLOT(SelectInsertedVertex(vtkObject *)));
+    }
+    slot_connector_->Disconnect(qvtk_->GetInteractor(),
+                                vtkCommand::RightButtonPressEvent,
+                                this,
+                                SLOT(DeselectInsertedVertex(vtkObject *)));
+    this->ResetTrimBody();
+  }
+  this->Render();
+}
+
+void Viewer::ResetTrimBody() {
+  if (trimmed_actor_)
+    trimmed_actor_->GetProperty()->SetColor(snake_color_);
+  trimmed_actor_ = NULL;
+  trimmed_snake_ = NULL;
+  is_trim_body_second_click_ = false;
+  trim_body_index1_ = trim_body_index2_ = kBigNumber;
+  renderer_->RemoveActor(on_snake_sphere1_);
+  renderer_->RemoveActor(on_snake_sphere2_);
+  renderer_->RemoveActor(off_snake_sphere_);
+  inserted_point_.Fill(-1);
+}
+
+void Viewer::SelectBodyVertex() {
+  picker_->Pick(qvtk_->GetInteractor()->GetEventPosition()[0],
+                qvtk_->GetInteractor()->GetEventPosition()[1],
+                0, renderer_);
+  vtkActor *actor = picker_->GetActor();
+  if (actor) {
+    ActorSnakeMap::const_iterator it = actor_snakes_.find(actor);
+    if (it != actor_snakes_.end()) {
+      unsigned index = static_cast<unsigned>(picker_->GetPointId());
+
+      if (is_trim_body_second_click_) {
+        if (it->first == trimmed_actor_) {
+          this->SetupSphere(it->second->GetPoint(index), on_snake_sphere2_,
+                            sphere_color_);
+          trim_body_index2_ = index;
+          is_trim_body_second_click_ = false;
+          trimmed_actor_->GetProperty()->SetColor(selected_snake_color_);
+        }
+      } else {
+        this->SetupSphere(it->second->GetPoint(index), on_snake_sphere1_,
+                          sphere_color_);
+        if (trimmed_actor_) {
+          if (it->first == trimmed_actor_) {
+            trimmed_actor_->GetProperty()->SetColor(selected_snake_color_);
+          } else {
+            trimmed_actor_->GetProperty()->SetColor(snake_color_);
+          }
+        }
+        trimmed_actor_ = it->first;
+        trimmed_snake_ = it->second;
+        trim_body_index1_ = index;
+        is_trim_body_second_click_ = true;
+      }
+    }
+  }
+}
+
+void Viewer::DeselectBodyVertex() {
+  picker_->Pick(qvtk_->GetInteractor()->GetEventPosition()[0],
+                qvtk_->GetInteractor()->GetEventPosition()[1],
+                0, renderer_);
+  vtkActor *actor = picker_->GetActor();
+  if (actor) {
+    if (actor == on_snake_sphere1_) {
+      renderer_->RemoveActor(on_snake_sphere1_);
+      trim_body_index1_ = kBigNumber;
+      is_trim_body_second_click_ = false;
+      trimmed_actor_->GetProperty()->SetColor(snake_color_);
+    } else if (actor == on_snake_sphere2_) {
+      renderer_->RemoveActor(on_snake_sphere2_);
+      trim_body_index2_ = kBigNumber;
+      is_trim_body_second_click_ = true;
+      trimmed_actor_->GetProperty()->SetColor(snake_color_);
+    }
+  }
+}
+
+void Viewer::SelectInsertedVertex(vtkObject *obj) {
+  vtkImagePlaneWidget *p = vtkImagePlaneWidget::SafeDownCast(obj);
+  double point[3];
+  p->GetCurrentCursorPosition(point);
+
+  if (point[0] >= 0 && trim_body_index1_ != trim_body_index2_) {
+    inserted_point_[0] = point[0];
+    inserted_point_[1] = point[1];
+    inserted_point_[2] = point[2];
+
+    this->SetupSphere(inserted_point_, off_snake_sphere_, sphere_color_);
+  }
+}
+
+
+void Viewer::DeselectInsertedVertex(vtkObject *obj) {
+  picker_->Pick(qvtk_->GetInteractor()->GetEventPosition()[0],
+                qvtk_->GetInteractor()->GetEventPosition()[1],
+                0, renderer_);
+  vtkActor *actor = picker_->GetActor();
+  if (actor == off_snake_sphere_) {
+    renderer_->RemoveActor(off_snake_sphere_);
+    inserted_point_.Fill(-1);
+  }
+}
+
+void Viewer::TrimBody() {
+  if (!trimmed_snake_ || inserted_point_[0] < 0) return;
+  trimmed_snake_->TrimAndInsert(trim_body_index1_, trim_body_index2_,
+                                inserted_point_);
+  trimmed_snake_->Resample();
+  this->SetupSnake(trimmed_snake_, 0);
+  inserted_point_.Fill(-1.0);
+  trim_body_index1_ = trim_body_index2_ = kBigNumber;
+  //trimmed_snake_ = NULL;
+  trimmed_actor_ = NULL;
+
+  renderer_->RemoveActor(on_snake_sphere1_);
+  renderer_->RemoveActor(on_snake_sphere2_);
+  renderer_->RemoveActor(off_snake_sphere_);
+}
+
+void Viewer::ToggleDeleteJunction(bool state) {
+  if (state) {
+    slot_connector_->Connect(qvtk_->GetInteractor(),
+                             vtkCommand::LeftButtonPressEvent,
+                             this, SLOT(SelectJunction()));
+    slot_connector_->Connect(qvtk_->GetInteractor(),
+                             vtkCommand::RightButtonPressEvent,
+                             this, SLOT(DeselectJunction()));
+  } else {
+    slot_connector_->Disconnect(qvtk_->GetInteractor(),
+                                vtkCommand::LeftButtonPressEvent,
+                                this, SLOT(SelectJunction()));
+    slot_connector_->Disconnect(qvtk_->GetInteractor(),
+                                vtkCommand::RightButtonPressEvent,
+                                this, SLOT(DeselectJunction()));
+  }
+  this->Render();
+}
+
+void Viewer::SelectJunction() {
+  picker_->Pick(qvtk_->GetInteractor()->GetEventPosition()[0],
+                qvtk_->GetInteractor()->GetEventPosition()[1],
+                0, renderer_);
+  vtkActor *actor = picker_->GetActor();
+  if (actor) {
+    ActorPointMap::const_iterator it = actor_junctions_.find(actor);
+    if (it != actor_junctions_.end()) {
+      actor->GetProperty()->SetColor(selected_junction_color_);
+      selected_junctions_.insert(*it);
+    }
+  }
+}
+
+void Viewer::DeselectJunction() {
+  picker_->Pick(qvtk_->GetInteractor()->GetEventPosition()[0],
+                qvtk_->GetInteractor()->GetEventPosition()[1],
+                0, renderer_);
+  vtkActor *actor = picker_->GetActor();
+  if (actor) {
+    ActorPointMap::iterator it = actor_junctions_.find(actor);
+    if (it !=  actor_junctions_.end()) {
+      actor->GetProperty()->SetColor(junction_color_);
+      selected_junctions_.erase(actor);
+    }
+  }
+}
+
+void Viewer::RemoveSelectedJunctions(Junctions &junctions) {
+  if (selected_junctions_.empty()) return;
+  for (ActorPointMap::iterator it = selected_junctions_.begin();
+       it != selected_junctions_.end(); ++it) {
+    junctions.RemoveJunction(it->second);
+    renderer_->RemoveActor(it->first);
+    actor_junctions_.erase(it->first);
+    it->first->Delete();
+  }
+  selected_junctions_.clear();
+}
 
 
 void Viewer::Render() {

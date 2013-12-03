@@ -39,6 +39,7 @@ MainWindow::~MainWindow() {
 
 void MainWindow::CreateActions() {
   this->CreateFileMenuActions();
+  this->CreateEditMenuActions();
   this->CreateViewMenuActions();
   this->CreateProcessMenuActions();
   this->CreateAnalysisMenuActions();
@@ -102,6 +103,58 @@ void MainWindow::CreateFileMenuActions() {
   connect(exit_, SIGNAL(triggered()), this, SLOT(close()));
 }
 
+void MainWindow::CreateEditMenuActions() {
+  toggle_none_ = new QAction(tr("Normal Mode"), this);
+  toggle_none_->setIcon(QIcon(":/icon/Cancel.png"));
+  toggle_none_->setCheckable(true);
+  connect(toggle_none_, SIGNAL(toggled(bool)),
+          viewer_, SLOT(ToggleNone(bool)));
+
+  toggle_delete_snake_ = new QAction(tr("Delete Snake Mode"), this);
+  toggle_delete_snake_->setIcon(QIcon(":/icon/Delete.png"));
+  toggle_delete_snake_->setCheckable(true);
+  connect(toggle_delete_snake_, SIGNAL(toggled(bool)),
+          viewer_, SLOT(ToggleDeleteSnake(bool)));
+
+  toggle_trim_tip_ = new QAction(tr("Trim Tip Mode"), this);
+  toggle_trim_tip_->setCheckable(true);
+  toggle_trim_tip_->setIcon(QIcon(":/icon/letter-t.png"));
+  connect(toggle_trim_tip_, SIGNAL(toggled(bool)),
+          viewer_, SLOT(ToggleTrimTip(bool)));
+
+  toggle_extend_tip_ = new QAction(tr("Extend Tip Mode"), this);
+  toggle_extend_tip_->setCheckable(true);
+  toggle_extend_tip_->setIcon(QIcon(":/icon/letter-e.png"));
+  connect(toggle_extend_tip_, SIGNAL(toggled(bool)),
+          viewer_, SLOT(ToggleExtendTip(bool)));
+
+  toggle_trim_body_ = new QAction(tr("Trim Body Mode"), this);
+  toggle_trim_body_->setCheckable(true);
+  toggle_trim_body_->setIcon(QIcon(":/icon/letter-b.png"));
+  connect(toggle_trim_body_, SIGNAL(toggled(bool)),
+          viewer_, SLOT(ToggleTrimBody(bool)));
+
+  toggle_delete_junction_ = new QAction(tr("Delete Junction Mode"), this);
+  toggle_delete_junction_->setCheckable(true);
+  toggle_delete_junction_->setIcon(QIcon(":/icon/Remove.png"));
+  connect(toggle_delete_junction_, SIGNAL(toggled(bool)),
+          viewer_, SLOT(ToggleDeleteJunction(bool)));
+
+  edit_snake_ = new QAction(tr("Edit Snake"), this);
+  edit_snake_->setShortcut(Qt::Key_Space);
+  connect(edit_snake_, SIGNAL(triggered()), this, SLOT(EditSnake()));
+
+  snake_edit_group_ = new QActionGroup(this);
+  snake_edit_group_->addAction(toggle_none_);
+  snake_edit_group_->addAction(toggle_delete_snake_);
+  snake_edit_group_->addAction(toggle_trim_tip_);
+  snake_edit_group_->addAction(toggle_extend_tip_);
+  snake_edit_group_->addAction(toggle_trim_body_);
+  snake_edit_group_->addAction(toggle_delete_junction_);
+  snake_edit_group_->setExclusive(true);
+  toggle_none_->setChecked(true);
+}
+
 void MainWindow::CreateViewMenuActions() {
   toggle_planes_ = new QAction(tr("Slice Planes"), this);
   toggle_planes_->setIcon(QIcon(":/icon/Picture.png"));
@@ -152,23 +205,34 @@ void MainWindow::CreateViewMenuActions() {
   toggle_clip_->setIcon(QIcon(":/icon/Search.png"));
   connect(toggle_clip_, SIGNAL(toggled(bool)),
           viewer_, SLOT(ToggleClipSnakes(bool)));
-  connect(toggle_clip_, SIGNAL(toggled(bool)),
-          this, SLOT(ToggleSnakeDisplay(bool)));
+  // connect(toggle_clip_, SIGNAL(toggled(bool)),
+  //         this, SLOT(ToggleSnakeDisplay(bool)));
 
   toggle_color_azimuthal_ = new QAction(
-      tr("Color Snakes by Azimuthal Angle)"), this);
+      tr("Color Snakes by Azimuthal Angle"), this);
   toggle_color_azimuthal_->setCheckable(true);
   connect(toggle_color_azimuthal_, SIGNAL(toggled(bool)),
           viewer_, SLOT(ColorByAzimuthalAngle(bool)));
+  // connect(toggle_color_azimuthal_, SIGNAL(toggled(bool)),
+  //         this, SLOT(ToggleSnakeDisplay(bool)));
 
   toggle_color_polar_ = new QAction(tr("Color Snakes by Polar Angle"), this);
   toggle_color_polar_->setCheckable(true);
   connect(toggle_color_polar_, SIGNAL(toggled(bool)),
           viewer_, SLOT(ColorByPolarAngle(bool)));
+  // connect(toggle_color_polar_, SIGNAL(toggled(bool)),
+  //         this, SLOT(ToggleSnakeDisplay(bool)));
 
   show_view_options_ = new QAction(tr("Options"), this);
   connect(show_view_options_, SIGNAL(triggered()),
           this, SLOT(ShowViewOptions()));
+
+  snake_view_group_ = new QActionGroup(this);
+  snake_view_group_->addAction(toggle_snakes_);
+  snake_view_group_->addAction(toggle_clip_);
+  snake_view_group_->addAction(toggle_color_azimuthal_);
+  snake_view_group_->addAction(toggle_color_polar_);
+  snake_view_group_->setExclusive(true);
 }
 
 void MainWindow::CreateProcessMenuActions() {
@@ -268,6 +332,16 @@ void MainWindow::CreateMenus() {
   file_->addAction(close_session_);
   file_->addAction(exit_);
 
+  edit_ = menuBar()->addMenu(tr("&Edit"));
+  snake_edit_submenu_ = edit_->addMenu(tr("Edit Mode"));
+  snake_edit_submenu_->addAction(toggle_none_);
+  snake_edit_submenu_->addAction(toggle_delete_snake_);
+  snake_edit_submenu_->addAction(toggle_trim_tip_);
+  snake_edit_submenu_->addAction(toggle_extend_tip_);
+  snake_edit_submenu_->addAction(toggle_trim_body_);
+  snake_edit_submenu_->addAction(toggle_delete_junction_);
+  edit_->addAction(edit_snake_);
+
   view_ = menuBar()->addMenu(tr("&View"));
   view_->addAction(toggle_planes_);
   view_->addAction(toggle_mip_);
@@ -333,6 +407,14 @@ void MainWindow::CreateToolBar() {
   toolbar_->addAction(deform_one_snake_);
 
   toolbar_->addSeparator();
+  toolbar_->addAction(toggle_none_);
+  toolbar_->addAction(toggle_delete_snake_);
+  toolbar_->addAction(toggle_trim_tip_);
+  toolbar_->addAction(toggle_extend_tip_);
+  toolbar_->addAction(toggle_trim_body_);
+  toolbar_->addAction(toggle_delete_junction_);
+
+  toolbar_->addSeparator();
   toolbar_->addAction(show_parameters_);
 
   toolbar_->addSeparator();
@@ -353,6 +435,13 @@ void MainWindow::ResetActions() {
   compare_snakes_->setEnabled(false);
   compare_another_snakes_->setEnabled(false);
   close_session_->setEnabled(false);
+
+  toggle_delete_snake_->setEnabled(false);
+  toggle_trim_tip_->setEnabled(false);
+  toggle_extend_tip_->setEnabled(false);
+  toggle_trim_body_->setEnabled(false);
+  toggle_delete_junction_->setEnabled(false);
+  edit_snake_->setEnabled(false);
 
   toggle_planes_->setEnabled(false);
   toggle_mip_->setEnabled(false);
@@ -419,6 +508,7 @@ void MainWindow::OpenImage() {
   view_options_dialog_->SetMinIntensity(viewer_->mip_min_intensity());
   view_options_dialog_->SetMaxIntensity(viewer_->mip_max_intensity());
   view_options_dialog_->SetClipSpan(viewer_->clip_span());
+  view_options_dialog_->SetColorSegmentStep(viewer_->color_segment_step());
 
   analysis_options_dialog_->SetImageCenter(multisnake_->GetImageCenter());
 
@@ -508,6 +598,12 @@ void MainWindow::LoadSnakes() {
   viewer_->Render();
 
   save_snakes_->setEnabled(true);
+  toggle_delete_snake_->setEnabled(true);
+  toggle_trim_tip_->setEnabled(true);
+  toggle_extend_tip_->setEnabled(true);
+  toggle_trim_body_->setEnabled(true);
+  toggle_delete_junction_->setEnabled(true);
+  edit_snake_->setEnabled(true);
   save_jfilament_snakes_->setEnabled(true);
   compare_snakes_->setEnabled(true);
   initialize_snakes_->setEnabled(false);
@@ -515,8 +611,8 @@ void MainWindow::LoadSnakes() {
   toggle_snakes_->setEnabled(true);
   toggle_junctions_->setEnabled(true);
   toggle_clip_->setEnabled(true);
-  toggle_color_azimuthal_->setChecked(true);
-  toggle_color_polar_->setChecked(true);
+  toggle_color_azimuthal_->setEnabled(true);
+  toggle_color_polar_->setEnabled(true);
   compute_spherical_orientation_->setEnabled(true);
   compute_radial_orientation_->setEnabled(true);
   compute_point_density_->setEnabled(true);
@@ -559,8 +655,8 @@ void MainWindow::LoadJFilamentSnakes() {
   compare_snakes_->setEnabled(true);
   toggle_snakes_->setEnabled(true);
   toggle_clip_->setEnabled(true);
-  toggle_color_azimuthal_->setChecked(true);
-  toggle_color_polar_->setChecked(true);
+  toggle_color_azimuthal_->setEnabled(true);
+  toggle_color_polar_->setEnabled(true);
 }
 
 void MainWindow::SaveJFilamentSnakes() {
@@ -594,6 +690,12 @@ void MainWindow::CompareSnakes() {
 
   compare_another_snakes_->setEnabled(true);
   toggle_snakes_->setEnabled(true);
+  toggle_delete_snake_->setEnabled(false);
+  toggle_trim_tip_->setEnabled(false);
+  toggle_extend_tip_->setEnabled(false);
+  toggle_trim_body_->setEnabled(false);
+  toggle_delete_junction_->setEnabled(false);
+  edit_snake_->setEnabled(false);
 }
 
 void MainWindow::CompareAnotherSnakes() {
@@ -642,9 +744,25 @@ void MainWindow::CloseSession() {
   setWindowTitle("SOAX");
 }
 
-void MainWindow::ToggleSnakeDisplay(bool state) {
-  toggle_snakes_->setChecked(!state);
+void MainWindow::EditSnake() {
+  if (toggle_delete_snake_->isChecked()) {
+    multisnake_->DeleteSnakes(viewer_->selected_snakes());
+    viewer_->RemoveSelectedSnakes();
+  } else if (toggle_trim_tip_->isChecked()) {
+    viewer_->TrimTip();
+  } else if (toggle_extend_tip_->isChecked()) {
+    viewer_->ExtendTip();
+  } else if (toggle_trim_body_->isChecked()) {
+    viewer_->TrimBody();
+  } else if (toggle_delete_junction_->isChecked()) {
+    viewer_->RemoveSelectedJunctions(multisnake_->junctions());
+  }
+  viewer_->Render();
 }
+
+// void MainWindow::ToggleSnakeDisplay(bool state) {
+//   toggle_snakes_->setChecked(!state);
+// }
 
 void MainWindow::ShowViewOptions() {
   if (view_options_dialog_->exec()) {
@@ -657,6 +775,8 @@ void MainWindow::ShowViewOptions() {
     //std::cout << min_intensity << "\t" << max_intensity << std::endl;
     viewer_->UpdateMIPIntensityRange(min_intensity, max_intensity);
     viewer_->set_clip_span(view_options_dialog_->GetClipSpan());
+    viewer_->set_color_segment_step(
+        view_options_dialog_->GetColorSegmentStep());
     view_options_dialog_->DisableOKButton();
   }
   viewer_->Render();
@@ -667,7 +787,6 @@ void MainWindow::InitializeSnakes() {
   multisnake_->WriteParameters(std::cout);
   std::cout << "============================================" << std::endl;
 
-  // multisnake_->ScaleImageIntensity();
   multisnake_->ComputeImageGradient();
   multisnake_->InitializeSnakes();
   QString msg = QString::number(multisnake_->GetNumberOfInitialSnakes()) +
@@ -684,6 +803,13 @@ void MainWindow::InitializeSnakes() {
   deform_snakes_->setEnabled(true);
   deform_snakes_in_action_->setEnabled(true);
   deform_one_snake_->setEnabled(true);
+
+  toggle_delete_snake_->setEnabled(true);
+  toggle_trim_tip_->setEnabled(true);
+  toggle_extend_tip_->setEnabled(true);
+  toggle_trim_body_->setEnabled(true);
+  toggle_delete_junction_->setEnabled(true);
+  edit_snake_->setEnabled(true);
 }
 
 void MainWindow::DeformSnakes() {
@@ -706,9 +832,62 @@ void MainWindow::DeformSnakes() {
   show_analysis_options_->setEnabled(true);
 }
 
-void MainWindow::DeformSnakesInAction() {}
+void MainWindow::DeformSnakesInAction() {
+  viewer_->RemoveSnakes();
+  while (!multisnake_->initial_snakes().empty()) {
+    Snake *s = multisnake_->PopLastInitialSnake();
+    viewer_->SetupSnake(s, 0);
+    viewer_->Render();
+    s->Evolve(multisnake_->converged_snakes(), Snake::iterations_per_press());
 
-void MainWindow::DeformOneSnake() {}
+    if (s->viable()) {
+      if (s->converged()) {
+        viewer_->ChangeSnakeColor(s, Viewer::Yellow());
+        multisnake_->AddConvergedSnake(s);
+      } else {
+        multisnake_->AddInitialSnake(s);
+      }
+    } else {
+      multisnake_->AddSubsnakesToInitialSnakes(s);
+      viewer_->RemoveSnake(s);
+      delete s;
+    }
+    viewer_->Render();
+    std::cout << "\rRemaining: " << std::setw(6)
+              << multisnake_->GetNumberOfInitialSnakes() << std::flush;
+  }
+  statusBar()->showMessage(tr("Evolution complete."));
+  viewer_->RemoveSnakes();
+  viewer_->SetupSnakes(multisnake_->converged_snakes());
+  toggle_snakes_->setChecked(true);
+  viewer_->Render();
+
+  deform_snakes_->setEnabled(false);
+  deform_snakes_in_action_->setEnabled(false);
+  toggle_snakes_->setEnabled(true);
+  save_snakes_->setEnabled(true);
+  save_jfilament_snakes_->setEnabled(true);
+  compare_snakes_->setEnabled(true);
+  cut_snakes_->setEnabled(true);
+  show_analysis_options_->setEnabled(true);
+}
+
+void MainWindow::DeformOneSnake() {
+  if (viewer_->trimmed_snake()) {
+    if (!multisnake_->external_force()) {
+      multisnake_->ComputeImageGradient();
+    }
+    viewer_->trimmed_snake()->EvolveWithTipFixed();
+
+    if (viewer_->trimmed_snake()->converged()) {
+      statusBar()->showMessage(tr("Snake is converged."));
+    }
+    viewer_->SetupSnake(viewer_->trimmed_snake(), 0);
+    viewer_->Render();
+  } else {
+    std::cerr << "No edited snake!" << std::endl;
+  }
+}
 
 void MainWindow::CutSnakes() {
   multisnake_->CutSnakesAtTJunctions();

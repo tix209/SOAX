@@ -5,6 +5,7 @@
 #include "global.h"
 
 class QProgressBar;
+class QActionGroup;
 
 
 namespace soax {
@@ -14,7 +15,6 @@ class Viewer;
 class ParametersDialog;
 class AnalysisOptionsDialog;
 class ViewOptionsDialog;
-
 
 /*
  * SOAX GUI main window.
@@ -42,7 +42,9 @@ class MainWindow : public QMainWindow {
   void SaveJFilamentSnakes();
   void CloseSession();
 
-  void ToggleSnakeDisplay(bool state);
+  void EditSnake();
+
+  //   void ToggleSnakeDisplay(bool state);
   void ShowViewOptions();
 
   void InitializeSnakes();
@@ -68,6 +70,7 @@ class MainWindow : public QMainWindow {
  private:
   void CreateActions();
   void CreateFileMenuActions();
+  void CreateEditMenuActions();
   void CreateViewMenuActions();
   void CreateProcessMenuActions();
   void CreateAnalysisMenuActions();
@@ -101,6 +104,16 @@ class MainWindow : public QMainWindow {
   QAction *close_session_;
   QAction *exit_;
 
+  // Actions in Edit menu
+  QAction *toggle_none_;
+  QAction *toggle_delete_snake_;
+  QAction *toggle_trim_tip_;
+  QAction *toggle_extend_tip_;
+  QAction *toggle_trim_body_;
+  QAction *toggle_delete_junction_;
+  QAction *edit_snake_;
+  QActionGroup *snake_edit_group_;
+
   // Actions in View menu
   QAction *toggle_planes_;
   QAction *toggle_mip_;
@@ -114,7 +127,7 @@ class MainWindow : public QMainWindow {
   QAction *toggle_color_azimuthal_;
   QAction *toggle_color_polar_;
   QAction *show_view_options_;
-
+  QActionGroup *snake_view_group_;
 
   // Actions in Process menu
   QAction *initialize_snakes_;
@@ -143,6 +156,8 @@ class MainWindow : public QMainWindow {
 
   // Menus
   QMenu *file_;
+  QMenu *edit_;
+  QMenu *snake_edit_submenu_;
   QMenu *view_;
   QMenu *process_;
   QMenu *analysis_;

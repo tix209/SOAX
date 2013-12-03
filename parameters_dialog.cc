@@ -76,7 +76,7 @@ QGroupBox * ParametersDialog::CreateSnakeGroup() {
   max_iterations_edit_ = new QLineEdit("0");
   change_threshold_edit_ = new QLineEdit("0.0");
   check_period_edit_ = new QLineEdit("0");
-  iterations_per_press_edit_ = new QLineEdit("0");
+  iterations_per_press_edit_ = new QLineEdit("100");
   alpha_edit_ = new QLineEdit("0.0");
   beta_edit_ = new QLineEdit("0.0");
   gamma_edit_ = new QLineEdit("0.0");

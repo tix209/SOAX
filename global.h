@@ -25,6 +25,7 @@ typedef itk::Vector<double, kDimension> VectorType;
 typedef std::vector<VectorType>  VectorContainer;
 typedef itk::Point<double, kDimension> PointType;
 typedef std::deque<PointType>  PointContainer;
+typedef std::set<PointType> PointSet;
 typedef PointContainer::iterator PointIterator;
 typedef PointContainer::const_iterator PointConstIterator;
 // typedef itk::Image<double, kDimension> ImageType;
@@ -33,6 +34,7 @@ typedef itk::Image<VectorType, kDimension> VectorImageType;
 
 class Snake;
 typedef std::vector<Snake *> SnakeContainer;
+typedef std::set<Snake *> SnakeSet;
 typedef SnakeContainer::iterator SnakeIterator;
 typedef SnakeContainer::const_iterator SnakeConstIterator;
 

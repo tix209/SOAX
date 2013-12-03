@@ -274,7 +274,7 @@ void Viewer::ToggleOrientationMarker(bool state) {
 void Viewer::SetupUpperLeftCornerText(unsigned min_intensity,
                                       unsigned max_intensity) {
   std::ostringstream buffer;
-  buffer << "Intensity Range: [" << min_intensity << ", "
+  buffer << "Intensity: [" << min_intensity << ", "
          << max_intensity << "]";
   corner_text_->SetText(2, buffer.str().c_str());
 }

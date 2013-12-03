@@ -10,25 +10,26 @@
 
 namespace soax {
 
-MainWindow::MainWindow() {
+MainWindow::MainWindow() : message_timeout_(0) {
   central_widget_ = new QWidget;
   multisnake_ = new Multisnake;
   viewer_ = new Viewer;
   parameters_dialog_ = new ParametersDialog(this);
   view_options_dialog_ = new ViewOptionsDialog(this);
   analysis_options_dialog_ = new AnalysisOptionsDialog(this);
+
   QHBoxLayout* layout = new QHBoxLayout;
   layout->addWidget(viewer_->qvtk());
   central_widget_->setLayout(layout);
   setCentralWidget(central_widget_);
   setWindowIcon(QIcon(":/icon/letter-x.png"));
   setWindowTitle("SOAX");
+
   this->CreateActions();
   this->CreateMenus();
   this->CreateToolBar();
   this->CreateStatusBar();
   this->ResetActions();
-  message_timeout_ = 0;
 }
 
 
@@ -369,7 +370,7 @@ void MainWindow::CreateMenus() {
   contractile_ring_submenu_ = analysis_->addMenu(tr("Contractile Ring"));
   fibrin_submenu_ = analysis_->addMenu(tr("Fibrin Network"));
   fibrin_submenu_->addAction(compute_spherical_orientation_);
-  droplet_submenu_ = analysis_->addMenu(tr("Droplet"));
+  droplet_submenu_ = analysis_->addMenu(tr("Actin Droplet"));
   droplet_submenu_->addAction(compute_radial_orientation_);
   droplet_submenu_->addAction(compute_point_density_);
   droplet_submenu_->addAction(compute_curvature_);
@@ -475,7 +476,7 @@ void MainWindow::ResetActions() {
 }
 
 QString MainWindow::GetLastDirectory(const std::string &filename) {
-  QString dir = "..";
+  QString dir = ".";
   if (!filename.empty()) {
     std::string::size_type pos = filename.find_last_of("/\\");
     dir = QString(filename.substr(0, pos).c_str());
@@ -494,14 +495,14 @@ void MainWindow::OpenImage() {
   multisnake_->LoadImage(image_filename_);
   viewer_->SetupImage(multisnake_->image());
   toggle_planes_->setChecked(true);
-  toggle_mip_->setChecked(false);
+  toggle_mip_->setChecked(true);
   toggle_orientation_marker_->setChecked(true);
   toggle_corner_text_->setChecked(true);
   toggle_bounding_box_->setChecked(false);
   toggle_cube_axes_->setChecked(false);
   statusBar()->showMessage(tr("Image loaded."), message_timeout_);
 
-  this->SetParameters();
+  // this->SetParameters();
 
   view_options_dialog_->SetWindow(viewer_->window());
   view_options_dialog_->SetLevel(viewer_->level());
@@ -557,7 +558,7 @@ void MainWindow::LoadParameters() {
   QString dir = this->GetLastDirectory(parameter_filename_);
   parameter_filename_ = QFileDialog::getOpenFileName(
       this, tr("Open a parameter file"), dir,
-      tr("Text Files (*.txt)")).toStdString();
+      tr("Text files(*.txt)")).toStdString();
   if (parameter_filename_.empty()) return;
   multisnake_->LoadParameters(parameter_filename_);
   statusBar()->showMessage(tr("Parameters loaded."), message_timeout_);
@@ -567,7 +568,7 @@ void MainWindow::SaveParameters() {
   QString dir = this->GetLastDirectory(parameter_filename_);
   parameter_filename_ = QFileDialog::getSaveFileName(
       this, tr("Save current parameters"), dir,
-      tr("Text Files (*.txt)")).toStdString();
+      tr("Text files(*.txt)")).toStdString();
   if (parameter_filename_.empty()) return;
   multisnake_->SaveParameters(parameter_filename_);
   statusBar()->showMessage("Parameters saved.", message_timeout_);
@@ -576,7 +577,7 @@ void MainWindow::SaveParameters() {
 void MainWindow::LoadSnakes() {
   QString dir = this->GetLastDirectory(snake_filename_);
   snake_filename_ = QFileDialog::getOpenFileName(
-      this, tr("Load Snakes"), dir, "Text (*.txt)").toStdString();
+      this, tr("Load Snakes"), dir, "Text files(*.txt)").toStdString();
   if (snake_filename_.empty()) return;
 
   multisnake_->LoadConvergedSnakes(snake_filename_);
@@ -598,16 +599,16 @@ void MainWindow::LoadSnakes() {
   viewer_->Render();
 
   save_snakes_->setEnabled(true);
+  save_jfilament_snakes_->setEnabled(true);
+  compare_snakes_->setEnabled(true);
   toggle_delete_snake_->setEnabled(true);
   toggle_trim_tip_->setEnabled(true);
   toggle_extend_tip_->setEnabled(true);
   toggle_trim_body_->setEnabled(true);
   toggle_delete_junction_->setEnabled(true);
   edit_snake_->setEnabled(true);
-  save_jfilament_snakes_->setEnabled(true);
-  compare_snakes_->setEnabled(true);
   initialize_snakes_->setEnabled(false);
-  deform_one_snake_->setEnabled(true);
+  deform_one_snake_->setEnabled(false);
   toggle_snakes_->setEnabled(true);
   toggle_junctions_->setEnabled(true);
   toggle_clip_->setEnabled(true);
@@ -623,7 +624,7 @@ void MainWindow::LoadSnakes() {
 void MainWindow::SaveSnakes() {
   QString dir = this->GetLastDirectory(snake_filename_);
   snake_filename_ = QFileDialog::getSaveFileName(
-      this, tr("Save Snakes"), dir, "Text (*.txt)").toStdString();
+      this, tr("Save Snakes"), dir, "Text files(*.txt)").toStdString();
   if (snake_filename_.empty()) return;
   multisnake_->SaveSnakes(multisnake_->converged_snakes(), snake_filename_);
   statusBar()->showMessage(tr("Snakes are saved."), message_timeout_);
@@ -632,7 +633,7 @@ void MainWindow::SaveSnakes() {
 void MainWindow::LoadJFilamentSnakes() {
   QString dir = this->GetLastDirectory(snake_filename_);
   snake_filename_ = QFileDialog::getOpenFileName(
-      this, tr("Load JFilament Snakes"), dir, "Text (*.txt)").toStdString();
+      this, tr("Load JFilament Snakes"), dir, "Text files(*.txt)").toStdString();
   if (snake_filename_.empty()) return;
   multisnake_->LoadGroundTruthSnakes(snake_filename_);
   unsigned num_snakes = multisnake_->GetNumberOfComparingSnakes1();
@@ -653,25 +654,37 @@ void MainWindow::LoadJFilamentSnakes() {
   save_snakes_->setEnabled(true);
   save_jfilament_snakes_->setEnabled(true);
   compare_snakes_->setEnabled(true);
+  toggle_delete_snake_->setEnabled(true);
+  toggle_trim_tip_->setEnabled(true);
+  toggle_extend_tip_->setEnabled(true);
+  toggle_trim_body_->setEnabled(true);
+  toggle_delete_junction_->setEnabled(true);
+  edit_snake_->setEnabled(true);
   toggle_snakes_->setEnabled(true);
   toggle_clip_->setEnabled(true);
   toggle_color_azimuthal_->setEnabled(true);
   toggle_color_polar_->setEnabled(true);
+  compute_spherical_orientation_->setEnabled(true);
+  compute_radial_orientation_->setEnabled(true);
+  compute_point_density_->setEnabled(true);
+  compute_curvature_->setEnabled(true);
+  show_analysis_options_->setEnabled(true);
 }
 
 void MainWindow::SaveJFilamentSnakes() {
   QString dir = this->GetLastDirectory(snake_filename_);
   snake_filename_ = QFileDialog::getSaveFileName(
-      this, tr("Save JFilament Snakes"), dir, "Text (*.txt)").toStdString();
+      this, tr("Save JFilament Snakes"), dir, "Text files(*.txt)").toStdString();
   if (snake_filename_.empty()) return;
   multisnake_->SaveConvergedSnakesAsJFilamentFormat(snake_filename_);
-  statusBar()->showMessage(tr("Snakes are saved in JFilament format"), message_timeout_);
+  statusBar()->showMessage(tr("Snakes are saved in JFilament format"),
+                           message_timeout_);
 }
 
 void MainWindow::CompareSnakes() {
   QString dir = this->GetLastDirectory(snake_filename_);
   snake_filename_ = QFileDialog::getOpenFileName(
-      this, tr("Compare Snakes"), dir, "Text (*.txt)").toStdString();
+      this, tr("Compare Snakes"), dir, "Text files(*.txt)").toStdString();
   if (snake_filename_.empty()) return;
   multisnake_->LoadComparingSnakes1(snake_filename_);
   unsigned num_snakes = multisnake_->GetNumberOfComparingSnakes1();
@@ -689,19 +702,22 @@ void MainWindow::CompareSnakes() {
   viewer_->Render();
 
   compare_another_snakes_->setEnabled(true);
-  toggle_snakes_->setEnabled(true);
   toggle_delete_snake_->setEnabled(false);
   toggle_trim_tip_->setEnabled(false);
   toggle_extend_tip_->setEnabled(false);
   toggle_trim_body_->setEnabled(false);
   toggle_delete_junction_->setEnabled(false);
   edit_snake_->setEnabled(false);
+  toggle_snakes_->setEnabled(true);
+  toggle_clip_->setEnabled(true);
+  toggle_color_azimuthal_->setEnabled(false);
+  toggle_color_polar_->setEnabled(false);
 }
 
 void MainWindow::CompareAnotherSnakes() {
   QString dir = this->GetLastDirectory(snake_filename_);
   snake_filename_ = QFileDialog::getOpenFileName(
-      this, tr("Compare other snakes"), dir, "Text (*.txt)").toStdString();
+      this, tr("Compare other snakes"), dir, "Text files(*.txt)").toStdString();
   if (snake_filename_.empty()) return;
   multisnake_->LoadComparingSnakes2(snake_filename_);
   unsigned num_snakes = multisnake_->GetNumberOfComparingSnakes2();
@@ -758,6 +774,7 @@ void MainWindow::EditSnake() {
     viewer_->RemoveSelectedJunctions(multisnake_->junctions());
   }
   viewer_->Render();
+  deform_one_snake_->setEnabled(true);
 }
 
 // void MainWindow::ToggleSnakeDisplay(bool state) {
@@ -798,18 +815,18 @@ void MainWindow::InitializeSnakes() {
 
   initialize_snakes_->setEnabled(false);
   save_snakes_->setEnabled(true);
+  save_jfilament_snakes_->setEnabled(true);
   toggle_snakes_->setEnabled(true);
   toggle_clip_->setEnabled(true);
   deform_snakes_->setEnabled(true);
   deform_snakes_in_action_->setEnabled(true);
-  deform_one_snake_->setEnabled(true);
 
-  toggle_delete_snake_->setEnabled(true);
-  toggle_trim_tip_->setEnabled(true);
-  toggle_extend_tip_->setEnabled(true);
-  toggle_trim_body_->setEnabled(true);
-  toggle_delete_junction_->setEnabled(true);
-  edit_snake_->setEnabled(true);
+  // toggle_delete_snake_->setEnabled(true);
+  // toggle_trim_tip_->setEnabled(true);
+  // toggle_extend_tip_->setEnabled(true);
+  // toggle_trim_body_->setEnabled(true);
+  // toggle_delete_junction_->setEnabled(true);
+  // edit_snake_->setEnabled(true);
 }
 
 void MainWindow::DeformSnakes() {
@@ -824,11 +841,25 @@ void MainWindow::DeformSnakes() {
   viewer_->Render();
 
   deform_snakes_->setEnabled(false);
-  toggle_snakes_->setEnabled(true);
   save_snakes_->setEnabled(true);
   save_jfilament_snakes_->setEnabled(true);
   compare_snakes_->setEnabled(true);
+  toggle_snakes_->setEnabled(true);
+  toggle_clip_->setEnabled(true);
+  toggle_color_azimuthal_->setEnabled(true);
+  toggle_color_polar_->setEnabled(true);
+
+  toggle_delete_snake_->setEnabled(true);
+  toggle_trim_tip_->setEnabled(true);
+  toggle_extend_tip_->setEnabled(true);
+  toggle_trim_body_->setEnabled(true);
+  edit_snake_->setEnabled(true);
+
   cut_snakes_->setEnabled(true);
+  compute_spherical_orientation_->setEnabled(true);
+  compute_radial_orientation_->setEnabled(true);
+  compute_point_density_->setEnabled(true);
+  compute_curvature_->setEnabled(true);
   show_analysis_options_->setEnabled(true);
 }
 
@@ -864,11 +895,25 @@ void MainWindow::DeformSnakesInAction() {
 
   deform_snakes_->setEnabled(false);
   deform_snakes_in_action_->setEnabled(false);
-  toggle_snakes_->setEnabled(true);
+
   save_snakes_->setEnabled(true);
   save_jfilament_snakes_->setEnabled(true);
   compare_snakes_->setEnabled(true);
+  toggle_delete_snake_->setEnabled(true);
+  toggle_trim_tip_->setEnabled(true);
+  toggle_extend_tip_->setEnabled(true);
+  toggle_trim_body_->setEnabled(true);
+  edit_snake_->setEnabled(true);
+
+  toggle_snakes_->setEnabled(true);
+  toggle_clip_->setEnabled(true);
+  toggle_color_azimuthal_->setEnabled(true);
+  toggle_color_polar_->setEnabled(true);
   cut_snakes_->setEnabled(true);
+  compute_spherical_orientation_->setEnabled(true);
+  compute_radial_orientation_->setEnabled(true);
+  compute_point_density_->setEnabled(true);
+  compute_curvature_->setEnabled(true);
   show_analysis_options_->setEnabled(true);
 }
 
@@ -900,6 +945,12 @@ void MainWindow::CutSnakes() {
   group_snakes_->setEnabled(true);
   save_snakes_->setEnabled(true);
   save_jfilament_snakes_->setEnabled(true);
+
+  compute_spherical_orientation_->setEnabled(true);
+  compute_radial_orientation_->setEnabled(true);
+  compute_point_density_->setEnabled(true);
+  compute_curvature_->setEnabled(true);
+  show_analysis_options_->setEnabled(true);
 }
 
 void MainWindow::GroupSnakes() {
@@ -916,12 +967,20 @@ void MainWindow::GroupSnakes() {
   toggle_junctions_->setEnabled(true);
   save_snakes_->setEnabled(true);
   save_jfilament_snakes_->setEnabled(true);
+  compare_snakes_->setEnabled(true);
+  toggle_delete_junction_->setEnabled(true);
+
+  compute_spherical_orientation_->setEnabled(true);
+  compute_radial_orientation_->setEnabled(true);
+  compute_point_density_->setEnabled(true);
+  compute_curvature_->setEnabled(true);
+  show_analysis_options_->setEnabled(true);
 }
 
 void MainWindow::ComputeSphericalOrientation() {
   QString filename = QFileDialog::getSaveFileName(
       this, tr("Save spherical orientation"), "..",
-      tr("Text (*.txt)"));
+      tr("Text files(*.txt)"));
   if (filename.isEmpty()) return;
   multisnake_->ComputeSphericalOrientation(filename.toStdString());
   statusBar()->showMessage(tr("Spherical orientation file saved."));
@@ -929,7 +988,7 @@ void MainWindow::ComputeSphericalOrientation() {
 
 void MainWindow::ComputeRadialOrientation() {
   QString filename = QFileDialog::getSaveFileName(
-      this, tr("Save radial orientation file"), "..", tr("Text (*.txt)"));
+      this, tr("Save radial orientation file"), "..", tr("Text files(*.txt)"));
   if (filename.isEmpty()) return;
 
   PointType center;
@@ -941,7 +1000,7 @@ void MainWindow::ComputeRadialOrientation() {
 
 void MainWindow::ComputePointDensity() {
   QString filename = QFileDialog::getSaveFileName(
-      this, tr("Save snake point density file"), "..", tr("Text (*.txt)"));
+      this, tr("Save snake point density file"), "..", tr("Text files(*.txt)"));
   if (filename.isEmpty()) return;
   PointType center;
   analysis_options_dialog_->GetImageCenter(center);
@@ -954,7 +1013,7 @@ void MainWindow::ComputePointDensity() {
 
 void MainWindow::ComputeCurvature() {
   QString filename = QFileDialog::getSaveFileName(
-      this, tr("Save curvature file"), "..", tr("Text (*.txt)"));
+      this, tr("Save curvature file"), "..", tr("Text files(*.txt)"));
   if (filename.isEmpty()) return;
   int coarse_graining = analysis_options_dialog_->GetCoarseGraining();
   std::cout << coarse_graining << std::endl;
@@ -991,7 +1050,8 @@ void MainWindow::SetParameters() {
   Snake::set_max_iterations(parameters_dialog_->GetMaxIterations());
   Snake::set_change_threshold(parameters_dialog_->GetChangeThreshold());
   Snake::set_check_period(parameters_dialog_->GetCheckPeriod());
-  Snake::set_iterations_per_press(parameters_dialog_->GetIterationsPerPress());
+  Snake::set_iterations_per_press(
+      parameters_dialog_->GetIterationsPerPress());
   multisnake_->solver_bank()->set_alpha(parameters_dialog_->GetAlpha());
   multisnake_->solver_bank()->set_beta(parameters_dialog_->GetBeta());
   multisnake_->solver_bank()->set_gamma(parameters_dialog_->GetGamma());

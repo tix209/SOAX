@@ -44,7 +44,7 @@ class MainWindow : public QMainWindow {
 
   void EditSnake();
 
-  //   void ToggleSnakeDisplay(bool state);
+  // void ToggleSnakeDisplay(bool state);
   void ShowViewOptions();
 
   void InitializeSnakes();

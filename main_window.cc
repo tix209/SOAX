@@ -55,7 +55,8 @@ void MainWindow::CreateFileMenuActions() {
   connect(open_image_, SIGNAL(triggered()),
           this, SLOT(OpenImage()));
 
-  save_as_isotropic_image_ = new QAction(tr("Save as Isotropic Image"), this);
+  save_as_isotropic_image_ = new QAction(tr("Save as Isotropic Image"),
+                                         this);
   connect(save_as_isotropic_image_, SIGNAL(triggered()),
           this, SLOT(SaveAsIsotropicImage()));
 
@@ -248,7 +249,8 @@ void MainWindow::CreateProcessMenuActions() {
   deform_snakes_->setShortcut(Qt::CTRL + Qt::Key_D);
   connect(deform_snakes_, SIGNAL(triggered()), this, SLOT(DeformSnakes()));
 
-  deform_snakes_in_action_ = new QAction(tr("Deform Snakes in Action"), this);
+  deform_snakes_in_action_ = new QAction(
+      tr("Deform Snakes in Action"), this);
   deform_snakes_in_action_->setIcon(QIcon(":/icon/Refresh.png"));
   connect(deform_snakes_in_action_, SIGNAL(triggered()),
           this, SLOT(DeformSnakesInAction()));
@@ -476,7 +478,7 @@ void MainWindow::ResetActions() {
 }
 
 QString MainWindow::GetLastDirectory(const std::string &filename) {
-  QString dir = ".";
+  QString dir = "..";
   if (!filename.empty()) {
     std::string::size_type pos = filename.find_last_of("/\\");
     dir = QString(filename.substr(0, pos).c_str());
@@ -534,10 +536,9 @@ void MainWindow::OpenImage() {
 
 void MainWindow::SaveAsIsotropicImage() {
   bool ok;
-  double z_spacing = QInputDialog::getDouble(this,
-                                             tr("Set inter-slice spacing"),
-                                             tr("Z Spacing"),
-                                             1.0, 0.1, 10, 4, &ok);
+  double z_spacing = QInputDialog::getDouble(
+      this, tr("Set Z spacing"), tr("Z Spacing (relative to X/Y)"),
+      1.0, 0.1, 10, 4, &ok);
   if (!ok) return;
 
   if (std::fabs(z_spacing - 1) > kEpsilon) {

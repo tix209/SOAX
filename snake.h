@@ -58,6 +58,11 @@ class Snake {
     intensity_scaling_ = scale;
   }
 
+  static unsigned short foreground() {return foreground_;}
+  static void set_foreground(unsigned short foreground) {
+    foreground_ = foreground;
+  }
+
   static unsigned short background() {return background_;}
   static void set_background(unsigned short background) {
     background_ = background;
@@ -281,6 +286,7 @@ class Snake {
   static SolverBank *solver_bank_;
 
   static double intensity_scaling_;
+  static unsigned short foreground_;
   static unsigned short background_;
 
   static double desired_spacing_;

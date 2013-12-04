@@ -7,6 +7,7 @@ namespace soax {
 
 SolverBank *Snake::solver_bank_ = NULL;
 double Snake::intensity_scaling_ = 0.0;
+unsigned short Snake::foreground_ = 0.0;
 unsigned short Snake::background_ = 0.0;
 double Snake::desired_spacing_ = 1.0;
 double Snake::minimum_length_ = 0.0;
@@ -458,8 +459,8 @@ double Snake::ComputeLocalStretch(bool is_head) {
   // and actin rings.
   double fg = this->ComputeCircularMeanIntensity(is_head, true);
 
-  if (fg < background_ * intensity_scaling_ + kEpsilon)
-    return 0.0;
+  if (fg < background_ * intensity_scaling_ + kEpsilon ||
+      fg > foreground_ * intensity_scaling_) return 0.0;
 
   double bg = this->ComputeCircularMeanIntensity(is_head, false);
   // std::cout << fg << "\t" << bg << std::endl;
@@ -489,7 +490,7 @@ double Snake::ComputeCircularMeanIntensity(bool is_head, bool is_fg) {
   if (intensities.empty()) {
     // std::cout << "empty intensities!" << std::endl;
     // this->PrintSelf();
-    return 0; // could be a bug here!!!
+    return 0.0; // could be a bug here!!!
   } else {
     return Mean(intensities);
   }
@@ -584,27 +585,28 @@ void Snake::CheckBodyOverlap(const SnakeContainer &converged_snakes) {
 
 void Snake::PrintSelf() const {
   std::cout << "\n======== Snake Info ========" << std::endl;
-  std::cout << "snake: " << this << std::endl;
-  std::cout << "viable: " << viable_ << std::endl;
-  std::cout << "open: " << open_ << std::endl;
-  std::cout << "converged: " << converged_ << std::endl;
-  std::cout << "grouping: " << grouping_ << std::endl;
-  std::cout << "iteration: " << iterations_ << std::endl;
+  std::cout << "snake id: " << this << std::endl;
+  // std::cout << "viable: " << viable_ << std::endl;
+  std::cout << "open: " << std::boolalpha << open_
+            << std::endl << std::noboolalpha;
+  // std::cout << "converged: " << converged_ << std::endl;
+  // std::cout << "grouping: " << grouping_ << std::endl;
+  // std::cout << "iteration: " << iterations_ << std::endl;
   std::cout << "length: " << length_ << std::endl;
-  std::cout << "size: " << this->GetSize() << std::endl;
+  // std::cout << "size: " << this->GetSize() << std::endl;
   std::cout << "spacing: " << spacing_ << std::endl;
-  std::cout << "fixed head: " << fixed_head_ << std::endl;
-  std::cout << "fixed tail: " << fixed_tail_ << std::endl;
+  // std::cout << "fixed head: " << fixed_head_ << std::endl;
+  // std::cout << "fixed tail: " << fixed_tail_ << std::endl;
 
-  unsigned snake_index(0);
   const unsigned column_width = 15;
-  std::cout << "#" << open_ << std::endl;
+  std::cout << "#" << std::endl;
   for (unsigned j = 0; j != vertices_.size(); ++j) {
-    std::cout << snake_index << "\t" << j << "\t";
+    std::cout << j << "\t";
     std::cout << std::setw(column_width) << this->GetX(j)
               << std::setw(column_width) << this->GetY(j)
               << std::setw(column_width) << this->GetZ(j)
-              << std::endl;
+              << std::setw(column_width) << interpolator_->Evaluate(
+                  this->GetPoint(j)) << std::endl;
   }
 }
 

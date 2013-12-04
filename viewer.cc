@@ -139,7 +139,8 @@ void Viewer::SetupImage(ImageType::Pointer image) {
   ConnectorType::Pointer connector = ConnectorType::New();
   connector->SetInput(image);
   connector->Update();
-  // vtkSmartPointer<vtkImageCast> caster = vtkSmartPointer<vtkImageCast>::New();
+  // vtkSmartPointer<vtkImageCast> caster =
+  // vtkSmartPointer<vtkImageCast>::New();
   // caster->SetInputData(connector->GetOutput());
   // caster->SetOutputScalarTypeToUnsignedShort();
   // caster->Update();
@@ -152,7 +153,8 @@ void Viewer::SetupImage(ImageType::Pointer image) {
   double max_intensity = filter->GetMaximum();
   window_ = max_intensity - min_intensity;
   level_ = min_intensity + window_ / 2;
-  mip_min_intensity_ = min_intensity + 0.05 * (max_intensity - min_intensity);
+  mip_min_intensity_ = min_intensity +
+      0.05 * (max_intensity - min_intensity);
   mip_max_intensity_ = max_intensity;
 
   // this->SetupSlicePlanes(caster->GetOutput());

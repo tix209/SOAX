@@ -27,10 +27,12 @@ VectorType SnakeTip::GetDirection() const {
       Snake::grouping_delta() : snake_->GetSize();
   VectorType v;
   if (is_head_) {
-    v = snake_->GetPoint(delta/2) - snake_->GetPoint(delta-1);
+    // v = snake_->GetPoint(delta/2) - snake_->GetPoint(delta-1);
+    v = snake_->GetHead() - snake_->GetPoint(delta-1);
   } else {
-    v = snake_->GetPoint(snake_->GetSize()-delta/2) -
-        snake_->GetPoint(snake_->GetSize()-delta);
+    // v = snake_->GetPoint(snake_->GetSize()-delta/2) -
+    //     snake_->GetPoint(snake_->GetSize()-delta);
+    v = snake_->GetTail() - snake_->GetPoint(snake_->GetSize()-delta);
   }
   v.Normalize();
   return v;

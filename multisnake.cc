@@ -149,6 +149,7 @@ void Multisnake::AssignParameters(const std::string &name,
     ridge_threshold_ = String2Double(value);
   } else if (name == "foreground") {
     foreground_ = String2UShort(value);
+    Snake::set_foreground(foreground_);
   } else if (name == "background") {
     background_ = String2UShort(value);
     Snake::set_background(background_);

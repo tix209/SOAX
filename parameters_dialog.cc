@@ -31,7 +31,8 @@ void ParametersDialog::SetCurrentParameters(Multisnake *ms) {
   spacing_edit_->setText(QString::number(Snake::desired_spacing()));
   min_snake_length_edit_->setText(QString::number(Snake::minimum_length()));
   max_iterations_edit_->setText(QString::number(Snake::max_iterations()));
-  change_threshold_edit_->setText(QString::number(Snake::change_threshold()));
+  change_threshold_edit_->setText(
+      QString::number(Snake::change_threshold()));
   check_period_edit_->setText(QString::number(Snake::check_period()));
   iterations_per_press_edit_->setText(
       QString::number(Snake::iterations_per_press()));
@@ -151,17 +152,22 @@ QGroupBox * ParametersDialog::CreateSnakeGroup() {
           this, SLOT(EnableOKButton()));
 
   QFormLayout *layout_left  = new QFormLayout;
-  layout_left->addRow(tr("Image Intensity Scaling"), intensity_scaling_edit_);
-  layout_left->addRow(tr("Gaussian Standard Deviation (pixels)"), sigma_edit_);
-  layout_left->addRow(tr("Gradient Difference"), ridge_threshold_edit_);
+  layout_left->addRow(tr("Image Intensity Scaling"),
+                      intensity_scaling_edit_);
+  layout_left->addRow(tr("Gaussian Standard Deviation (pixels)"),
+                      sigma_edit_);
+  layout_left->addRow(tr("Ridge Threshold"), ridge_threshold_edit_);
   layout_left->addRow(tr("Foreground"), foreground_edit_);
   layout_left->addRow(tr("Background"), background_edit_);
   layout_left->addRow(tr("Snake Point Spacing (pixels) "), spacing_edit_);
-  layout_left->addRow(tr("Minimum Snake Length"), min_snake_length_edit_);
+  layout_left->addRow(tr("Minimum Snake Length (pixels)"),
+                      min_snake_length_edit_);
   layout_left->addRow(tr("Maximum Iterations"), max_iterations_edit_);
-  layout_left->addRow(tr("Change Threshold (pixels)"), change_threshold_edit_);
+  layout_left->addRow(tr("Change Threshold (pixels)"),
+                      change_threshold_edit_);
   layout_left->addRow(tr("Check Period"), check_period_edit_);
-  layout_left->addRow(tr("Iterations per press"), iterations_per_press_edit_);
+  layout_left->addRow(tr("Iterations per press"),
+                      iterations_per_press_edit_);
   layout_left->addRow(tr(""), initialize_z_check_);
   layout_left->addRow(tr(""), damp_z_check_);
 

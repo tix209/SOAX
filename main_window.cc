@@ -793,28 +793,34 @@ void MainWindow::ShowViewOptions() {
     //std::cout << min_intensity << "\t" << max_intensity << std::endl;
     viewer_->UpdateMIPIntensityRange(min_intensity, max_intensity);
     viewer_->set_clip_span(view_options_dialog_->GetClipSpan());
-    viewer_->set_color_segment_step(
-        view_options_dialog_->GetColorSegmentStep());
+
+    if (viewer_->color_segment_step() !=
+        view_options_dialog_->GetColorSegmentStep()) {
+      viewer_->set_color_segment_step(
+          view_options_dialog_->GetColorSegmentStep());
+      if (toggle_color_azimuthal_->isChecked()) {
+        viewer_->ColorByAzimuthalAngle(true);
+      } else if (toggle_color_polar_->isChecked()) {
+        viewer_->ColorByPolarAngle(true);
+      }
+    }
     view_options_dialog_->DisableOKButton();
   }
   viewer_->Render();
 }
 
 void MainWindow::InitializeSnakes() {
-  std::cout << "============ Current Parameters ============" << std::endl;
-  multisnake_->WriteParameters(std::cout);
-  std::cout << "============================================" << std::endl;
-
   multisnake_->ComputeImageGradient();
   multisnake_->InitializeSnakes();
   QString msg = QString::number(multisnake_->GetNumberOfInitialSnakes()) +
       " snakes initialized.";
   statusBar()->showMessage(msg, message_timeout_);
 
+  viewer_->RemoveSnakes();
   viewer_->SetupSnakes(multisnake_->initial_snakes());
   toggle_snakes_->setChecked(true);
-
-  initialize_snakes_->setEnabled(false);
+  viewer_->Render();
+  // initialize_snakes_->setEnabled(false);
   save_snakes_->setEnabled(true);
   save_jfilament_snakes_->setEnabled(true);
   toggle_snakes_->setEnabled(true);
@@ -831,11 +837,16 @@ void MainWindow::InitializeSnakes() {
 }
 
 void MainWindow::DeformSnakes() {
+  std::cout << "============ Current Parameters ============" << std::endl;
+  multisnake_->WriteParameters(std::cout);
+  std::cout << "============================================" << std::endl;
+
   progress_bar_->setMaximum(multisnake_->GetNumberOfInitialSnakes());
   multisnake_->DeformSnakes(progress_bar_);
   unsigned num_snakes = multisnake_->GetNumberOfConvergedSnakes();
   QString msg = "Number of converged snakes: " + QString::number(num_snakes);
   statusBar()->showMessage(msg, message_timeout_);
+
   viewer_->RemoveSnakes();
   viewer_->SetupSnakes(multisnake_->converged_snakes());
   toggle_snakes_->setChecked(true);

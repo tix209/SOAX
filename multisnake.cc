@@ -241,6 +241,7 @@ void Multisnake::WriteParameters(std::ostream &os) const {
 }
 
 void Multisnake::ComputeImageGradient() {
+  if (external_force_) return;
   typedef itk::Image<double, kDimension> InternalImageType;
   typedef itk::ShiftScaleImageFilter<ImageType, InternalImageType> ScalerType;
   ScalerType::Pointer scaler = ScalerType::New();
@@ -286,6 +287,7 @@ void Multisnake::ComputeImageGradient() {
 }
 
 void Multisnake::InitializeSnakes() {
+  this->ClearSnakeContainer(initial_snakes_);
   BoolVectorImageType::Pointer ridge_image =
       InitializeBoolVectorImage();
   ScanGradient(ridge_image);

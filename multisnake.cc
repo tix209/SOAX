@@ -17,8 +17,8 @@
 namespace soax {
 
 Multisnake::Multisnake() :
-    image_(NULL), external_force_(NULL), intensity_scaling_(0.0),
-    sigma_(0.0), ridge_threshold_(0.0), foreground_(0), background_(0),
+    image_(NULL), external_force_(NULL), intensity_scaling_(0.004),
+    sigma_(0.0), ridge_threshold_(0.01), foreground_(65535), background_(0),
     initialize_z_(false) {
   interpolator_ = InterpolatorType::New();
   vector_interpolator_ = VectorInterpolatorType::New();

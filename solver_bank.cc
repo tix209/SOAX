@@ -2,7 +2,7 @@
 
 namespace soax {
 
-SolverBank::SolverBank() : alpha_(0.0), beta_(0.0), gamma_(0.0) {}
+SolverBank::SolverBank() : alpha_(0.01), beta_(0.1), gamma_(2.0) {}
 
 SolverBank::~SolverBank() {
   this->ClearSolvers(open_solvers_);

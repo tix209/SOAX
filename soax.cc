@@ -56,7 +56,7 @@ int main(int argc, char **argv) {
     }
 
     if (vm.count("help")) {
-      std::cout << "Usage: \n" << all;
+      std::cout << "SOAX Console Mode: \n" << all;
       return EXIT_SUCCESS;
     }
 

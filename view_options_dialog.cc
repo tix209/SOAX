@@ -65,11 +65,11 @@ QGroupBox * ViewOptionsDialog::CreateMIPGroup() {
 }
 
 QGroupBox * ViewOptionsDialog::CreateClipGroup() {
-  QGroupBox *gb = new QGroupBox(tr("Span for Clipping Snake "));
+  QGroupBox *gb = new QGroupBox(tr("Show Snake Locally"));
   clip_span_edit_ = new QLineEdit("0.0");
   connect(clip_span_edit_, SIGNAL(textChanged(const QString &)),
           this, SLOT(EnableOKButton()));
-  QLabel *label = new QLabel(tr("Span"));
+  QLabel *label = new QLabel(tr("Interval"));
   QHBoxLayout *layout = new QHBoxLayout;
   layout->addWidget(label);
   layout->addWidget(clip_span_edit_);
@@ -83,7 +83,7 @@ QGroupBox *ViewOptionsDialog::CreateColorOrientationGroup() {
   color_segment_step_edit_ = new QLineEdit("0");
   connect(color_segment_step_edit_, SIGNAL(textChanged(const QString &)),
           this, SLOT(EnableOKButton()));
-  QLabel *label = new QLabel(tr("Snake segment size"));
+  QLabel *label = new QLabel(tr("Segment size"));
   QHBoxLayout *layout = new QHBoxLayout;
   layout->addWidget(label);
   layout->addWidget(color_segment_step_edit_);

@@ -818,9 +818,10 @@ void MainWindow::InitializeSnakes() {
 
   viewer_->RemoveSnakes();
   viewer_->SetupSnakes(multisnake_->initial_snakes());
+  // viewer_->SetupSnakesAsOneActor(multisnake_->initial_snakes());
   toggle_snakes_->setChecked(true);
   viewer_->Render();
-  // initialize_snakes_->setEnabled(false);
+
   save_snakes_->setEnabled(true);
   save_jfilament_snakes_->setEnabled(true);
   toggle_snakes_->setEnabled(true);
@@ -852,6 +853,7 @@ void MainWindow::DeformSnakes() {
   toggle_snakes_->setChecked(true);
   viewer_->Render();
 
+  initialize_snakes_->setEnabled(false);
   deform_snakes_->setEnabled(false);
   save_snakes_->setEnabled(true);
   save_jfilament_snakes_->setEnabled(true);

@@ -151,6 +151,8 @@ class Viewer : public QObject {
   void SetupBoundingBox();
   void SetupCubeAxes(vtkImageData *image);
 
+  void UpdateJunctionRadius(ImageType::Pointer image);
+
   vtkActor * ActSnake(Snake *snake);
   vtkActor * ActSnakeSegments(Snake *snake, unsigned start, unsigned end);
   vtkPolyData * MakePolyData(Snake *snake,unsigned start, unsigned end);

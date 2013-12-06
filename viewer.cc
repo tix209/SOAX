@@ -139,11 +139,6 @@ void Viewer::SetupImage(ImageType::Pointer image) {
   ConnectorType::Pointer connector = ConnectorType::New();
   connector->SetInput(image);
   connector->Update();
-  // vtkSmartPointer<vtkImageCast> caster =
-  // vtkSmartPointer<vtkImageCast>::New();
-  // caster->SetInputData(connector->GetOutput());
-  // caster->SetOutputScalarTypeToUnsignedShort();
-  // caster->Update();
 
   typedef itk::StatisticsImageFilter<ImageType> FilterType;
   FilterType::Pointer filter = FilterType::New();
@@ -157,15 +152,31 @@ void Viewer::SetupImage(ImageType::Pointer image) {
       0.05 * (max_intensity - min_intensity);
   mip_max_intensity_ = max_intensity;
 
-  // this->SetupSlicePlanes(caster->GetOutput());
-  // this->SetupMIPRendering(caster->GetOutput());
   this->SetupSlicePlanes(connector->GetOutput());
   this->SetupMIPRendering(connector->GetOutput());
   this->SetupOrientationMarker();
   this->SetupUpperLeftCornerText(min_intensity, max_intensity);
   this->SetupBoundingBox();
-  // this->SetupCubeAxes(caster->GetOutput());
   this->SetupCubeAxes(connector->GetOutput());
+
+  this->UpdateJunctionRadius(image);
+}
+
+void Viewer::UpdateJunctionRadius(ImageType::Pointer image) {
+  ImageType::SizeType size = image->GetLargestPossibleRegion().GetSize();
+  double diag_length = 0.0;
+  for (unsigned i = 0; i < kDimension; ++i) {
+    diag_length += size[i] * size[i];
+  }
+  diag_length = std::sqrt(diag_length);
+  if (diag_length < 100.0)
+    junction_radius_ = 1.5;
+  else if (diag_length < 200.0)
+    junction_radius_ = 2;
+  else if (diag_length < 500.0)
+    junction_radius_ = 3;
+  else
+    junction_radius_ = 4;
 }
 
 void Viewer::SetupSlicePlanes(vtkImageData *data) {

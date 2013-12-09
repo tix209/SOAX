@@ -1119,7 +1119,7 @@ void MainWindow::SaveSnapshot() {
 
 void MainWindow::AboutSOAX() {
   QMessageBox::about(this, tr("About SOAX"),
-                     tr("<h3>SOAX 3.5.0</h3>"
+                     tr("<h3>SOAX 3.5.1</h3>"
                         "<p>Copyright &copy; 2013 Ting Xu, IDEA Lab, "
                         "Lehigh University "
                         "<p>SOAX extracts curvilinear network structure "

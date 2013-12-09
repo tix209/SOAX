@@ -49,7 +49,7 @@ int main(int argc, char **argv) {
 
     if (vm.count("version")) {
       const std::string version_msg(
-          "SOAX 3.5.0\n"
+          "SOAX 3.5.1\n"
           "Copyright (C) 2013 Ting Xu, IDEA Lab, Lehigh University.");
       std::cout << version_msg << std::endl;
       return EXIT_SUCCESS;

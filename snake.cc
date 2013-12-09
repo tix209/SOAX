@@ -37,7 +37,8 @@ Snake::Snake(const PointContainer &points, bool is_open, bool is_grouping,
              InterpolatorType::Pointer interpolator,
              VectorInterpolatorType::Pointer vector_interpolator,
              TransformType::Pointer transform) :
-    vertices_(points), open_(is_open), grouping_(is_grouping) {
+    open_(is_open), grouping_(is_grouping) {
+  vertices_ = points;
   image_ = image;
   external_force_ = external_force;
   interpolator_ = interpolator;
@@ -61,7 +62,6 @@ Snake::Snake(const PointContainer &points, bool is_open, bool is_grouping,
   tail_hooked_index_ = 0;
 }
 
-
 void Snake::Resample() {
   if (!viable_) return;
 
@@ -75,17 +75,29 @@ void Snake::Resample() {
 
   PairContainer sums[kDimension];
   this->UpdateLength(sums);
+  if (length_ < spacing) {
+    viable_ = false;
+    return;
+  }
   unsigned new_size = this->ComputeNewSize(spacing);
   spacing_ = length_ / (new_size - 1);
   this->InterpolateVertices(sums, new_size);
 
-  if (final_ || !open_) {
+  if (final_) {
     viable_ = length_ > minimum_length_;
   } else if (grouping_) {
     viable_ = length_ > grouping_distance_threshold_;
-  } else if (!converged_) {
+  } else {
     viable_ = vertices_.size() >= kMinimumEvolvingSize;
   }
+
+  // if (final_ || !open_) {
+  //   viable_ = length_ > minimum_length_;
+  // } else if (grouping_) {
+  //   viable_ = length_ > grouping_distance_threshold_;
+  // } else if (!converged_) {
+  //   viable_ = vertices_.size() >= kMinimumEvolvingSize;
+  // }
 }
 
 void Snake::UpdateLength(PairContainer *sums) {
@@ -694,6 +706,8 @@ void Snake::CopySubSnakes(SnakeContainer &c) {
   snake->Resample();
   if (snake->viable())
     c.push_back(snake);
+  else
+    delete snake;
 }
 
 void Snake::EvolveWithTipFixed(unsigned max_iter) {

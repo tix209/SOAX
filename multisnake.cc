@@ -28,6 +28,10 @@ Multisnake::Multisnake() :
 }
 
 Multisnake::~Multisnake() {
+  this->ClearSnakeContainer(initial_snakes_);
+  this->ClearSnakeContainer(converged_snakes_);
+  this->ClearSnakeContainer(comparing_snakes1_);
+  this->ClearSnakeContainer(comparing_snakes2_);
   delete solver_bank_;
 }
 
@@ -434,6 +438,8 @@ void Multisnake::LinkFromIndex(
 
     if (snake->viable())
       initial_snakes_.push_back(snake);
+    else
+      delete snake;
   }
 }
 
@@ -443,6 +449,10 @@ bool Multisnake::FindNextCandidate(
     BoolVectorImageType::IndexType &index, unsigned direction) {
   BoolVectorImageType::IndexType current_index = index;
   index[direction]++;
+
+  if (!candidate_image->GetLargestPossibleRegion().IsInside(index))
+    return false;
+
   int d1 = (direction + 1) % 3;
   int d2 = (direction + 2) % 3;
 
@@ -470,8 +480,6 @@ void Multisnake::DeformSnakes(QProgressBar * progress_bar) {
   while (!initial_snakes_.empty()) {
     Snake *snake = initial_snakes_.back();
     initial_snakes_.pop_back();
-    // if (initial_snakes_.size() == 100)
-    // snake->PrintSelf();
 
     snake->Evolve(converged_snakes_, kBigNumber);
 

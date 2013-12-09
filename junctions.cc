@@ -8,8 +8,6 @@ namespace soax {
 Junctions::Junctions() {}
 
 Junctions::~Junctions() {
-  // this->DeleteTipSetContainer();
-  // this->DeleteTipContainer();
   this->Reset();
 }
 

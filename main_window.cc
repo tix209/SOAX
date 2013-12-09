@@ -11,7 +11,7 @@
 namespace soax {
 
 MainWindow::MainWindow() : message_timeout_(0) {
-  central_widget_ = new QWidget;
+  central_widget_ = new QWidget(this);
   multisnake_ = new Multisnake;
   viewer_ = new Viewer;
   parameters_dialog_ = new ParametersDialog(this);

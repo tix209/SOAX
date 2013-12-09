@@ -104,6 +104,11 @@ Viewer::Viewer():
 }
 
 Viewer::~Viewer() {
+  selected_junctions_.clear();
+  selected_snakes_.clear();
+  this->RemoveJunctions();
+  this->RemoveSnakes();
+  this->RemoveColorSegments();
   on_snake_sphere1_->Delete();
   on_snake_sphere2_->Delete();
   off_snake_sphere_->Delete();

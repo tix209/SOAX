@@ -265,7 +265,7 @@ void Multisnake::ComputeImageGradient() {
     caster->SetInput(filter->GetOutput());
     try {
       caster->Update();
-    } catch( itk::ExceptionObject & e ) {
+    } catch(itk::ExceptionObject & e) {
       std::cerr << "Exception caught when computing image gradient!\n"
                 << e << std::endl;
     }
@@ -280,7 +280,7 @@ void Multisnake::ComputeImageGradient() {
     filter->SetInput(scaler->GetOutput());
     try {
       filter->Update();
-    } catch( itk::ExceptionObject & e ) {
+    } catch(itk::ExceptionObject & e) {
       std::cerr << "Exception caught when computing image gradient!\n"
                 << e << std::endl;
     }

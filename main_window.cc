@@ -367,7 +367,7 @@ void MainWindow::CreateMenus() {
   process_->addAction(cut_snakes_);
   process_->addAction(group_snakes_);
 
-  analysis_ = menuBar()->addMenu(tr("Analysis"));
+  analysis_ = menuBar()->addMenu(tr("&Analysis"));
   actin_cable_submenu_ = analysis_->addMenu(tr("Actin Cable"));
   contractile_ring_submenu_ = analysis_->addMenu(tr("Contractile Ring"));
   fibrin_submenu_ = analysis_->addMenu(tr("Fibrin Network"));
@@ -907,6 +907,7 @@ void MainWindow::DeformSnakesInAction() {
   toggle_snakes_->setChecked(true);
   viewer_->Render();
 
+  initialize_snakes_->setEnabled(false);
   deform_snakes_->setEnabled(false);
   deform_snakes_in_action_->setEnabled(false);
 

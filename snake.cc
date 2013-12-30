@@ -149,8 +149,7 @@ void Snake::InterpolateVertices(const PairContainer *sums,
 void Snake::Evolve(const SnakeContainer &converged_snakes,
                    unsigned max_iter) {
   unsigned iter = 0;
-  // interpolator_->SetInputImage(image_);
-  // vector_interpolator_->SetInputImage(external_force_);
+
   while (iter <= max_iter) {
     if (iterations_ >= max_iterations_)  {
       // std::cout << this << " reaches maximum iterations." << std::endl;

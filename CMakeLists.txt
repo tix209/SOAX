@@ -17,9 +17,10 @@ if(QT_FOUND)
   include(${QT_USE_FILE})
 endif(QT_FOUND)
 
-set(Boost_USE_STATIC_LIBS        ON)
-set(Boost_USE_MULTITHREADED      ON)
-set(Boost_USE_STATIC_RUNTIME    OFF)
+## Enable these options for Windows build
+# set(Boost_USE_STATIC_LIBS        ON)
+# set(Boost_USE_MULTITHREADED      ON)
+# set(Boost_USE_STATIC_RUNTIME    OFF)
 
 find_package(Boost 1.54.0 COMPONENTS program_options REQUIRED)
 

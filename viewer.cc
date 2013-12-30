@@ -91,10 +91,10 @@ Viewer::Viewer():
   comparing_snakes1_color_ = kYellow;
   comparing_snakes2_color_ = kCyan;
   selected_snake_color_ = kCyan;
-  snake_width_ = 3.0;
+  snake_width_ = 2.0;
   comparing_snakes1_width_ = 6.0;
   comparing_snakes2_width_ = 10.0;
-  snake_opacity_ = 0.8;
+  snake_opacity_ = 0.9;
   comparing_snakes1_opacity_ = 0.5;
   comparing_snakes2_opacity_ = 0.3;
   junction_radius_ = 2.0;
@@ -179,9 +179,11 @@ void Viewer::UpdateJunctionRadius(ImageType::Pointer image) {
   else if (diag_length < 200.0)
     junction_radius_ = 2;
   else if (diag_length < 500.0)
-    junction_radius_ = 3;
+    junction_radius_ = 2.5;
   else
-    junction_radius_ = 4;
+    junction_radius_ = 3.5;
+  // std::cout << "Junction radius is set to: "
+  //           << junction_radius_ << std::endl;
 }
 
 void Viewer::SetupSlicePlanes(vtkImageData *data) {

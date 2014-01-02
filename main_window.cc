@@ -1120,8 +1120,8 @@ void MainWindow::SaveSnapshot() {
 
 void MainWindow::AboutSOAX() {
   QMessageBox::about(this, tr("About SOAX"),
-                     tr("<h3>SOAX 3.5.1</h3>"
-                        "<p>Copyright &copy; 2013 Ting Xu, IDEA Lab, "
+                     tr("<h3>SOAX 3.5.2</h3>"
+                        "<p>Copyright &copy; 2014 Ting Xu, IDEA Lab, "
                         "Lehigh University "
                         "<p>SOAX extracts curvilinear network structure "
                         "in biomedical images."

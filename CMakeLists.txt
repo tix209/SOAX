@@ -72,6 +72,7 @@ qt4_add_resources(rccs ${rcc_srcs})
 
 add_executable(soax ${common_srcs} ${gui_srcs} ${mocs} ${rccs})
 add_executable(evaluate evaluate.cc ${common_srcs})
+add_executable(gtf gt_f_value.cc ${common_srcs})
 
 target_link_libraries(soax
   ${QT_LIBRARIES}
@@ -81,6 +82,11 @@ target_link_libraries(soax
   )
 
 target_link_libraries(evaluate
+  ${ITK_LIBRARIES}
+  ${Boost_PROGRAM_OPTIONS_LIBRARY}
+  )
+
+target_link_libraries(gtf
   ${ITK_LIBRARIES}
   ${Boost_PROGRAM_OPTIONS_LIBRARY}
   )

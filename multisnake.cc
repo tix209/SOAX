@@ -11,6 +11,8 @@
 #include "itkVectorCastImageFilter.h"
 #include "itkGradientRecursiveGaussianImageFilter.h"
 #include "itkImageRegionIteratorWithIndex.h"
+#include "itkImageRegionIterator.h"
+#include "itkOtsuThresholdImageFilter.h"
 #include "solver_bank.h"
 #include "utility.h"
 
@@ -948,29 +950,30 @@ void Multisnake::EvaluateByFFunction(double threshold, double penalizer,
     return;
   }
 
-  double fvalue = 0.0;
-  if (!converged_snakes_.empty()) {
-    // interpolator_->SetInputImage(image_);
-    unsigned total_npoints = 0;
-    unsigned npoints_low_snr = 0;
-    for (SnakeConstIterator it = converged_snakes_.begin();
-         it != converged_snakes_.end(); it++) {
-      for (unsigned i = 0; i < (*it)->GetSize(); i++) {
-        double local_snr = 0.0;
-        bool local_bg_defined = (*it)->ComputeLocalSNR(
-            i, radial_near, radial_far, local_snr);
-        if (local_bg_defined) {
-          total_npoints++;
-          if (local_snr < threshold) npoints_low_snr++;
-        }
-      }
-    }
-    ImageType::SizeType size = image_->GetLargestPossibleRegion().GetSize();
-    double normalizer = std::sqrt(static_cast<double>(
-        size[1]*size[1]+size[2]*size[2]+size[0]*size[0]));
-    fvalue = (penalizer * npoints_low_snr - total_npoints) *
-        Snake::desired_spacing() / normalizer;
-  }
+  double fvalue = this->ComputeFValue(converged_snakes_, threshold,
+                                      penalizer, radial_near, radial_far);
+  // if (!converged_snakes_.empty()) {
+  //   // interpolator_->SetInputImage(image_);
+  //   unsigned total_npoints = 0;
+  //   unsigned npoints_low_snr = 0;
+  //   for (SnakeConstIterator it = converged_snakes_.begin();
+  //        it != converged_snakes_.end(); it++) {
+  //     for (unsigned i = 0; i < (*it)->GetSize(); i++) {
+  //       double local_snr = 0.0;
+  //       bool local_bg_defined = (*it)->ComputeLocalSNR(
+  //           i, radial_near, radial_far, local_snr);
+  //       if (local_bg_defined) {
+  //         total_npoints++;
+  //         if (local_snr < threshold) npoints_low_snr++;
+  //       }
+  //     }
+  //   }
+  //   ImageType::SizeType size = image_->GetLargestPossibleRegion().GetSize();
+  //   double normalizer = std::sqrt(static_cast<double>(
+  //       size[1]*size[1]+size[2]*size[2]+size[0]*size[0]));
+  //   fvalue = (penalizer * npoints_low_snr - total_npoints) *
+  //       Snake::desired_spacing() / normalizer;
+  // }
 
   const unsigned width = 15;
   outfile << std::setw(width) << ridge_threshold_
@@ -1229,5 +1232,87 @@ void Multisnake::AddSubsnakesToInitialSnakes(Snake *s) {
                          s->subsnakes().begin(), s->subsnakes().end());
 }
 
+double Multisnake::ComputeImageSNR() const {
+  ImageType::Pointer img = NULL;
+  int threshold = this->ComputeBinaryImage(img);
+  std::cout << "Otsu threshold: " << threshold << std::endl;
+
+  typedef itk::ImageFileWriter<ImageType> WriterType;
+  WriterType::Pointer writer = WriterType::New();
+  std::string::size_type slash_pos = image_filename_.find_last_of("/\\");
+  std::string::size_type dot_pos = image_filename_.find_last_of(".");
+  std::string extracted_name = image_filename_.substr(slash_pos+1,
+                                                      dot_pos-slash_pos-1);
+  std::cout << "extracted name: " << extracted_name << std::endl;
+  writer->SetFileName(extracted_name + "_binary.mha");
+  writer->SetInput(img);
+  writer->Update();
+
+  double fg_mean(0.0), bg_mean(0.0), bg_std(0.0);
+  this->ComputeForegroundBackgroundStatistics(
+      threshold, fg_mean, bg_mean, bg_std);
+  if (bg_std < kEpsilon) {
+    std::cerr << "Background intensity std is zero!" << std::endl;
+    return 0.0;
+  }
+  return (fg_mean - bg_mean) / bg_std;
+}
+
+int Multisnake::ComputeBinaryImage(ImageType::Pointer &img) const {
+  typedef itk::OtsuThresholdImageFilter<ImageType, ImageType> FilterType;
+  FilterType::Pointer otsu_filter = FilterType::New();
+  otsu_filter->SetInput(image_);
+  otsu_filter->SetOutsideValue(255);
+  otsu_filter->SetInsideValue(0);
+  otsu_filter->Update();
+  img = otsu_filter->GetOutput();
+  return otsu_filter->GetThreshold();
+}
+
+void Multisnake::ComputeForegroundBackgroundStatistics(
+    int threshold, double &fg_mean, double &bg_mean, double &bg_std) const {
+  DataContainer fgs, bgs;
+  typedef itk::ImageRegionConstIterator<ImageType> ConstIteratorType;
+  ConstIteratorType it(image_, image_->GetLargestPossibleRegion());
+  it.GoToBegin();
+  while (!it.IsAtEnd()) {
+    if (it.Get() > threshold) { // foreground
+      fgs.push_back(it.Get());
+    } else { // background
+      bgs.push_back(it.Get());
+    }
+    ++it;
+  }
+  fg_mean = Mean(fgs);
+  bg_mean = Mean(bgs);
+  bg_std = StandardDeviation(bgs, bg_mean);
+  std::cout << "fg mean: " << fg_mean << "\tbg mean: " << bg_mean
+            << "\tbg std: " << bg_std << std::endl;
+}
+
+double Multisnake::ComputeFValue(const SnakeContainer &snakes,
+                                 double threshold, double penalizer,
+                                 int radial_near, int radial_far) const {
+  double fvalue = 0.0;
+  if (!snakes.empty()) {
+    unsigned total_npoints = 0;
+    unsigned low_snr_npoints = 0;
+    for (SnakeConstIterator it = snakes.begin(); it != snakes.end(); it++) {
+      for (unsigned i = 0; i < (*it)->GetSize(); i++) {
+        double local_snr = 0.0;
+        // int radial_near(3), radial_far(6);
+        bool local_bg_defined = (*it)->ComputeLocalSNR(
+            i, radial_near, radial_far, local_snr);
+        if (local_bg_defined) {
+          total_npoints++;
+          if (local_snr < threshold) low_snr_npoints++;
+        }
+      }
+    }
+    fvalue = (penalizer * low_snr_npoints - total_npoints) *
+        Snake::desired_spacing();
+  }
+  return fvalue;
+}
 
 } // namespace soax

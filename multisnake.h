@@ -149,6 +149,17 @@ class Multisnake {
   void AddConvergedSnake(Snake *s) {converged_snakes_.push_back(s);}
   void AddSubsnakesToInitialSnakes(Snake *s);
 
+  /*
+   * Estimate image SNR using Otsu's method.
+   */
+  double ComputeImageSNR() const;
+
+  double ComputeGroundTruthFValue(double snr_threshold,
+                                  double penalizer) const {
+    return this->ComputeFValue(comparing_snakes1_, snr_threshold, penalizer,
+                               3, 6);
+  }
+
  private:
   typedef itk::Vector<bool, kDimension> BoolVectorType;
   typedef itk::Image<BoolVectorType, kDimension> BoolVectorImageType;
@@ -226,6 +237,27 @@ class Multisnake {
 
   void ComputeThetaPhi(VectorType vector, double &theta, double &phi) const;
 
+  /*
+   * Compute F-value for a set of snakes.
+   */
+  double ComputeFValue(const SnakeContainer &snakes, double threshold,
+                       double penalizer, int radial_near,
+                       int radial_far) const;
+
+  /*
+   * Compute a binary image of input image using Otsu's method and
+   * return the applied threshold.
+   */
+  int ComputeBinaryImage(ImageType::Pointer &img) const;
+
+  /*
+   * Compute the intensity statistics of input image using the binary
+   * image produced by Otsu's method (see above method)
+   */
+  void ComputeForegroundBackgroundStatistics(int threshold,
+                                             double &fg_mean,
+                                             double &bg_mean,
+                                             double &bg_std) const;
 
   std::string image_filename_;
   ImageType::Pointer image_;

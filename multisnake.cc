@@ -787,7 +787,7 @@ void Multisnake::SaveSnakes(const SnakeContainer &snakes,
     return;
   }
 
-  const unsigned column_width = 20;
+  const unsigned column_width = 16;
   outfile << "image\t" << image_filename_ << std::endl;
   this->WriteParameters(outfile);
 
@@ -797,18 +797,17 @@ void Multisnake::SaveSnakes(const SnakeContainer &snakes,
   }
 
   unsigned snake_index = 0;
-  outfile << std::setprecision(12);
+  // outfile << std::setprecision(12);
 
   for (SnakeConstIterator it = snakes.begin(); it != snakes.end(); ++it) {
     outfile << "#" << (*it)->open() << std::endl;
     for (unsigned j = 0; j != (*it)->GetSize(); ++j) {
       double intensity = interpolator_->Evaluate((*it)->GetPoint(j));
-      outfile << snake_index << "\t" << j << "\t";
-      outfile << std::setw(column_width) << (*it)->GetX(j)
+      outfile << snake_index << std::setw(12) << j
+              << std::setw(column_width) << (*it)->GetX(j)
               << std::setw(column_width) << (*it)->GetY(j)
               << std::setw(column_width) << (*it)->GetZ(j)
-              << std::setw(column_width) << intensity
-              << std::endl;
+              << std::setw(20) << intensity << std::endl;
     }
     snake_index++;
   }

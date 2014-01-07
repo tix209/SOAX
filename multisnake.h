@@ -160,6 +160,12 @@ class Multisnake {
                                3, 6);
   }
 
+  double ComputeResultSnakesFValue(double snr_threshold,
+                                  double penalizer) const {
+    return this->ComputeFValue(converged_snakes_, snr_threshold, penalizer,
+                               2, 4);
+  }
+
  private:
   typedef itk::Vector<bool, kDimension> BoolVectorType;
   typedef itk::Image<BoolVectorType, kDimension> BoolVectorImageType;

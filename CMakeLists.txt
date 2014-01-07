@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 
 project(SOAX)
 
-find_package(ITK REQUIRED)
+find_package(ITK 4 REQUIRED)
 if(ITK_FOUND)
   include(${ITK_USE_FILE})
 endif(ITK_FOUND)
@@ -65,7 +65,7 @@ set(moc_gui_srcs
 
 set(rcc_srcs icons.qrc)
 
-add_definitions(-Wall)
+# add_definitions(-Wall)
 
 qt4_wrap_cpp(mocs ${moc_gui_srcs})
 qt4_add_resources(rccs ${rcc_srcs})

@@ -4,6 +4,7 @@
 #include <limits>
 #include <deque>
 #include "itkImage.h"
+// #include "itkNearestNeighborInterpolateImageFunction.h"
 #include "itkLinearInterpolateImageFunction.h"
 #include "itkVectorLinearInterpolateImageFunction.h"
 #include "itkVersorTransform.h"
@@ -39,6 +40,7 @@ typedef SnakeContainer::iterator SnakeIterator;
 typedef SnakeContainer::const_iterator SnakeConstIterator;
 
 typedef itk::LinearInterpolateImageFunction<ImageType> InterpolatorType;
+// typedef itk::NearestNeighborInterpolateImageFunction<ImageType> InterpolatorType;
 typedef itk::VectorLinearInterpolateImageFunction<VectorImageType>
 VectorInterpolatorType;
 typedef itk::VersorTransform<double> TransformType;

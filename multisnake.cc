@@ -1301,6 +1301,7 @@ double Multisnake::ComputeFValue(const SnakeContainer &snakes,
       for (unsigned i = 0; i < (*it)->GetSize(); i++) {
         double local_snr = 0.0;
         // int radial_near(3), radial_far(6);
+        // std::cout << "snaxel " << i << "\t";
         bool local_bg_defined = (*it)->ComputeLocalSNR(
             i, radial_near, radial_far, local_snr);
         if (local_bg_defined) {

@@ -511,13 +511,14 @@ void Snake::GetStartingRadialDirection(VectorType &direction,
                                        const VectorType &normal,
                                        const PointType &vertex) {
   unsigned principal_index = this->GetPrincipalIndex(normal);
-
+  // std::cout << "principal_index: " << principal_index << std::endl;
   PointType other;
   other[(principal_index + 1) % 3] = 0;
   other[(principal_index + 2) % 3] = 0;
   other[principal_index] = (normal[0]*vertex[0] + normal[1]*vertex[1] +
                             normal[2]*vertex[2]) / normal[principal_index];
-
+  // std::cout << "other vertex: " << other << std::endl;
+  // std::cout << "vertex: " << vertex << std::endl;
   direction = other - vertex;
   direction.Normalize();
 }
@@ -738,12 +739,16 @@ const PointType &Snake::GetTip(bool is_head) const {
 bool Snake::ComputeLocalSNR(unsigned index, int radial_near, int radial_far,
                             double &local_snr) {
   double foreground = interpolator_->Evaluate(this->GetPoint(index));
+  // std::cout << "foreground: " << foreground << std::endl;
   double bg_mean(0.0), bg_std(0.0);
   bool local_bg_defined = this->ComputeLocalBackgroundMeanStd(
       index, radial_near, radial_far, bg_mean, bg_std);
+  // std::cout << "background mean: " << bg_mean << std::endl;
+  // std::cout << "background std: " << bg_std << std::endl;
   if (local_bg_defined) {
     local_snr = (foreground - bg_mean) / bg_std;
   }
+  // std::cout << "local snr: " << local_snr << std::endl;
   return local_bg_defined;
 }
 
@@ -755,13 +760,14 @@ bool Snake::ComputeLocalBackgroundMeanStd(unsigned index,int radial_near,
   PointType &vertex = vertices_.at(index);
   VectorType radial;
   this->GetStartingRadialDirection(radial, normal, vertex);
-
+  // std::cout << "staring radial direction: " << radial << std::endl;
   const int number_of_sectors = 8;
 
   for (int s = 0; s < number_of_sectors; s++) {
     for (int d = radial_near; d < radial_far; d++) {
       PointType sample_point;
       this->ComputeSamplePoint(sample_point, vertex, radial, normal, d, s);
+      // std::cout << "sample point: " << sample_point << std::endl;
       if (this->IsInsideImage(sample_point)) {
         bgs.push_back(interpolator_->Evaluate(sample_point));
       }

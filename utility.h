@@ -21,6 +21,7 @@ double Maximum(const DataContainer &data);
  */
 std::string GetImageName(const std::string &snake_path);
 
+void PrintDataContainer(const DataContainer &data);
 } // namespace soax
 
 #endif // SOAX_UTILITY_H_

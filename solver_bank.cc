@@ -20,8 +20,10 @@ void SolverBank::ClearSolvers(SolverContainer &solvers) {
 }
 
 void SolverBank::Reset() {
-  this->DestroySolutionVectors(open_solvers_);
-  this->DestroySolutionVectors(closed_solvers_);
+  // this->DestroySolutionVectors(open_solvers_);
+  // this->DestroySolutionVectors(closed_solvers_);
+  this->ClearSolvers(open_solvers_);
+  this->ClearSolvers(closed_solvers_);
 }
 
 void SolverBank::DestroySolutionVectors(SolverContainer &solvers) {

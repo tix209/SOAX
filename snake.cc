@@ -468,14 +468,77 @@ double Snake::ComputeLocalStretch(bool is_head) {
 
   // Good for noisy images such as OCT vessels and microtubules,
   // and actin rings.
-  double fg = this->ComputeCircularMeanIntensity(is_head, true);
+  // double fg1 = this->ComputeCircularMeanIntensity(is_head, true);
+  double fg = this->ComputeForegroundMeanIntensity(is_head);
 
   if (fg < background_ * intensity_scaling_ + kEpsilon ||
-      fg > foreground_ * intensity_scaling_) return 0.0;
+      fg > foreground_ * intensity_scaling_)
+    return 0.0;
+  // std::cout << "fg1: " << fg1 << "\tfg: " << fg << std::endl;
 
-  double bg = this->ComputeCircularMeanIntensity(is_head, false);
-  // std::cout << fg << "\t" << bg << std::endl;
-  return stretch_factor_ * (1 - bg / fg);
+  double bg1 = this->ComputeCircularMeanIntensity(is_head, false);
+  double bg = this->ComputeBackgroundMeanIntensity(is_head);
+
+  // if (abs(bg1-bg) > kEpsilon) {
+  //   std::cout << "bg1: " << bg1 << "\tbg: " << bg << std::endl;
+  // }
+  if (bg < 0.0)
+    return 0.0;
+
+  return 1 - bg / fg;
+}
+
+double Snake::ComputeForegroundMeanIntensity(bool is_head) const {
+  PointType vertex = is_head ? vertices_.front() : vertices_.back();
+
+  if (radial_near_ > 1) {
+    const VectorType &normal = is_head ? head_tangent_ : tail_tangent_;
+    VectorType radial;
+    this->GetStartingRadialDirection(radial, normal, vertex);
+    DataContainer fgs;
+    fgs.push_back(intensity_scaling_ * interpolator_->Evaluate(vertex));
+
+    for (int s = 0; s < number_of_sectors_; s++) {
+      for (int d = 1; d < radial_near_; d++) {
+        PointType sample_point;
+        this->ComputeSamplePoint(sample_point, vertex, radial, normal, d, s);
+        if (this->IsInsideImage(sample_point)) {
+          double intensity = interpolator_->Evaluate(sample_point);
+          fgs.push_back(intensity_scaling_ * intensity);
+        }
+      }
+    }
+    return Mean(fgs);
+  } else if (radial_near_ == 1) {
+    return interpolator_->Evaluate(vertex);
+  } else { // should never reach here
+    std::cerr << "Fatal error: radial_near_ is less than 1!" << std::endl;
+    return 0.0;
+  }
+}
+
+double Snake::ComputeBackgroundMeanIntensity(bool is_head) const {
+  PointType vertex = is_head ? vertices_.front() : vertices_.back();
+  const VectorType &normal = is_head ? head_tangent_ : tail_tangent_;
+  VectorType radial;
+  this->GetStartingRadialDirection(radial, normal, vertex);
+  DataContainer bgs;
+  for (int s = 0; s < number_of_sectors_; s++) {
+    for (int d = radial_near_; d < radial_far_; d++) {
+      PointType sample_point;
+      this->ComputeSamplePoint(sample_point, vertex, radial, normal, d, s);
+      if (this->IsInsideImage(sample_point)) {
+        double intensity = interpolator_->Evaluate(sample_point);
+        bgs.push_back(intensity_scaling_ * intensity);
+      }
+    }
+  }
+
+  if (bgs.empty())  {
+    // std::cout << "bgs empty!" << std::endl;
+    return -1.0;
+  } // return a negative value intentionally
+  else  return Mean(bgs);
 }
 
 double Snake::ComputeCircularMeanIntensity(bool is_head, bool is_fg) {
@@ -498,6 +561,11 @@ double Snake::ComputeCircularMeanIntensity(bool is_head, bool is_fg) {
       }
     }
   }
+
+  // if (is_fg)
+  //   PrintDataContainer(intensities);
+  //   std::cout << "size: " << intensities.size() << std::endl;
+
   if (intensities.empty()) {
     // std::cout << "empty intensities!" << std::endl;
     // this->PrintSelf();
@@ -509,7 +577,7 @@ double Snake::ComputeCircularMeanIntensity(bool is_head, bool is_fg) {
 
 void Snake::GetStartingRadialDirection(VectorType &direction,
                                        const VectorType &normal,
-                                       const PointType &vertex) {
+                                       const PointType &vertex) const {
   unsigned principal_index = this->GetPrincipalIndex(normal);
 
   PointType other;
@@ -523,7 +591,7 @@ void Snake::GetStartingRadialDirection(VectorType &direction,
 }
 
 
-unsigned Snake::GetPrincipalIndex(const VectorType &vec) {
+unsigned Snake::GetPrincipalIndex(const VectorType &vec) const {
   unsigned ind = 0;
   for (unsigned i = 1; i < kDimension; ++i) {
     if (fabs(vec[i]) > fabs(vec[ind]))
@@ -535,7 +603,7 @@ unsigned Snake::GetPrincipalIndex(const VectorType &vec) {
 void Snake::ComputeSamplePoint(PointType &point, const PointType &origin,
                                const VectorType &radial,
                                const VectorType &normal,
-                               int d, int s) {
+                               int d, int s) const {
   if (d == 0) {
     point = origin;
     return;
@@ -548,7 +616,7 @@ void Snake::ComputeSamplePoint(PointType &point, const PointType &origin,
   }
 }
 
-bool Snake::IsInsideImage(const PointType &point) {
+bool Snake::IsInsideImage(const PointType &point) const {
   ImageType::SizeType size = image_->GetLargestPossibleRegion().GetSize();
   for (unsigned i = 0; i < kDimension; ++i) {
     if (point[i] < kBoundary || point[i] >= size[i] - kBoundary)

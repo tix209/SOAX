@@ -1244,7 +1244,7 @@ double Multisnake::ComputeImageSNR() const {
   std::string::size_type dot_pos = image_filename_.find_last_of(".");
   std::string extracted_name = image_filename_.substr(slash_pos+1,
                                                       dot_pos-slash_pos-1);
-  std::cout << "extracted name: " << extracted_name << std::endl;
+  // std::cout << "extracted name: " << extracted_name << std::endl;
   writer->SetFileName(extracted_name + "_binary.mha");
   writer->SetInput(img);
   writer->Update();

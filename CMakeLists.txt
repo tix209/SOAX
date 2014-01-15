@@ -92,6 +92,8 @@ target_link_libraries(eval_gt
 target_link_libraries(eval_f
   ${ITK_LIBRARIES}
   ${Boost_PROGRAM_OPTIONS_LIBRARY}
+  ${Boost_FILESYSTEM_LIBRARY} 
+  ${Boost_SYSTEM_LIBRARY}
   )
 
 target_link_libraries(gtf

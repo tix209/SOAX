@@ -47,7 +47,7 @@ int main(int argc, char **argv) {
     for (int j = 0; j < 20; ++j) {
       double penalizer = 1.0 + 0.1 * j;
       double fvalue = multisnake.ComputeGroundTruthFValue(threshold,
-                                                          penalizer);
+                                                          penalizer, 4, 12);
       outfile << threshold << "\t" << penalizer << "\t" << fvalue
               << std::endl;
     }

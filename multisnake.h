@@ -155,15 +155,19 @@ class Multisnake {
   double ComputeImageSNR() const;
 
   double ComputeGroundTruthFValue(double snr_threshold,
-                                  double penalizer) const {
+                                  double penalizer,
+                                  int radial_near,
+                                  int radial_far) const {
     return this->ComputeFValue(comparing_snakes1_, snr_threshold, penalizer,
-                               4, 12);
+                               radial_near, radial_far);
   }
 
   double ComputeResultSnakesFValue(double snr_threshold,
-                                  double penalizer) const {
+                                   double penalizer,
+                                   int radial_near,
+                                   int radial_far) const {
     return this->ComputeFValue(converged_snakes_, snr_threshold, penalizer,
-                               4, 12);
+                               radial_near, radial_far);
   }
 
  private:

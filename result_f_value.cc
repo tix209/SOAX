@@ -9,7 +9,7 @@
  * set radial_near = 4, radial_far = 12, and we use snake point
  * intensity as the foreground intensity.
  *
- * Copyright (C) Ting Xu, IDEA Lab, Lehigh University.
+ * Copyright (C) 2014 Ting Xu, IDEA Lab, Lehigh University.
  */
 
 
@@ -50,7 +50,8 @@ int main (int argc, char **argv) {
         for (int j = 0; j < 10; ++j) {
           double penalizer = 1.0 + 0.5 * j;
           double gt_fvalue = multisnake.ComputeGroundTruthFValue(threshold,
-                                                                 penalizer);
+                                                                 penalizer,
+                                                                 4, 12);
           bool snakes_greater_fvalue = true;
 
           fs::directory_iterator end_it;
@@ -62,7 +63,8 @@ int main (int argc, char **argv) {
             //           << " resultant snakes loaded." << std::endl;
 
             double fvalue = multisnake.ComputeResultSnakesFValue(threshold,
-                                                                 penalizer);
+                                                                 penalizer,
+                                                                 4, 12);
             if (fvalue < gt_fvalue) {
               snakes_greater_fvalue = false;
               // std::cout << "t: " << i*0.1 << "\t" << "c: "

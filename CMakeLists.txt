@@ -22,7 +22,8 @@ endif(QT_FOUND)
 # set(Boost_USE_MULTITHREADED      ON)
 # set(Boost_USE_STATIC_RUNTIME    OFF)
 
-find_package(Boost 1.54.0 COMPONENTS program_options REQUIRED)
+find_package(Boost 1.54.0 COMPONENTS 
+  program_options filesystem system REQUIRED)
 
 if(Boost_FOUND)
   include_directories(${Boost_INCLUDE_DIRS})
@@ -71,8 +72,10 @@ qt4_wrap_cpp(mocs ${moc_gui_srcs})
 qt4_add_resources(rccs ${rcc_srcs})
 
 add_executable(soax ${common_srcs} ${gui_srcs} ${mocs} ${rccs})
-add_executable(evaluate evaluate.cc ${common_srcs})
+add_executable(eval_gt evaluate_gt.cc ${common_srcs})
+add_executable(eval_f evaluate_f.cc ${common_srcs})
 add_executable(gtf gt_f_value.cc ${common_srcs})
+add_executable(rsf result_f_value.cc ${common_srcs})
 
 target_link_libraries(soax
   ${QT_LIBRARIES}
@@ -81,7 +84,12 @@ target_link_libraries(soax
   ${Boost_PROGRAM_OPTIONS_LIBRARY}
   )
 
-target_link_libraries(evaluate
+target_link_libraries(eval_gt
+  ${ITK_LIBRARIES}
+  ${Boost_PROGRAM_OPTIONS_LIBRARY}
+  )
+
+target_link_libraries(eval_f
   ${ITK_LIBRARIES}
   ${Boost_PROGRAM_OPTIONS_LIBRARY}
   )
@@ -89,4 +97,11 @@ target_link_libraries(evaluate
 target_link_libraries(gtf
   ${ITK_LIBRARIES}
   ${Boost_PROGRAM_OPTIONS_LIBRARY}
+  )
+
+target_link_libraries(rsf
+  ${ITK_LIBRARIES}
+  ${Boost_PROGRAM_OPTIONS_LIBRARY}
+  ${Boost_FILESYSTEM_LIBRARY} 
+  ${Boost_SYSTEM_LIBRARY}
   )

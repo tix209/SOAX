@@ -739,6 +739,8 @@ const PointType &Snake::GetTip(bool is_head) const {
 bool Snake::ComputeLocalSNR(unsigned index, int radial_near, int radial_far,
                             double &local_snr) {
   double foreground = interpolator_->Evaluate(this->GetPoint(index));
+  // double foreground = this->ComputeLocalForegroundMean(index, radial_near);
+
   // std::cout << "foreground: " << foreground << std::endl;
   double bg_mean(0.0), bg_std(0.0);
   bool local_bg_defined = this->ComputeLocalBackgroundMeanStd(
@@ -747,9 +749,41 @@ bool Snake::ComputeLocalSNR(unsigned index, int radial_near, int radial_far,
   // std::cout << "background std: " << bg_std << std::endl;
   if (local_bg_defined) {
     local_snr = (foreground - bg_mean) / bg_std;
+    // std::cout << "local snr: " << local_snr << std::endl;
   }
-  // std::cout << "local snr: " << local_snr << std::endl;
+
   return local_bg_defined;
+}
+
+double Snake::ComputeLocalForegroundMean(unsigned index, int radial_near) {
+  if (radial_near < 1) {
+    std::cerr << "Fatal error: radial_near is less than 1!" << std::endl;
+    return 0.0;
+  }
+
+  DataContainer fgs;
+  fgs.push_back(interpolator_->Evaluate(this->GetPoint(index)));
+
+  if (radial_near > 1) {
+    const VectorType normal = this->ComputeUnitTangentVector(index);
+    PointType &vertex = vertices_.at(index);
+    VectorType radial;
+    this->GetStartingRadialDirection(radial, normal, vertex);
+    // std::cout << "staring radial direction: " << radial << std::endl;
+    const int number_of_sectors = 8;
+
+    for (int s = 0; s < number_of_sectors; s++) {
+      for (int d = 1; d < radial_near; d++) {
+        PointType sample_point;
+        this->ComputeSamplePoint(sample_point, vertex, radial, normal, d, s);
+        // std::cout << "sample point: " << sample_point << std::endl;
+        if (this->IsInsideImage(sample_point)) {
+          fgs.push_back(interpolator_->Evaluate(sample_point));
+        }
+      }
+    }
+  }
+  return Mean(fgs);
 }
 
 bool Snake::ComputeLocalBackgroundMeanStd(unsigned index,int radial_near,

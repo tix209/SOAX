@@ -157,13 +157,13 @@ class Multisnake {
   double ComputeGroundTruthFValue(double snr_threshold,
                                   double penalizer) const {
     return this->ComputeFValue(comparing_snakes1_, snr_threshold, penalizer,
-                               3, 6);
+                               4, 12);
   }
 
   double ComputeResultSnakesFValue(double snr_threshold,
                                   double penalizer) const {
     return this->ComputeFValue(converged_snakes_, snr_threshold, penalizer,
-                               2, 4);
+                               4, 12);
   }
 
  private:

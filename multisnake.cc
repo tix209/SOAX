@@ -659,7 +659,7 @@ unsigned Multisnake::GetNumberOfSnakesCloseToPoint(const PointType &p) {
 
 void Multisnake::LoadSnakes(const std::string &filename,
                             SnakeContainer &snakes) {
-  snakes.clear();
+  this->ClearSnakeContainer(snakes);
   std::ifstream infile(filename.c_str());
   if (!infile.is_open()) {
     std::cerr << "LoadSnakes: couldn't open file: " << filename << std::endl;
@@ -715,7 +715,7 @@ void Multisnake::LoadSnakes(const std::string &filename,
 
 void Multisnake::LoadJFilamentSnakes(const std::string &filename,
                                      SnakeContainer &snakes) {
-  snakes.clear();
+  this->ClearSnakeContainer(snakes);
   std::ifstream infile(filename.c_str());
   if (!infile) {
     std::cerr << "Couldn't open file: " << infile << std::endl;
@@ -986,9 +986,10 @@ void Multisnake::EvaluateByFFunction(double threshold, double penalizer,
   outfile.close();
 }
 
-void Multisnake::PrintGroundTruthLocalSNRValues(int radial_near, int radial_far) {
+void Multisnake::PrintGroundTruthLocalSNRValues(int radial_near,
+                                                int radial_far) {
   if (comparing_snakes1_.empty()) return;
-  // interpolator_->SetInputImage(image_);
+
   DataContainer snrs;
   for (SnakeConstIterator it = comparing_snakes1_.begin();
        it != comparing_snakes1_.end(); ++it) {
@@ -1003,7 +1004,8 @@ void Multisnake::PrintGroundTruthLocalSNRValues(int radial_near, int radial_far)
   }
 
   std::cout << "========= Local SNR Info =========" << std::endl;
-  std::cout << "Min: " << Minimum(snrs) << "\tMax: " << Maximum(snrs) << std::endl;
+  std::cout << "Min: " << Minimum(snrs) << "\tMax: " << Maximum(snrs)
+            << std::endl;
   double mean_snr = Mean(snrs);
   std::cout << "Mean: " << mean_snr << "\t Median: " << Median(snrs)
             << "\t Std: " << StandardDeviation(snrs, mean_snr) << std::endl;
@@ -1309,6 +1311,8 @@ double Multisnake::ComputeFValue(const SnakeContainer &snakes,
         }
       }
     }
+    // std::cout << "c: " << penalizer << std::endl;
+    // std::cout << "Low SNR points: " << low_snr_npoints << std::endl;
     fvalue = (penalizer * low_snr_npoints - total_npoints) *
         Snake::desired_spacing();
   }

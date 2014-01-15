@@ -231,6 +231,7 @@ class Snake {
 
   void AddJunctionIndex(unsigned index);
 
+  double ComputeLocalForegroundMean(unsigned index, int radial_near);
   bool ComputeLocalBackgroundMeanStd(unsigned index,int radial_near,
                                      int radial_far, double &mean,
                                      double &std);

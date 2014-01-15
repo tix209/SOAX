@@ -22,7 +22,7 @@ endif(QT_FOUND)
 # set(Boost_USE_MULTITHREADED      ON)
 # set(Boost_USE_STATIC_RUNTIME    OFF)
 
-find_package(Boost 1.54.0 COMPONENTS 
+find_package(Boost 1.54.0 COMPONENTS
   program_options filesystem system REQUIRED)
 
 if(Boost_FOUND)
@@ -87,12 +87,14 @@ target_link_libraries(soax
 target_link_libraries(eval_gt
   ${ITK_LIBRARIES}
   ${Boost_PROGRAM_OPTIONS_LIBRARY}
+  ${Boost_FILESYSTEM_LIBRARY}
+  ${Boost_SYSTEM_LIBRARY}
   )
 
 target_link_libraries(eval_f
   ${ITK_LIBRARIES}
   ${Boost_PROGRAM_OPTIONS_LIBRARY}
-  ${Boost_FILESYSTEM_LIBRARY} 
+  ${Boost_FILESYSTEM_LIBRARY}
   ${Boost_SYSTEM_LIBRARY}
   )
 
@@ -104,6 +106,6 @@ target_link_libraries(gtf
 target_link_libraries(rsf
   ${ITK_LIBRARIES}
   ${Boost_PROGRAM_OPTIONS_LIBRARY}
-  ${Boost_FILESYSTEM_LIBRARY} 
+  ${Boost_FILESYSTEM_LIBRARY}
   ${Boost_SYSTEM_LIBRARY}
   )

@@ -124,12 +124,12 @@ class Multisnake {
   void SaveSnakes(const SnakeContainer &snakes,
                   const std::string &filename) const;
 
-  void EvaluateByVertexErrorHausdorffDistance(
-      const std::string &snake_path, const std::string &filename) const;
-  void EvaluateByFFunction(double threshold, double penalizer,
-                           int radial_near, int radial_far,
-                           const std::string &snake_path,
-                           const std::string &filename) const;
+  // void EvaluateByVertexErrorHausdorffDistance(
+  //     const std::string &snake_path, const std::string &filename) const;
+  // void EvaluateByFFunction(double threshold, double penalizer,
+  //                          int radial_near, int radial_far,
+  //                          const std::string &snake_path,
+  //                          const std::string &filename) const;
 
   void PrintGroundTruthLocalSNRValues(int radial_near, int radial_far);
 
@@ -169,6 +169,10 @@ class Multisnake {
     return this->ComputeFValue(converged_snakes_, snr_threshold, penalizer,
                                radial_near, radial_far);
   }
+
+  void ComputeResultSnakesVertexErrorHausdorffDistance(
+      double &vertex_error, double &hausdorff) const;
+
 
  private:
   typedef itk::Vector<bool, kDimension> BoolVectorType;

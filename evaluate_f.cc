@@ -1,7 +1,9 @@
 /*
  * File: evaluate_f.cc
  *
- * This file implements the evaluation of segmentation using F-function.
+ * This file implements the evaluation of segmentation using
+ * F-function. The proper meta-parameters t and c are determined by
+ * another file result_f_value.cc.
  *
  * Copyright (C) 2014 Ting Xu, IDEA Lab, Lehigh University
  */

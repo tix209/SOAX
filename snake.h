@@ -104,10 +104,21 @@ class Snake {
   }
 
   static int radial_near() {return radial_near_;}
-  static void set_radial_near(int rnear) {radial_near_ = rnear;}
+  /*
+   * Note radial_near_ cannot be less than 1 because the snake point
+   * has to be included in the local foreground neighborhood.
+   */
+  static void set_radial_near(int rnear) {
+    radial_near_ = rnear > 0 ? rnear : 1;
+  }
 
   static int radial_far() {return radial_far_;}
-  static void set_radial_far(int rfar) {radial_far_ = rfar;}
+  /*
+   * Note radial_far must be greater than radial_near_.
+   */
+  static void set_radial_far(int rfar) {
+    radial_far_ = rfar > 0 ? rfar : 2;
+  }
 
   static unsigned delta() {return delta_;}
   static void set_delta(unsigned n) {delta_ = n;}
@@ -205,27 +216,29 @@ class Snake {
   void UpdateTailTangent();
 
   double ComputeLocalStretch(bool is_head);
-  /*
-   * Compute the mean intensity of sample points on a orthogonal plane
-   * at end points. For foreground intensity (is_fg = true), the
-   * sampling region is a circle; for background intensity, the
-   * sampling region is a banded ring defined by "radial_near" and
-   * "radial_far".
-   */
+
   double ComputeCircularMeanIntensity(bool is_head, bool is_fg);
 
+  /*
+   * Compute the mean foreground and background intensity around the
+   * tips. The sample points are on a orthogonal plane at tips. For
+   * foreground intensity (is_fg = true), the sampling region is a
+   * circle; for background intensity, the sampling region is a
+   * annulus defined by "radial_near_" and "radial_far_".
+   */
+  double ComputeForegroundMeanIntensity(bool is_head) const;
+  double ComputeBackgroundMeanIntensity(bool is_head) const;
+
   void GetStartingRadialDirection(VectorType &direction,
-                                         const VectorType &normal,
-                                         const PointType &vertex);
-  unsigned GetPrincipalIndex(const VectorType &vec);
-  bool IsPerpendicular(const VectorType &vec1,
-                              const VectorType &vec2);
+                                  const VectorType &normal,
+                                  const PointType &vertex) const;
+  unsigned GetPrincipalIndex(const VectorType &vec) const;
   void ComputeSamplePoint(PointType &point,
                           const PointType &origin,
                           const VectorType &radial,
                           const VectorType &normal,
-                          int d, int s);
-  bool IsInsideImage(const PointType &point);
+                          int d, int s) const;
+  bool IsInsideImage(const PointType &point) const;
 
   void CheckBodyOverlap(const SnakeContainer &converged_snakes);
 

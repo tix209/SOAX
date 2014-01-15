@@ -141,7 +141,6 @@ void Multisnake::LoadParameters(const std::string &filename) {
     converter >> name >> value;
     this->AssignParameters(name, value);
   }
-  // Snake::set_background(background_ * intensity_scaling_);
 }
 
 void Multisnake::AssignParameters(const std::string &name,
@@ -247,7 +246,8 @@ void Multisnake::WriteParameters(std::ostream &os) const {
 }
 
 void Multisnake::ComputeImageGradient() {
-  if (external_force_) return;
+  // if (external_force_) return;
+  external_force_ = NULL;
   typedef itk::Image<double, kDimension> InternalImageType;
   typedef itk::ShiftScaleImageFilter<ImageType, InternalImageType> ScalerType;
   ScalerType::Pointer scaler = ScalerType::New();

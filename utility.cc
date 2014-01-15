@@ -130,4 +130,13 @@ std::string GetImageName(const std::string &snake_path) {
   return line.substr(found_slash + 1);
 }
 
+void PrintDataContainer(const DataContainer &data) {
+  std::cout << "=====================" << std::endl;
+  for (DataContainer::const_iterator it = data.begin();
+       it != data.end(); ++it) {
+    std::cout << *it << "\t";
+  }
+  std::cout << "\n====================" << std::endl;
+}
+
 } // namespace soax

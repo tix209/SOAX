@@ -398,6 +398,8 @@ void MainWindow::CreateToolBar() {
   toolbar_->addSeparator();
   toolbar_->addAction(toggle_planes_);
   toolbar_->addAction(toggle_mip_);
+
+  toolbar_->addSeparator();
   toolbar_->addAction(toggle_snakes_);
   toolbar_->addAction(toggle_junctions_);
   toolbar_->addAction(toggle_clip_);

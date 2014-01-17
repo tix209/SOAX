@@ -94,7 +94,7 @@ int main(int argc, char **argv) {
           multisnake.LoadConvergedSnakes(it->path().string());
           // std::cout << multisnake.GetNumberOfConvergedSnakes()
           //           << " resultant snakes loaded." << std::endl;
-          double vertex_error(0.0), hausdorff(0.0);
+          double vertex_error(100.0), hausdorff(100.0);
           multisnake.ComputeResultSnakesVertexErrorHausdorffDistance(
               vertex_error, hausdorff);
           outfile << std::setw(width) << multisnake.ridge_threshold()

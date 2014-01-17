@@ -7,7 +7,7 @@ if(ITK_FOUND)
   include(${ITK_USE_FILE})
 endif(ITK_FOUND)
 
-find_package(VTK 6.0 REQUIRED NO_MODULE)
+find_package(VTK REQUIRED NO_MODULE)
 if(VTK_FOUND)
   include(${VTK_USE_FILE})
 endif(VTK_FOUND)
@@ -22,7 +22,7 @@ endif(QT_FOUND)
 # set(Boost_USE_MULTITHREADED      ON)
 # set(Boost_USE_STATIC_RUNTIME    OFF)
 
-find_package(Boost 1.54.0 COMPONENTS
+find_package(Boost COMPONENTS
   program_options filesystem system REQUIRED)
 
 if(Boost_FOUND)

@@ -1233,25 +1233,28 @@ void Multisnake::AddSubsnakesToInitialSnakes(Snake *s) {
                          s->subsnakes().begin(), s->subsnakes().end());
 }
 
-double Multisnake::ComputeImageSNR() const {
+double Multisnake::ComputeImageSNR(const std::string &binary_filename) const {
   ImageType::Pointer img = NULL;
   int threshold = this->ComputeBinaryImage(img);
-  std::cout << "Otsu threshold: " << threshold << std::endl;
+  // std::cout << "Otsu threshold: " << threshold << std::endl;
 
-  typedef itk::ImageFileWriter<ImageType> WriterType;
-  WriterType::Pointer writer = WriterType::New();
-  std::string::size_type slash_pos = image_filename_.find_last_of("/\\");
-  std::string::size_type dot_pos = image_filename_.find_last_of(".");
-  std::string extracted_name = image_filename_.substr(slash_pos+1,
-                                                      dot_pos-slash_pos-1);
-  // std::cout << "extracted name: " << extracted_name << std::endl;
-  writer->SetFileName(extracted_name + "_binary.mha");
-  writer->SetInput(img);
-  writer->Update();
+  if (!binary_filename.empty()) {
+    typedef itk::ImageFileWriter<ImageType> WriterType;
+    WriterType::Pointer writer = WriterType::New();
+    // std::string::size_type slash_pos = image_filename_.find_last_of("/\\");
+    // std::string::size_type dot_pos = image_filename_.find_last_of(".");
+    // std::string extracted_name = image_filename_.substr(
+    //     slash_pos+1, dot_pos-slash_pos-1);
+    // std::cout << "extracted name: " << extracted_name << std::endl;
+    // writer->SetFileName(extracted_name + "_binary.mha");
+    writer->SetFileName(binary_filename);
+    writer->SetInput(img);
+    writer->Update();
+  }
 
   double fg_mean(0.0), bg_mean(0.0), bg_std(0.0);
-  this->ComputeForegroundBackgroundStatistics(
-      threshold, fg_mean, bg_mean, bg_std);
+  this->ComputeForegroundBackgroundStatistics(threshold, fg_mean,
+                                              bg_mean, bg_std);
   if (bg_std < kEpsilon) {
     std::cerr << "Background intensity std is zero!" << std::endl;
     return 0.0;
@@ -1287,8 +1290,8 @@ void Multisnake::ComputeForegroundBackgroundStatistics(
   fg_mean = Mean(fgs);
   bg_mean = Mean(bgs);
   bg_std = StandardDeviation(bgs, bg_mean);
-  std::cout << "fg mean: " << fg_mean << "\tbg mean: " << bg_mean
-            << "\tbg std: " << bg_std << std::endl;
+  // std::cout << "fg mean: " << fg_mean << "\tbg mean: " << bg_mean
+  //           << "\tbg std: " << bg_std << std::endl;
 }
 
 double Multisnake::ComputeFValue(const SnakeContainer &snakes,

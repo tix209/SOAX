@@ -75,8 +75,8 @@ qt4_add_resources(rccs ${rcc_srcs})
 add_executable(soax ${common_srcs} ${gui_srcs} ${mocs} ${rccs})
 add_executable(eval_gt evaluate_gt.cc ${common_srcs})
 add_executable(eval_f evaluate_f.cc ${common_srcs})
-add_executable(gtf gt_f_value.cc ${common_srcs})
 add_executable(rsf result_f_value.cc ${common_srcs})
+add_executable(snr image_snr.cc ${common_srcs})
 
 target_link_libraries(soax
   ${QT_LIBRARIES}
@@ -99,9 +99,11 @@ target_link_libraries(eval_f
   ${Boost_SYSTEM_LIBRARY}
   )
 
-target_link_libraries(gtf
+target_link_libraries(snr
   ${ITK_LIBRARIES}
   ${Boost_PROGRAM_OPTIONS_LIBRARY}
+  ${Boost_FILESYSTEM_LIBRARY}
+  ${Boost_SYSTEM_LIBRARY}
   )
 
 target_link_libraries(rsf

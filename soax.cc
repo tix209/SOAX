@@ -33,14 +33,14 @@ int main(int argc, char **argv) {
         ("snake,s", po::value<std::string>(&snake_path)->required(),
          "Snake file path");
 
-    double grad_diff(0.0);
+    double ridge_threshold(0.0);
     double stretch(0.0);
     po::options_description optional("Optional options");
     optional.add_options()
-        ("grad-diff", po::value<double>(&grad_diff),
-         "Ridge threshold for SOAC initialization")
+        ("grad-diff", po::value<double>(&ridge_threshold),
+         "Ridge threshold for SOAC's initialization")
         ("stretch", po::value<double>(&stretch),
-         "Magnitude of stretching force");
+         "Stretching factor for SOAC's evolution");
 
     po::options_description all("Allowed options");
     all.add(generic).add(required).add(optional);
@@ -66,8 +66,8 @@ int main(int argc, char **argv) {
     multisnake.LoadParameters(parameter_path);
 
     if (vm.count("grad-diff")) {
-      std::cout << "grad-diff is set to " << grad_diff << std::endl;
-      multisnake.set_ridge_threshold(grad_diff);
+      std::cout << "grad-diff is set to " << ridge_threshold << std::endl;
+      multisnake.set_ridge_threshold(ridge_threshold);
     }
 
     if (vm.count("stretch")) {
@@ -75,9 +75,9 @@ int main(int argc, char **argv) {
       soax::Snake::set_stretch_factor(stretch);
     }
 
-    std::cout << "============ Current Parameters ============" << std::endl;
+    std::cout << "=========== Current Parameters ===========" << std::endl;
     multisnake.WriteParameters(std::cout);
-    std::cout << "============================================" << std::endl;
+    std::cout << "==========================================" << std::endl;
 
     multisnake.ComputeImageGradient();
     multisnake.InitializeSnakes();

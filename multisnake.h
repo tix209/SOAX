@@ -47,33 +47,36 @@ class Multisnake {
   void set_sigma(double sigma) {sigma_ = sigma;}
 
   double ridge_threshold() const {return ridge_threshold_;}
-  void set_ridge_threshold(double threshold) {ridge_threshold_ = threshold;}
+  void set_ridge_threshold(double threshold) {
+    ridge_threshold_ = threshold;
+  }
 
   unsigned short foreground() const {return foreground_;}
-  void set_foreground(unsigned short foreground) {foreground_ = foreground;}
+  void set_foreground(unsigned short foreground) {
+    foreground_ = foreground;
+  }
 
   unsigned short background() const {return background_;}
-  void set_background(unsigned short background) {background_ = background;}
+  void set_background(unsigned short background) {
+    background_ = background;
+  }
 
   bool initialize_z() const {return initialize_z_;}
   void set_initialize_z(bool init_z) {initialize_z_ = init_z;}
 
   SolverBank *solver_bank() const {return solver_bank_;}
 
-  // /*
-  //  * Multiply the image intensity by a constant factor.
-  //  */
-  // void ScaleImageIntensity();
-
   /*
    * Compute image gradient field for both snake initialization and
-   * evolution.
+   * evolution. If reset is true, the external_force_ is recomputed.
    */
-  void ComputeImageGradient();
+  void ComputeImageGradient(bool reset = true);
 
   void InitializeSnakes();
 
-  unsigned GetNumberOfInitialSnakes() const {return initial_snakes_.size();}
+  unsigned GetNumberOfInitialSnakes() const {
+    return initial_snakes_.size();
+  }
   unsigned GetNumberOfConvergedSnakes() const {
     return converged_snakes_.size();
   }
@@ -85,9 +88,15 @@ class Multisnake {
   }
 
   const SnakeContainer &initial_snakes() const {return initial_snakes_;}
-  const SnakeContainer &converged_snakes() const {return converged_snakes_;}
-  const SnakeContainer &comparing_snakes1() const {return comparing_snakes1_;}
-  const SnakeContainer &comparing_snakes2() const {return comparing_snakes2_;}
+  const SnakeContainer &converged_snakes() const {
+    return converged_snakes_;
+  }
+  const SnakeContainer &comparing_snakes1() const {
+    return comparing_snakes1_;
+  }
+  const SnakeContainer &comparing_snakes2() const {
+    return comparing_snakes2_;
+  }
 
   void SaveConvergedSnakesAsJFilamentFormat(
       const std::string &filename) const {
@@ -158,7 +167,8 @@ class Multisnake {
                                   double penalizer,
                                   int radial_near,
                                   int radial_far) const {
-    return this->ComputeFValue(comparing_snakes1_, snr_threshold, penalizer,
+    return this->ComputeFValue(comparing_snakes1_,
+                               snr_threshold, penalizer,
                                radial_near, radial_far);
   }
 
@@ -166,7 +176,8 @@ class Multisnake {
                                    double penalizer,
                                    int radial_near,
                                    int radial_far) const {
-    return this->ComputeFValue(converged_snakes_, snr_threshold, penalizer,
+    return this->ComputeFValue(converged_snakes_,
+                               snr_threshold, penalizer,
                                radial_near, radial_far);
   }
 
@@ -254,9 +265,9 @@ class Multisnake {
   /*
    * Compute F-value for a set of snakes.
    */
-  double ComputeFValue(const SnakeContainer &snakes, double threshold,
-                       double penalizer, int radial_near,
-                       int radial_far) const;
+  double ComputeFValue(const SnakeContainer &snakes,
+                       double threshold, double penalizer,
+                       int radial_near,int radial_far) const;
 
   /*
    * Compute a binary image of input image using Otsu's method and
@@ -318,113 +329,10 @@ class Multisnake {
   unsigned short foreground_;
   unsigned short background_;
 
-  // /*
-  //  * The distance between adjacent snake points the snakes try to maintain.
-  //  */
-  // double desired_spacing_;
-
   /*
    * True if initialize snakes along z axis direction.
    */
   bool initialize_z_;
-
-  // /*
-  //  * Minimum length for the final snake.
-  //  */
-  // double minimum_length_;
-
-  // /*
-  //  * Maximum number iterations allowed for a snake.
-  //  */
-  // unsigned max_iterations_;
-
-  // /*
-  //  * Change threshold for determining snake convergence. If every
-  //  * snake point move a distance less than this threshold, then the
-  //  * snake is converged.
-  //  */
-  // double change_threshold_;
-
-  // /*
-  //  * Period (# of iterations) of checking convergence.
-  //  */
-  // unsigned check_period_;
-
-  /*
-   * Number of iterations performed on each click in step evolution mode.
-   */
-  // unsigned iterations_per_press_;
-
-  // /*
-  //  * Weight for first order continuity of snakes.
-  //  */
-  // double alpha_;
-
-  // /*
-  //  * Weight for second order continuity of snakes.
-  //  */
-  // double beta_;
-
-  // /*
-  //  * Step size of iteration.
-  //  */
-  // double gamma_;
-
-  // /*
-  //  * Weight for external forces.
-  //  */
-  // double external_factor_;
-
-  // /*
-  //  * Weight for stretch forces. It controls how much snakes stretch.
-  //  */
-  // double stretch_factor_;
-
-  // /*
-  //  * These thress parameters determine the sampling locations of local
-  //  * shell in estimating the local background intensity near snake
-  //  * tips.
-  //  */
-  // int number_of_sectors_;
-  // int radial_near_;
-  // int radial_far_;
-
-  // /*
-  //  * Number of points apart to compute the tangent vector at snake
-  //  * tips.
-  //  */
-  // unsigned delta_;
-
-  // /*
-  //  * Distance threshold for determining overlap with other snakes.
-  //  */
-  // double overlap_threshold_;
-
-  // /*
-  //  * Distance threshold for determining junctions.
-  //  */
-  // double grouping_distance_threshold_;
-
-  // /*
-  //  * Number of points apart to compute the snake branch directions for
-  //  * grouping.
-  //  */
-  // unsigned grouping_delta_;
-
-  // /*
-  //  * Angle threshold (in radians) for determining if two snake
-  //  * branches are smooth enough to be linked together during grouping
-  //  * process.
-  //  */
-  // double direction_threshold_;
-
-  // /*
-  //  * Flag of damping of stretching along z direction. If it is true,
-  //  * the stretching forces are reduced if the tangent directions of
-  //  * tips are along z direction.
-  //  */
-  // bool damp_z_;
-
 
   DISALLOW_COPY_AND_ASSIGN(Multisnake);
 };

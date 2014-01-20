@@ -73,6 +73,7 @@ qt4_wrap_cpp(mocs ${moc_gui_srcs})
 qt4_add_resources(rccs ${rcc_srcs})
 
 add_executable(soax ${common_srcs} ${gui_srcs} ${mocs} ${rccs})
+add_executable(batch_soax batch_soax.cc ${common_srcs})
 add_executable(eval_gt evaluate_gt.cc ${common_srcs})
 add_executable(eval_f evaluate_f.cc ${common_srcs})
 add_executable(rsf result_f_value.cc ${common_srcs})
@@ -83,6 +84,13 @@ target_link_libraries(soax
   ${VTK_LIBRARIES}
   ${ITK_LIBRARIES}
   ${Boost_PROGRAM_OPTIONS_LIBRARY}
+  )
+
+target_link_libraries(batch_soax
+  ${ITK_LIBRARIES}
+  ${Boost_PROGRAM_OPTIONS_LIBRARY}
+  ${Boost_FILESYSTEM_LIBRARY}
+  ${Boost_SYSTEM_LIBRARY}
   )
 
 target_link_libraries(eval_gt

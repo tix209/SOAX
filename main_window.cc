@@ -885,7 +885,8 @@ void MainWindow::DeformSnakesInAction() {
     Snake *s = multisnake_->PopLastInitialSnake();
     viewer_->SetupSnake(s, 0);
     viewer_->Render();
-    s->Evolve(multisnake_->converged_snakes(), Snake::iterations_per_press());
+    s->Evolve(multisnake_->solver_bank(),
+              multisnake_->converged_snakes(), Snake::iterations_per_press());
 
     if (s->viable()) {
       if (s->converged()) {
@@ -939,7 +940,7 @@ void MainWindow::DeformOneSnake() {
     if (!multisnake_->external_force()) {
       multisnake_->ComputeImageGradient();
     }
-    viewer_->trimmed_snake()->EvolveWithTipFixed();
+    viewer_->trimmed_snake()->EvolveWithTipFixed(multisnake_->solver_bank());
 
     if (viewer_->trimmed_snake()->converged()) {
       statusBar()->showMessage(tr("Snake is converged."));
@@ -1072,7 +1073,7 @@ void MainWindow::SetParameters() {
   multisnake_->solver_bank()->set_alpha(parameters_dialog_->GetAlpha());
   multisnake_->solver_bank()->set_beta(parameters_dialog_->GetBeta());
   multisnake_->solver_bank()->set_gamma(parameters_dialog_->GetGamma());
-  Snake::set_gamma(multisnake_->solver_bank()->gamma());
+  // Snake::set_gamma(multisnake_->solver_bank()->gamma());
   Snake::set_external_factor(parameters_dialog_->GetExternalFactor());
   Snake::set_stretch_factor(parameters_dialog_->GetStretchFactor());
   Snake::set_number_of_sectors(parameters_dialog_->GetNumberOfSectors());

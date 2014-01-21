@@ -26,7 +26,7 @@ Multisnake::Multisnake() :
   vector_interpolator_ = VectorInterpolatorType::New();
   transform_ = TransformType::New();
   solver_bank_ = new SolverBank;
-  Snake::set_solver_bank(solver_bank_);
+  // Snake::set_solver_bank(solver_bank_);
 }
 
 Multisnake::~Multisnake() {
@@ -176,7 +176,7 @@ void Multisnake::AssignParameters(const std::string &name,
     solver_bank_->set_beta(String2Double(value));
   } else if (name == "gamma") {
     solver_bank_->set_gamma(String2Double(value));
-    Snake::set_gamma(solver_bank_->gamma());
+    // Snake::set_gamma(solver_bank_->gamma());
   } else if (name == "weight") {
     Snake::set_external_factor(String2Double(value));
   } else if (name == "stretch") {
@@ -483,7 +483,8 @@ void Multisnake::DeformSnakes(QProgressBar * progress_bar) {
     Snake *snake = initial_snakes_.back();
     initial_snakes_.pop_back();
 
-    snake->Evolve(converged_snakes_, kBigNumber);
+    snake->Evolve(solver_bank_, converged_snakes_, kBigNumber);
+    solver_bank_->Reset(false);
 
     if (snake->viable()) {
       converged_snakes_.push_back(snake);
@@ -543,7 +544,8 @@ void Multisnake::GroupSnakes() {
   this->LinkSegments(converged_snakes_);
   SnakeIterator it = converged_snakes_.begin();
   while (it != converged_snakes_.end()) {
-    (*it)->EvolveWithTipFixed(100);
+    solver_bank_->Reset(false);
+    (*it)->EvolveWithTipFixed(solver_bank_, 100);
     if ((*it)->viable()) {
       it++;
     } else {

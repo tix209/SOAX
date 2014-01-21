@@ -5,7 +5,7 @@
 
 namespace soax {
 
-SolverBank *Snake::solver_bank_ = NULL;
+// SolverBank *Snake::solver_bank_ = NULL;
 
 double Snake::intensity_scaling_ = 0.004;
 unsigned short Snake::foreground_ = 65535;
@@ -16,7 +16,7 @@ unsigned Snake::max_iterations_ = 10000;
 double Snake::change_threshold_ = 0.05;
 unsigned Snake::check_period_ = 100;
 unsigned Snake::iterations_per_press_ = 100;
-double Snake::gamma_ = 2;
+// double Snake::gamma_ = 2;
 double Snake::external_factor_ = 1.0;
 double Snake::stretch_factor_ = 0.5;
 int Snake::number_of_sectors_ = 8;
@@ -147,7 +147,7 @@ void Snake::InterpolateVertices(const PairContainer *sums,
 }
 
 
-void Snake::Evolve(const SnakeContainer &converged_snakes,
+void Snake::Evolve(SolverBank *solver, const SnakeContainer &converged_snakes,
                    unsigned max_iter) {
   unsigned iter = 0;
 
@@ -170,7 +170,7 @@ void Snake::Evolve(const SnakeContainer &converged_snakes,
     if (!viable_)  break;
     this->HandleTailOverlap(converged_snakes);
     if (!viable_)  break;
-    this->IterateOnce();
+    this->IterateOnce(solver);
     // this->PrintSelf();
     this->Resample();
     iter++;
@@ -368,13 +368,13 @@ double Snake::FindClosestIndexTo(const PointType &p, unsigned &ind) {
   return min_d;
 }
 
-void Snake::IterateOnce() {
+void Snake::IterateOnce(SolverBank *solver) {
   VectorContainer rhs;
-  this->ComputeRHSVector(rhs);
+  this->ComputeRHSVector(solver->gamma(), rhs);
   // this->PrintVectorContainer(rhs);
-  for (unsigned direction = 0; direction < kDimension; ++direction) {
-    solver_bank_->SolveSystem(rhs, direction, open_);
-    this->KeepWithinBounds(direction);
+  for (unsigned dim = 0; dim < kDimension; ++dim) {
+    solver->SolveSystem(rhs, dim, open_);
+    this->CopySolutionToVertices(solver, dim);
   }
 
   if (this->HeadIsFixed())
@@ -385,26 +385,26 @@ void Snake::IterateOnce() {
   iterations_++;
 }
 
-void Snake::KeepWithinBounds(unsigned direction) {
-  double image_size = image_->GetLargestPossibleRegion().GetSize()[direction];
+void Snake::CopySolutionToVertices(SolverBank *solver, unsigned dim) {
+  double image_size = image_->GetLargestPossibleRegion().GetSize()[dim];
 
   for (unsigned i = 0; i < vertices_.size(); ++i) {
-    double value = solver_bank_->GetSolution(vertices_.size(), i, open_);
+    double value = solver->GetSolution(vertices_.size(), i, open_);
     if (value < kBoundary) {
-      vertices_.at(i)[direction] = kBoundary;
+      vertices_.at(i)[dim] = kBoundary;
     } else if (value > image_size - kBoundary - 1.0) {
-      vertices_.at(i)[direction] = image_size - kBoundary - 1.0;
+      vertices_.at(i)[dim] = image_size - kBoundary - 1.0;
     } else {
-      vertices_.at(i)[direction] = value;
+      vertices_.at(i)[dim] = value;
     }
   }
 }
 
-void Snake::ComputeRHSVector(VectorContainer &rhs) {
+void Snake::ComputeRHSVector(double gamma, VectorContainer &rhs) {
   this->AddExternalForce(rhs);
   if (open_)
     this->AddStretchingForce(rhs);
-  this->AddVerticesInfo(rhs);
+  this->AddVerticesInfo(gamma, rhs);
 }
 
 void Snake::AddExternalForce(VectorContainer &rhs) {
@@ -438,10 +438,10 @@ void Snake::AddStretchingForce(VectorContainer &rhs) {
   }
 }
 
-void Snake::AddVerticesInfo(VectorContainer &rhs) {
+void Snake::AddVerticesInfo(double gamma, VectorContainer &rhs) {
   for (unsigned i = 0; i < vertices_.size(); ++i) {
     VectorType vector = vertices_.at(i).GetVectorFromOrigin();
-    rhs.at(i) += vector * gamma_;
+    rhs.at(i) += vector * gamma;
   }
 }
 
@@ -779,7 +779,7 @@ void Snake::CopySubSnakes(SnakeContainer &c) {
     delete snake;
 }
 
-void Snake::EvolveWithTipFixed(unsigned max_iter) {
+void Snake::EvolveWithTipFixed(SolverBank *solver, unsigned max_iter) {
   unsigned iter = 0;
   fixed_head_ = vertices_.front();
   fixed_tail_ = vertices_.back();
@@ -790,7 +790,7 @@ void Snake::EvolveWithTipFixed(unsigned max_iter) {
         break;
     }
 
-    this->IterateOnce();
+    this->IterateOnce(solver);
     this->Resample();
     iter++;
   }

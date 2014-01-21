@@ -51,7 +51,7 @@ class Snake {
   void ExtendTail(const PointType &p);
   void TrimAndInsert(unsigned start, unsigned end, const PointType &p);
 
-  static void set_solver_bank(SolverBank *bank) {solver_bank_ = bank;}
+  // static void set_solver_bank(SolverBank *bank) {solver_bank_ = bank;}
 
   static double intensity_scaling() {return intensity_scaling_;}
   static void set_intensity_scaling(double scale) {
@@ -90,7 +90,7 @@ class Snake {
     iterations_per_press_ = n;
   }
 
-  static void set_gamma(double g) {gamma_ = g;}
+  // static void set_gamma(double g) {gamma_ = g;}
 
   static double external_factor() {return external_factor_;}
   static void set_external_factor(double f) {external_factor_ = f;}
@@ -146,8 +146,10 @@ class Snake {
 
   const SnakeContainer &subsnakes() const {return subsnakes_;}
 
-  void Evolve(const SnakeContainer &converged_snakes, unsigned max_iter);
-  void EvolveWithTipFixed(unsigned max_iter = iterations_per_press_);
+  void Evolve(SolverBank *solver, const SnakeContainer &converged_snakes,
+              unsigned max_iter);
+  void EvolveWithTipFixed(SolverBank *solver,
+                          unsigned max_iter = iterations_per_press_);
   void UpdateHookedIndices();
   void CopySubSnakes(SnakeContainer &c);
   bool PassThrough(const PointType &p, double threshold) const;
@@ -200,17 +202,17 @@ class Snake {
                                Snake * &s, unsigned &index);
   double FindClosestIndexTo(const PointType &p, unsigned &ind);
 
-  void IterateOnce();
+  void IterateOnce(SolverBank *solver);
 
   /*
    * Ensure the updated snake points stay within image after each
    * iteration.
    */
-  void KeepWithinBounds(unsigned direction);
-  void ComputeRHSVector(VectorContainer &rhs);
+  void CopySolutionToVertices(SolverBank *solver, unsigned direction);
+  void ComputeRHSVector(double gamma, VectorContainer &rhs);
   void AddExternalForce(VectorContainer &rhs);
   void AddStretchingForce(VectorContainer &rhs);
-  void AddVerticesInfo(VectorContainer &rhs);
+  void AddVerticesInfo(double gamma, VectorContainer &rhs);
 
   void UpdateHeadTangent();
   void UpdateTailTangent();
@@ -297,7 +299,7 @@ class Snake {
   SnakeContainer subsnakes_;
   IndexSet junction_indices_;
 
-  static SolverBank *solver_bank_;
+  // static SolverBank *solver_bank_;
 
   static double intensity_scaling_;
   static unsigned short foreground_;
@@ -328,7 +330,7 @@ class Snake {
    */
   static double minimum_length_;
 
-  static double gamma_;
+  // static double gamma_;
   /*
    * Weight for external forces.
    */

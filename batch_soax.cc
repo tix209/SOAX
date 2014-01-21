@@ -70,16 +70,48 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
       }
 
-      for (soax::DataContainer::const_iterator it = ridge_range.begin();
-           it != ridge_range.end(); ++it)
-        std::cout << *it << std::endl;
+      soax::Multisnake multisnake;
+      // vary the image
+      fs::directory_iterator image_end_it;
+      for (fs::directory_iterator image_it(image_dir);
+           image_it != image_end_it; ++image_it) {
+        multisnake.LoadImage(image_it->path().string());
+        // double snr = multisnake.ComputeImageSNR();
+        // std::cout << image_it->path().filename() << " SNR: " << snr << std::endl;
+        multisnake.LoadParameters(parameter_path);
+        multisnake.ComputeImageGradient(false);
+        // vary ridge_threshold and stretch
+        double ridge_threshold = ridge_range[0];
+        while (ridge_threshold < ridge_range[2]) {
+          std::cout << "ridge_threshold is set to: " << ridge_threshold
+                    << std::endl;
+          ridge_threshold += ridge_range[1];
+          double stretch = stretch_range[0];
+          while (stretch < stretch_range[2]) {
+            std::cout << "stretch is set to: " << stretch << std::endl;
+            std::cout << "=========== Current Parameters ==========="
+                      << std::endl;
+            multisnake.WriteParameters(std::cout);
+            std::cout << "=========================================="
+                      << std::endl;
+            multisnake.InitializeSnakes();
+            stretch += stretch_range[1];
+          }
+        }
+      }
+
+
+
+
+
+      // for (soax::DataContainer::const_iterator it = ridge_range.begin();
+      //      it != ridge_range.end(); ++it)
+      //   std::cout << *it << std::endl;
 
     } catch (const fs::filesystem_error &e) {
       std::cout << e.what() << std::endl;
       return EXIT_FAILURE;
     }
-
-
   } catch (std::exception &e) {
     std::cout << e.what() << std::endl;
     return EXIT_FAILURE;

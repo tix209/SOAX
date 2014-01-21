@@ -18,7 +18,7 @@ class SolverBank {
   SolverBank();
   ~SolverBank();
 
-  void Reset();
+  void Reset(bool reset_matrix = true);
   /*
    * Solve the linear system with order of vectors.size().
    */
@@ -52,7 +52,7 @@ class SolverBank {
 
   void FillMatrixClosed(SolverType *solver, unsigned order);
 
-  void DestroySolutionVectors(SolverContainer &solvers);
+  void ResetSolutionAndVector(SolverContainer &solvers);
 
   /*
    * Solvers for open snakes.

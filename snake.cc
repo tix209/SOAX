@@ -6,6 +6,7 @@
 namespace soax {
 
 SolverBank *Snake::solver_bank_ = NULL;
+
 double Snake::intensity_scaling_ = 0.004;
 unsigned short Snake::foreground_ = 65535;
 unsigned short Snake::background_ = 0;

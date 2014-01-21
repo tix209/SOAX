@@ -19,19 +19,25 @@ void SolverBank::ClearSolvers(SolverContainer &solvers) {
   solvers.clear();
 }
 
-void SolverBank::Reset() {
-  // this->DestroySolutionVectors(open_solvers_);
-  // this->DestroySolutionVectors(closed_solvers_);
-  this->ClearSolvers(open_solvers_);
-  this->ClearSolvers(closed_solvers_);
+void SolverBank::Reset(bool reset_matrix) {
+  if (reset_matrix) {
+    this->ClearSolvers(open_solvers_);
+    this->ClearSolvers(closed_solvers_);
+  } else {
+    this->ResetSolutionAndVector(open_solvers_);
+    this->ResetSolutionAndVector(closed_solvers_);
+  }
 }
 
-void SolverBank::DestroySolutionVectors(SolverContainer &solvers) {
+void SolverBank::ResetSolutionAndVector(SolverContainer &solvers) {
   if (solvers.empty()) return;
   for (SolverContainer::iterator it = solvers.begin();
        it != solvers.end(); ++it) {
-    if (*it)
-      (*it)->DestroySolution(0);
+    if (*it) {
+      (*it)->InitializeSolution(0);
+      (*it)->InitializeVector(0);
+      // if (reset_matrix) (*it)->InitializeMatrix(0);
+    }
   }
 }
 
@@ -49,10 +55,11 @@ void SolverBank::SolveSystem(const VectorContainer &vectors, unsigned dim,
     this->InitializeSolver(solvers[position], vectors.size(), open);
   }
 
-  if (!solvers[position]->IsSolutionInitialized(0)) {
-    solvers[position]->SetNumberOfSolutions(1);
-    solvers[position]->InitializeSolution(0);
-  }
+  // if (!solvers[position]->IsSolutionInitialized(0)) {
+  //   std::cout << "solution is not init!" << std::endl;
+  //   solvers[position]->SetNumberOfSolutions(1);
+  //   solvers[position]->InitializeSolution(0);
+  // }
 
   for (unsigned i = 0; i < vectors.size(); ++i) {
     solvers[position]->SetVectorValue(i, vectors[i][dim], 0);

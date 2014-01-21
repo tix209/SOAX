@@ -478,13 +478,13 @@ bool Multisnake::FindNextCandidate(
 void Multisnake::DeformSnakes(QProgressBar * progress_bar) {
   unsigned ncompleted = 0;
   std::cout << "Initial # snakes: " << initial_snakes_.size() << std::endl;
-
+  this->ClearSnakeContainer(converged_snakes_);
   while (!initial_snakes_.empty()) {
     Snake *snake = initial_snakes_.back();
     initial_snakes_.pop_back();
 
-    snake->Evolve(solver_bank_, converged_snakes_, kBigNumber);
     solver_bank_->Reset(false);
+    snake->Evolve(solver_bank_, converged_snakes_, kBigNumber);
 
     if (snake->viable()) {
       converged_snakes_.push_back(snake);

@@ -129,13 +129,17 @@ void Viewer::Reset() {
   renderer_->RemoveActor(cube_axes_);
   renderer_->RemoveActor(bounding_box_);
   this->RemoveColorSegments();
-  trimmed_actor_ = NULL;
-  trimmed_snake_ = NULL;
-  trim_tip_index_ = kBigNumber;
-  trim_body_index1_ = kBigNumber;
-  trim_body_index2_ = kBigNumber;
-  is_trim_body_second_click_ = false;
-  inserted_point_.Fill(-1);
+  this->ResetTrimTip();
+  this->ResetExtendTip();
+  this->ResetTrimBody();
+  // trimmed_actor_ = NULL;
+  // trimmed_snake_ = NULL;
+  // trim_tip_index_ = kBigNumber;
+  // trim_body_index1_ = kBigNumber;
+  // trim_body_index2_ = kBigNumber;
+  // is_trim_body_second_click_ = false;
+  // inserted_point_.Fill(-1);
+
   renderer_->ResetCamera();
 }
 

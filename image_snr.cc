@@ -1,6 +1,7 @@
 #include <iostream>
 #include <cstdlib>
 #include <fstream>
+#include <algorithm>
 #include <boost/filesystem.hpp>
 #include "multisnake.h"
 
@@ -21,11 +22,22 @@ int main(int argc, char **argv) {
   try {
     if (fs::exists(image_dir)) {
       soax::Multisnake multisnake;
-      fs::directory_iterator end_it;
-      for (fs::directory_iterator it(image_dir); it != end_it; ++it) {
-        multisnake.LoadImage(it->path().string());
+      // fs::directory_iterator end_it;
+      // for (fs::directory_iterator it(image_dir); it != end_it; ++it) {
+      //   multisnake.LoadImage(it->path().string());
+      //   double snr = multisnake.ComputeImageSNR();
+      //   std::cout << it->path().filename() << " SNR: " << snr << std::endl;
+      // }
+      typedef std::vector<fs::path> Paths;
+      Paths image_paths;
+      std::copy(fs::directory_iterator(image_dir), fs::directory_iterator(),
+                back_inserter(image_paths));
+      std::sort(image_paths.begin(), image_paths.end());
+      for (Paths::const_iterator it(image_paths.begin());
+           it != image_paths.end(); ++it) {
+        multisnake.LoadImage(it->string());
         double snr = multisnake.ComputeImageSNR();
-        std::cout << it->path().filename() << " SNR: " << snr << std::endl;
+        std::cout << it->filename() << " SNR: " << snr << std::endl;
       }
     } else {
       std::cout << image_dir << " does not exist." << std::endl;

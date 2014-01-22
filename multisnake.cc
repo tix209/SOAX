@@ -246,7 +246,7 @@ void Multisnake::WriteParameters(std::ostream &os) const {
 }
 
 void Multisnake::ComputeImageGradient(bool reset) {
-  if (reset && external_force_) return;
+  if (!reset && external_force_) return;
   external_force_ = NULL;
   typedef itk::Image<double, kDimension> InternalImageType;
   typedef itk::ShiftScaleImageFilter<ImageType, InternalImageType> ScalerType;

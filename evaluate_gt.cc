@@ -31,7 +31,7 @@ int main(int argc, char **argv) {
     required.add_options()
         ("image,i", po::value<std::string>(&image_path)->required(),
          "Image file path")
-        ("ground-truth,g", po::value<std::string>(&gt_snake_path),
+        ("ground-truth,g", po::value<std::string>(&gt_snake_path)->required(),
          "Ground truth snake file path")
         ("snake,s", po::value<std::string>(&result_snake_dir)->required(),
          "Resultant snake directory")

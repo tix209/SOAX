@@ -477,7 +477,7 @@ double Snake::ComputeLocalStretch(bool is_head) {
     return 0.0;
   // std::cout << "fg1: " << fg1 << "\tfg: " << fg << std::endl;
 
-  double bg1 = this->ComputeCircularMeanIntensity(is_head, false);
+  // double bg1 = this->ComputeCircularMeanIntensity(is_head, false);
   double bg = this->ComputeBackgroundMeanIntensity(is_head);
 
   // if (abs(bg1-bg) > kEpsilon) {

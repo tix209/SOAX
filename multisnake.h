@@ -41,7 +41,7 @@ class Multisnake {
   void WriteParameters(std::ostream &os) const;
 
   double intensity_scaling() const  {return intensity_scaling_;}
-  void set_intensity_scaling(double scale) {intensity_scaling_ = scale;}
+  void set_intensity_scaling(double scale);
 
   double sigma() const {return sigma_;}
   void set_sigma(double sigma) {sigma_ = sigma;}
@@ -287,6 +287,9 @@ class Multisnake {
                                              double &fg_mean,
                                              double &bg_mean,
                                              double &bg_std) const;
+
+  double GetMaxImageIntensity() const;
+
 
   std::string image_filename_;
   ImageType::Pointer image_;

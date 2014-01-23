@@ -15,6 +15,7 @@
 #include "itkOtsuThresholdImageFilter.h"
 #include "itkRescaleIntensityImageFilter.h"
 #include "itkNormalVariateGenerator.h"
+#include "itkMinimumMaximumImageCalculator.h"
 #include "solver_bank.h"
 #include "utility.h"
 
@@ -148,7 +149,7 @@ void Multisnake::LoadParameters(const std::string &filename) {
 void Multisnake::AssignParameters(const std::string &name,
                                   const std::string &value) {
   if (name == "intensity-scaling") {
-    intensity_scaling_ = String2Double(value);
+    this->set_intensity_scaling(String2Double(value));
     Snake::set_intensity_scaling(intensity_scaling_);
   } else if (name == "smoothing") {
     sigma_ = String2Double(value);
@@ -1415,5 +1416,20 @@ void Multisnake::GenerateSyntheticImage(unsigned foreground,
   return;
 }
 
+void Multisnake::set_intensity_scaling(double scale) {
+  if (scale > kEpsilon)
+    intensity_scaling_ = scale;
+  else
+    intensity_scaling_ = 1.0 / this->GetMaxImageIntensity();
+}
+
+double Multisnake::GetMaxImageIntensity() const {
+  if (!image_) return 0.0;
+  typedef itk::MinimumMaximumImageCalculator<ImageType> FilterType;
+  FilterType::Pointer filter = FilterType::New();
+  filter->SetImage(image_);
+  filter->ComputeMaximum();
+  return filter->GetMaximum();
+}
 
 } // namespace soax

@@ -474,6 +474,7 @@ void MainWindow::ResetActions() {
   compute_curvature_->setEnabled(false);
   show_analysis_options_->setEnabled(false);
 
+  show_parameters_->setEnabled(false);
   load_viewpoint_->setEnabled(false);
   save_viewpoint_->setEnabled(false);
   save_snapshot_->setEnabled(false);
@@ -531,6 +532,7 @@ void MainWindow::OpenImage() {
   toggle_cube_axes_->setEnabled(true);
   show_view_options_->setEnabled(true);
   initialize_snakes_->setEnabled(true);
+  show_parameters_->setEnabled(true);
   load_viewpoint_->setEnabled(true);
   save_viewpoint_->setEnabled(true);
   save_snapshot_->setEnabled(true);

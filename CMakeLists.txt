@@ -78,6 +78,7 @@ add_executable(eval_gt evaluate_gt.cc ${common_srcs})
 add_executable(eval_f evaluate_f.cc ${common_srcs})
 add_executable(rsf result_f_value.cc ${common_srcs})
 add_executable(snr image_snr.cc ${common_srcs})
+add_executable(syn synthetic.cc ${common_srcs})
 
 target_link_libraries(soax
   ${QT_LIBRARIES}
@@ -119,4 +120,11 @@ target_link_libraries(rsf
   ${Boost_PROGRAM_OPTIONS_LIBRARY}
   ${Boost_FILESYSTEM_LIBRARY}
   ${Boost_SYSTEM_LIBRARY}
+  )
+
+target_link_libraries(syn
+  ${ITK_LIBRARIES}
+  # ${Boost_PROGRAM_OPTIONS_LIBRARY}
+  # ${Boost_FILESYSTEM_LIBRARY}
+  # ${Boost_SYSTEM_LIBRARY}
   )

@@ -13,6 +13,8 @@
 #include "itkImageRegionIteratorWithIndex.h"
 #include "itkImageRegionIterator.h"
 #include "itkOtsuThresholdImageFilter.h"
+#include "itkRescaleIntensityImageFilter.h"
+#include "itkNormalVariateGenerator.h"
 #include "solver_bank.h"
 #include "utility.h"
 
@@ -1338,5 +1340,80 @@ void Multisnake::ComputeResultSnakesVertexErrorHausdorffDistance(
     double max_error2 = Maximum(errors2);
     hausdorff = max_error1 > max_error2 ? max_error1 : max_error2;
 }
+
+void Multisnake::GenerateSyntheticImage(unsigned foreground,
+                                        unsigned background,
+                                        double sigma,
+                                        const std::string &filename) const {
+  if (!image_ || comparing_snakes1_.empty()) return;
+  ImageType::Pointer image = ImageType::New();
+  image->SetRegions(image_->GetLargestPossibleRegion());
+  image->Allocate();
+  image->FillBuffer(0);
+
+  // Assign centerline intensities
+  for (SnakeConstIterator it = comparing_snakes1_.begin();
+       it != comparing_snakes1_.end(); ++it) {
+    for (unsigned i = 0; i < (*it)->GetSize(); ++i) {
+      ImageType::IndexType index;
+      image_->TransformPhysicalPointToIndex((*it)->GetPoint(i), index);
+      if (!image->GetPixel(index)) { // only set once
+        image->SetPixel(index, foreground);
+      }
+    }
+  }
+
+  // apply PSF
+  typedef itk::RecursiveGaussianImageFilter<ImageType,
+                                            ImageType>  FilterType;
+  FilterType::Pointer filter_x = FilterType::New();
+  FilterType::Pointer filter_y = FilterType::New();
+  FilterType::Pointer filter_z = FilterType::New();
+  filter_x->SetDirection(0);
+  filter_y->SetDirection(1);
+  filter_z->SetDirection(2);
+  filter_x->SetOrder(FilterType::ZeroOrder);
+  filter_y->SetOrder(FilterType::ZeroOrder);
+  filter_z->SetOrder(FilterType::ZeroOrder);
+  filter_x->SetInput(image);
+  filter_y->SetInput(filter_x->GetOutput());
+  filter_z->SetInput(filter_y->GetOutput());
+  const double psf = 2.0;
+  filter_x->SetSigma(psf);
+  filter_y->SetSigma(psf);
+  filter_z->SetSigma(psf);
+
+  typedef itk::RescaleIntensityImageFilter<ImageType, ImageType>
+      RescalerType;
+  RescalerType::Pointer rescaler = RescalerType::New();
+  rescaler->SetInput(filter_z->GetOutput());
+  rescaler->SetOutputMinimum(0.0);
+  rescaler->SetOutputMaximum(foreground);
+  rescaler->Update();
+  image = rescaler->GetOutput();
+  typedef itk::ImageRegionIterator<ImageType> IteratorType;
+  IteratorType iter(image, image->GetLargestPossibleRegion());
+
+  typedef itk::Statistics::NormalVariateGenerator GeneratorType;
+  GeneratorType::Pointer generator = GeneratorType::New();
+  generator->Initialize(2003);
+
+  for (iter.GoToBegin(); !iter.IsAtEnd(); ++iter) {
+    iter.Value() += background + sigma * generator->GetVariate();
+  }
+
+  typedef itk::ImageFileWriter<ImageType> WriterType;
+  WriterType::Pointer writer = WriterType::New();
+  writer->SetFileName(filename);
+  writer->SetInput(image);
+  try {
+    writer->Update();
+  } catch(itk::ExceptionObject &e) {
+    std::cerr << "Snake::SaveImageUShort: Exception caught!\n"
+              << e << std::endl;
+  }
+  return;
+}
+
 
 } // namespace soax

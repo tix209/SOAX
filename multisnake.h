@@ -184,6 +184,10 @@ class Multisnake {
   void ComputeResultSnakesVertexErrorHausdorffDistance(
       double &vertex_error, double &hausdorff) const;
 
+  void GenerateSyntheticImage(unsigned foreground,
+                              unsigned background,
+                              double sigma,
+                              const std::string &filename) const;
 
  private:
   typedef itk::Vector<bool, kDimension> BoolVectorType;

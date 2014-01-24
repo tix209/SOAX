@@ -56,10 +56,10 @@ int main (int argc, char **argv) {
           double gt_fvalue = multisnake.ComputeGroundTruthFValue(threshold,
                                                                  penalizer,
                                                                  3, 9);
-          // bool snakes_greater_fvalue = true;
+          bool snakes_greater_fvalue = true;
           unsigned number_of_violation = 0;
-          std::cout << "t: " << i*0.1 << "\t" << "c: " << penalizer
-                    << "\tgt fvalue: " << gt_fvalue << std::endl;
+          // std::cout << "t: " << i*0.1 << "\t" << "c: " << penalizer
+          //           << "\tgt fvalue: " << gt_fvalue << std::endl;
 
           fs::directory_iterator end_it;
           for (fs::directory_iterator it(snake_dir); it != end_it; ++it) {
@@ -72,8 +72,8 @@ int main (int argc, char **argv) {
             double fvalue = multisnake.ComputeResultSnakesFValue(threshold,
                                                                  penalizer,
                                                                  3, 9);
-            if (fvalue < gt_fvalue) {
-              // snakes_greater_fvalue = false;
+            if (fvalue < gt_fvalue + soax::kEpsilon) {
+              snakes_greater_fvalue = false;
               number_of_violation++;
               // std::cout << it->path().filename() << ": " << fvalue << std::endl;
               // break;
@@ -85,10 +85,10 @@ int main (int argc, char **argv) {
             t = i*0.1;
             c = penalizer;
           }
-          // if (snakes_greater_fvalue) {
-          //   std::cout << "t: " << i*0.1 << "\t"
-          //             << "c: " << penalizer << std::endl;
-          // }
+          if (snakes_greater_fvalue) {
+            std::cout << "t: " << i*0.1 << "\t"
+                      << "c: " << penalizer << std::endl;
+          }
         }
       }
       std::cout << "Best t, c = " << t << ", " << c

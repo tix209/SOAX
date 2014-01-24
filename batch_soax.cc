@@ -34,14 +34,6 @@ int main(int argc, char **argv) {
          "Path of default parameter file")
         ("snake,s", po::value<std::string>()->required(),
          "Directory or path of output snake files");
-        // ("ridge",
-        //  po::value<soax::DataContainer>(&ridge_range)->multitoken()->
-        //  required(),
-        //  "Range of ridge threshold for SOAC initialization (start step end)")
-        // ("stretch",
-        //  po::value<soax::DataContainer>(&stretch_range)->multitoken()->
-        //  required(),
-        //  "Range of stretching factor for SOAC evolution (start step end)");
 
     soax::DataContainer ridge_range, stretch_range;
     po::options_description optional("Optional options");
@@ -104,15 +96,23 @@ int main(int argc, char **argv) {
           multisnake.LoadImage(image_path.string());
           multisnake.LoadParameters(parameter_path.string());
           multisnake.ComputeImageGradient();
-          double ridge_threshold = ridge_range[0];
-          while (ridge_threshold < ridge_range[2]) {
+
+          // double ridge_threshold = ridge_range[0];
+          // while (ridge_threshold < ridge_range[2]) {
+          for (int ridge_exp = ridge_range[0]; ridge_exp < ridge_range[2];
+               ridge_exp += static_cast<int>(ridge_range[1])) {
+            double ridge_threshold = std::pow(2, ridge_exp);
             std::cout << "\nSegmentation started on " << image_path
                       << std::endl
                       << "ridge_threshold is set to: " << ridge_threshold
                       << std::endl;
             multisnake.set_ridge_threshold(ridge_threshold);
-            double stretch = stretch_range[0];
-            while (stretch < stretch_range[2]) {
+            // double stretch = stretch_range[0];
+            // while (stretch < stretch_range[2]) {
+            for (int stretch_exp = stretch_range[0];
+                 stretch_exp < stretch_range[2];
+                 stretch_exp += static_cast<int>(stretch_range[1])) {
+              double stretch = std::pow(2, stretch_exp);
               std::cout << "stretch is set to: " << stretch << std::endl;
               soax::Snake::set_stretch_factor(stretch);
 
@@ -140,9 +140,9 @@ int main(int argc, char **argv) {
               std::cout << "Segmentation completed (Evolution time: "
                         << time_elasped << "s)" << std::endl;
               multisnake.junctions().Reset();
-              stretch += stretch_range[1];
+              // stretch += stretch_range[1];
             }
-            ridge_threshold += ridge_range[1];
+            // ridge_threshold += ridge_range[1];
           }
 
         } else if (fs::is_directory(image_path)) {

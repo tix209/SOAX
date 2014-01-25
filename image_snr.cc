@@ -10,6 +10,10 @@
  * Compute the image SNR using Otsu's binary segmentation.
  */
 
+std::string GetSuffix(const std::string &s) {
+  return s.substr(s.size()-3);
+}
+
 int main(int argc, char **argv) {
   if (argc < 2) {
     std::cerr << "Usage: ./snr <image_path>" << std::endl;
@@ -35,9 +39,11 @@ int main(int argc, char **argv) {
       std::sort(image_paths.begin(), image_paths.end());
       for (Paths::const_iterator it(image_paths.begin());
            it != image_paths.end(); ++it) {
+        if (GetSuffix(it->string()) != "mha") continue;
         multisnake.LoadImage(it->string());
         double snr = multisnake.ComputeImageSNR();
-        std::cout << it->filename() << " SNR: " << snr << std::endl;
+        // if (snr < 4.2 && snr > 3.8)
+          std::cout << it->filename() << " SNR: " << snr << std::endl;
       }
     } else {
       std::cout << image_dir << " does not exist." << std::endl;

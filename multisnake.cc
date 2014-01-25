@@ -1384,6 +1384,7 @@ void Multisnake::GenerateSyntheticImage(unsigned foreground,
   filter_y->SetSigma(psf);
   filter_z->SetSigma(psf);
 
+  // rescale the intensity back to foreground
   typedef itk::RescaleIntensityImageFilter<ImageType, ImageType>
       RescalerType;
   RescalerType::Pointer rescaler = RescalerType::New();
@@ -1392,6 +1393,8 @@ void Multisnake::GenerateSyntheticImage(unsigned foreground,
   rescaler->SetOutputMaximum(foreground);
   rescaler->Update();
   image = rescaler->GetOutput();
+
+  // add Gaussian noise with u=background and std=sigma
   typedef itk::ImageRegionIterator<ImageType> IteratorType;
   IteratorType iter(image, image->GetLargestPossibleRegion());
 

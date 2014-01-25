@@ -27,10 +27,10 @@ int main(int argc, char **argv) {
             << " ground truth snakes loaded." << std::endl;
 
   const unsigned background = 200;
-  for (int i = 1; i < 16; i++) {
-    double sigma = i;
-    for (unsigned i = 1; i < 5; i++) {
-      unsigned foreground = 100 * i;
+  for (int i = 2; i <= 30; i++) {
+    double sigma = i*0.5;
+    for (unsigned i = 1; i < 100; i++) {
+      unsigned foreground = 100 + i;
       std::ostringstream buffer;
       buffer << "fg" << foreground << "-sigma" << sigma << ".mha";
       multisnake.GenerateSyntheticImage(
@@ -38,5 +38,14 @@ int main(int argc, char **argv) {
           std::string(argv[3]) + buffer.str());
     }
   }
+
+  // const unsigned foreground = 100;
+  // const double sigma = 5.5;
+  // std::ostringstream buffer;
+  // buffer << "fg" << foreground << "-sigma" << sigma << ".mha";
+
+  // multisnake.GenerateSyntheticImage(foreground, background, sigma,
+  //     std::string(argv[3]) + buffer.str());
+
   return 0;
 }

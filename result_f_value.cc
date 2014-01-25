@@ -58,8 +58,8 @@ int main (int argc, char **argv) {
                                                                  3, 9);
           bool snakes_greater_fvalue = true;
           unsigned number_of_violation = 0;
-          // std::cout << "t: " << i*0.1 << "\t" << "c: " << penalizer
-          //           << "\tgt fvalue: " << gt_fvalue << std::endl;
+          std::cout << "t: " << i*0.1 << "\t" << "c: " << penalizer
+                    << "\tgt fvalue: " << gt_fvalue << std::endl;
 
           fs::directory_iterator end_it;
           for (fs::directory_iterator it(snake_dir); it != end_it; ++it) {
@@ -76,7 +76,7 @@ int main (int argc, char **argv) {
               snakes_greater_fvalue = false;
               number_of_violation++;
               // std::cout << it->path().filename() << ": " << fvalue << std::endl;
-              // break;
+              break;
             }
           }
 

@@ -97,22 +97,22 @@ int main(int argc, char **argv) {
           multisnake.LoadParameters(parameter_path.string());
           multisnake.ComputeImageGradient();
 
-          // double ridge_threshold = ridge_range[0];
-          // while (ridge_threshold < ridge_range[2]) {
-          for (int ridge_exp = ridge_range[0]; ridge_exp < ridge_range[2];
-               ridge_exp += static_cast<int>(ridge_range[1])) {
-            double ridge_threshold = std::pow(2, ridge_exp);
+          double ridge_threshold = ridge_range[0];
+          while (ridge_threshold < ridge_range[2]) {
+          // for (int ridge_exp = ridge_range[0]; ridge_exp < ridge_range[2];
+          //      ridge_exp += static_cast<int>(ridge_range[1])) {
+          //   double ridge_threshold = std::pow(2, ridge_exp);
             std::cout << "\nSegmentation started on " << image_path
                       << std::endl
                       << "ridge_threshold is set to: " << ridge_threshold
                       << std::endl;
             multisnake.set_ridge_threshold(ridge_threshold);
-            // double stretch = stretch_range[0];
-            // while (stretch < stretch_range[2]) {
-            for (int stretch_exp = stretch_range[0];
-                 stretch_exp < stretch_range[2];
-                 stretch_exp += static_cast<int>(stretch_range[1])) {
-              double stretch = std::pow(2, stretch_exp);
+            double stretch = stretch_range[0];
+            while (stretch < stretch_range[2]) {
+            // for (int stretch_exp = stretch_range[0];
+            //      stretch_exp < stretch_range[2];
+            //      stretch_exp += static_cast<int>(stretch_range[1])) {
+            //   double stretch = std::pow(2, stretch_exp);
               std::cout << "stretch is set to: " << stretch << std::endl;
               soax::Snake::set_stretch_factor(stretch);
 
@@ -140,9 +140,9 @@ int main(int argc, char **argv) {
               std::cout << "Segmentation completed (Evolution time: "
                         << time_elasped << "s)" << std::endl;
               multisnake.junctions().Reset();
-              // stretch += stretch_range[1];
+              stretch += stretch_range[1];
             }
-            // ridge_threshold += ridge_range[1];
+            ridge_threshold += ridge_range[1];
           }
 
         } else if (fs::is_directory(image_path)) {

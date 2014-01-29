@@ -51,9 +51,9 @@ int main (int argc, char **argv) {
     po::options_description optional("Optional options");
     optional.add_options()
         ("near,n", po::value<int>(&radial_near),
-         "Inner radius of annulus for local SNR estimation.")
+         "Inner radius of annulus for local SNR estimation. (default: 4)")
         ("far,f", po::value<int>(&radial_far),
-         "Outer radius of annulus for local SNR estimation.")
+         "Outer radius of annulus for local SNR estimation. (default: 12)")
         ;
 
     po::options_description all("Allowed options");

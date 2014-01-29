@@ -45,21 +45,21 @@ int main (int argc, char **argv) {
       std::cout << multisnake.GetNumberOfComparingSnakes1()
                 << " ground truth snakes loaded." << std::endl;
 
-      unsigned least_number_of_violation = soax::kBigNumber;
+      // unsigned least_number_of_violation = soax::kBigNumber;
       double t = 0.0;
       double c = 0.0;
 
-      for (int i = 1; i < 10; ++i) {
+      for (int i = 1; i <= 10; ++i) {
         double threshold = 0.1 * i * snr;
-        for (int j = 0; j < 10; ++j) {
+        for (int j = 0; j <= 10; ++j) {
           double penalizer = 1.0 + 0.5 * j;
           double gt_fvalue = multisnake.ComputeGroundTruthFValue(threshold,
                                                                  penalizer,
                                                                  3, 9);
           bool snakes_greater_fvalue = true;
-          unsigned number_of_violation = 0;
-          std::cout << "t: " << i*0.1 << "\t" << "c: " << penalizer
-                    << "\tgt fvalue: " << gt_fvalue << std::endl;
+          // unsigned number_of_violation = 0;
+          // std::cout << "t: " << i*0.1 << "\t" << "c: " << penalizer
+          //           << "\tgt fvalue: " << gt_fvalue << std::endl;
 
           fs::directory_iterator end_it;
           for (fs::directory_iterator it(snake_dir); it != end_it; ++it) {
@@ -74,25 +74,26 @@ int main (int argc, char **argv) {
                                                                  3, 9);
             if (fvalue < gt_fvalue + soax::kEpsilon) {
               snakes_greater_fvalue = false;
-              number_of_violation++;
+              // number_of_violation++;
               // std::cout << it->path().filename() << ": " << fvalue << std::endl;
               break;
             }
           }
 
-          if (number_of_violation < least_number_of_violation) {
-            least_number_of_violation = number_of_violation;
-            t = i*0.1;
-            c = penalizer;
-          }
+          // if (number_of_violation < least_number_of_violation) {
+          //   least_number_of_violation = number_of_violation;
+          //   t = i*0.1;
+          //   c = penalizer;
+          // }
+
           if (snakes_greater_fvalue) {
             std::cout << "t: " << i*0.1 << "\t"
                       << "c: " << penalizer << std::endl;
           }
         }
       }
-      std::cout << "Best t, c = " << t << ", " << c
-                << "\tviolation: " << least_number_of_violation << std::endl;
+      // std::cout << "Best t, c = " << t << ", " << c
+      //           << "\tviolation: " << least_number_of_violation << std::endl;
     } else {
       std::cout << snake_dir << " does not exist." << std::endl;
     }

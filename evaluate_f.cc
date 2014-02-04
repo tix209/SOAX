@@ -116,10 +116,15 @@ int main (int argc, char **argv) {
           // std::cout << multisnake.GetNumberOfConvergedSnakes()
           //           << " resultant snakes loaded." << std::endl;
 
-          double fvalue = multisnake.ComputeResultSnakesFValue(threshold,
-                                                               c,
-                                                               radial_near,
-                                                               radial_far);
+          // double fvalue = multisnake.ComputeResultSnakesFValue(threshold,
+          //                                                      c,
+          //                                                      radial_near,
+          //                                                      radial_far);
+          soax::DataContainer snrs;
+          multisnake.ComputeResultSnakesLocalSNRs(radial_near,
+                                                  radial_far,
+                                                  snrs);
+          double fvalue = multisnake.ComputeFValue(snrs, threshold, c);
           outfile << std::setw(width) << multisnake.ridge_threshold()
                   << std::setw(width) << soax::Snake::stretch_factor()
                   << std::setw(width) << fvalue

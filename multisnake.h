@@ -163,23 +163,31 @@ class Multisnake {
    */
   double ComputeImageSNR(const std::string &binary_filename = "") const;
 
-  double ComputeGroundTruthFValue(double snr_threshold,
-                                  double penalizer,
-                                  int radial_near,
-                                  int radial_far) const {
-    return this->ComputeFValue(comparing_snakes1_,
-                               snr_threshold, penalizer,
-                               radial_near, radial_far);
-  }
+  // double ComputeGroundTruthFValue(double snr_threshold,
+  //                                 double penalizer,
+  //                                 int radial_near,
+  //                                 int radial_far) const {
+  //   return this->ComputeFValue(comparing_snakes1_,
+  //                              snr_threshold, penalizer,
+  //                              radial_near, radial_far);
+  // }
 
-  double ComputeResultSnakesFValue(double snr_threshold,
-                                   double penalizer,
-                                   int radial_near,
-                                   int radial_far) const {
-    return this->ComputeFValue(converged_snakes_,
-                               snr_threshold, penalizer,
-                               radial_near, radial_far);
-  }
+  void ComputeGroundTruthLocalSNRs(int radial_near, int radial_far,
+                                   DataContainer &snrs) const;
+  void ComputeResultSnakesLocalSNRs(int radial_near, int radial_far,
+                                   DataContainer &snrs) const;
+
+  double ComputeFValue(const DataContainer &snrs,
+                       double threshold, double penalizer) const;
+
+  // double ComputeResultSnakesFValue(double snr_threshold,
+  //                                  double penalizer,
+  //                                  int radial_near,
+  //                                  int radial_far) const {
+  //   return this->ComputeFValue(converged_snakes_,
+  //                              snr_threshold, penalizer,
+  //                              radial_near, radial_far);
+  // }
 
   void ComputeResultSnakesVertexErrorHausdorffDistance(
       double &vertex_error, double &hausdorff) const;
@@ -269,9 +277,9 @@ class Multisnake {
   /*
    * Compute F-value for a set of snakes.
    */
-  double ComputeFValue(const SnakeContainer &snakes,
-                       double threshold, double penalizer,
-                       int radial_near,int radial_far) const;
+  // double ComputeFValue(const SnakeContainer &snakes,
+  //                      double threshold, double penalizer,
+  //                      int radial_near,int radial_far) const;
 
   /*
    * Compute a binary image of input image using Otsu's method and
@@ -289,6 +297,10 @@ class Multisnake {
                                              double &bg_std) const;
 
   double GetMaxImageIntensity() const;
+
+  void ComputeLocalSNRs(const SnakeContainer &snakes,
+                        int radial_near, int radial_far,
+                        DataContainer &snrs) const;
 
 
   std::string image_filename_;

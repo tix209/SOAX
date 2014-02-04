@@ -790,7 +790,7 @@ void Multisnake::SaveSnakes(const SnakeContainer &snakes,
   std::ofstream outfile;
   outfile.open(filename.c_str());
   if (!outfile.is_open()) {
-    std::cerr << "Couldn't open file: " << outfile << std::endl;
+    std::cerr << "SaveSnakes: Couldn't open file: " << outfile << std::endl;
     return;
   }
 
@@ -1299,32 +1299,70 @@ void Multisnake::ComputeForegroundBackgroundStatistics(
   //           << "\tbg std: " << bg_std << std::endl;
 }
 
-double Multisnake::ComputeFValue(const SnakeContainer &snakes,
-                                 double threshold, double penalizer,
-                                 int radial_near, int radial_far) const {
-  double fvalue = 0.0;
-  if (!snakes.empty()) {
-    unsigned total_npoints = 0;
-    unsigned low_snr_npoints = 0;
-    for (SnakeConstIterator it = snakes.begin(); it != snakes.end(); it++) {
-      for (unsigned i = 0; i < (*it)->GetSize(); i++) {
-        double local_snr = 0.0;
-        // int radial_near(3), radial_far(6);
-        // std::cout << "snaxel " << i << "\t";
-        bool local_bg_defined = (*it)->ComputeLocalSNR(
-            i, radial_near, radial_far, local_snr);
-        if (local_bg_defined) {
-          total_npoints++;
-          if (local_snr < threshold) low_snr_npoints++;
-        }
-      }
-    }
-    // std::cout << "c: " << penalizer << std::endl;
-    // std::cout << "Low SNR points: " << low_snr_npoints << std::endl;
-    fvalue = (penalizer * low_snr_npoints - total_npoints) *
-        Snake::desired_spacing();
+// double Multisnake::ComputeFValue(const SnakeContainer &snakes,
+//                                  double threshold, double penalizer,
+//                                  int radial_near, int radial_far) const {
+//   double fvalue = 0.0;
+//   if (!snakes.empty()) {
+//     unsigned total_npoints = 0;
+//     unsigned low_snr_npoints = 0;
+//     for (SnakeConstIterator it = snakes.begin(); it != snakes.end(); it++) {
+//       for (unsigned i = 0; i < (*it)->GetSize(); i++) {
+//         double local_snr = 0.0;
+
+//         bool local_bg_defined = (*it)->ComputeLocalSNR(
+//             i, radial_near, radial_far, local_snr);
+//         if (local_bg_defined) {
+//           total_npoints++;
+//           if (local_snr < threshold) low_snr_npoints++;
+//         }
+//       }
+//     }
+//     // std::cout << "c: " << penalizer << std::endl;
+//     // std::cout << "Low SNR points: " << low_snr_npoints << std::endl;
+//     fvalue = (penalizer * low_snr_npoints - total_npoints) *
+//         Snake::desired_spacing();
+//   }
+//   return fvalue;
+// }
+
+double Multisnake::ComputeFValue(const DataContainer &snrs,
+                                 double threshold, double penalizer) const {
+  if (snrs.empty()) return 0.0;
+  unsigned low_snr_npoints = 0;
+  for (DataContainer::const_iterator it = snrs.begin(); it != snrs.end();
+       ++it) {
+    if (*it < threshold) low_snr_npoints++;
   }
-  return fvalue;
+  return penalizer * low_snr_npoints - snrs.size();
+}
+
+void Multisnake::ComputeGroundTruthLocalSNRs(int radial_near, int radial_far,
+                                             DataContainer &snrs) const {
+  return ComputeLocalSNRs(comparing_snakes1_, radial_near, radial_far, snrs);
+}
+
+void Multisnake::ComputeResultSnakesLocalSNRs(int radial_near, int radial_far,
+                                              DataContainer &snrs) const {
+  return ComputeLocalSNRs(converged_snakes_, radial_near, radial_far, snrs);
+}
+
+void Multisnake::ComputeLocalSNRs(const SnakeContainer &snakes,
+                                  int radial_near, int radial_far,
+                                  DataContainer &snrs) const {
+  if (snakes.empty()) return;
+  for (SnakeConstIterator it = snakes.begin(); it != snakes.end(); it++) {
+    for (unsigned i = 0; i < (*it)->GetSize(); i++) {
+      double local_snr = 0.0;
+      bool local_bg_defined = (*it)->ComputeLocalSNR(
+          i, radial_near, radial_far, local_snr);
+
+      if (local_bg_defined)
+        snrs.push_back(local_snr);
+      // else
+      //   std::cerr << "Local background undefined!" << std::endl;
+    }
+  }
 }
 
 void Multisnake::ComputeResultSnakesVertexErrorHausdorffDistance(

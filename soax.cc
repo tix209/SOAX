@@ -37,7 +37,7 @@ int main(int argc, char **argv) {
     double stretch(0.0);
     po::options_description optional("Optional options");
     optional.add_options()
-        ("grad-diff", po::value<double>(&ridge_threshold),
+        ("ridge", po::value<double>(&ridge_threshold),
          "Ridge threshold for SOAC's initialization")
         ("stretch", po::value<double>(&stretch),
          "Stretching factor for SOAC's evolution");
@@ -65,13 +65,13 @@ int main(int argc, char **argv) {
     multisnake.LoadImage(image_path);
     multisnake.LoadParameters(parameter_path);
 
-    if (vm.count("grad-diff")) {
-      std::cout << "grad-diff is set to " << ridge_threshold << std::endl;
+    if (vm.count("ridge")) {
+      std::cout << "Ridge threshold: " << ridge_threshold << std::endl;
       multisnake.set_ridge_threshold(ridge_threshold);
     }
 
     if (vm.count("stretch")) {
-      std::cout << "stretch is set to " << stretch << std::endl;
+      std::cout << "Stretch: " << stretch << std::endl;
       soax::Snake::set_stretch_factor(stretch);
     }
 

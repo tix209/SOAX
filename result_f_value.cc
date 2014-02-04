@@ -25,6 +25,7 @@
 int main (int argc, char **argv) {
   if (argc < 4) {
     std::cerr << "./rsf <image_path> <gt_snake_path> <resultant_snake_dir>"
+        " <radial_near> <radial_far>"
               << std::endl;
     return EXIT_FAILURE;
   }
@@ -32,7 +33,6 @@ int main (int argc, char **argv) {
   namespace fs = boost::filesystem;
   std::string image_path = argv[1];
   std::string gt_snake_path = argv[2];
-  // std::string snake_dir = argv[3];
   fs::path snake_dir(argv[3]);
 
   try {
@@ -48,36 +48,71 @@ int main (int argc, char **argv) {
       // unsigned least_number_of_violation = soax::kBigNumber;
       double t = 0.0;
       double c = 0.0;
+      int radial_near = atoi(argv[4]);
+      int radial_far = atoi(argv[5]);
+      std::cout << "radial_near: " << radial_near << "\t"
+                << "radial_near: " << radial_far << std::endl;
+
+      soax::DataContainer gt_snrs;
+      multisnake.ComputeGroundTruthLocalSNRs(
+          radial_near, radial_far, gt_snrs);
+      // std::cout << "gt_snr size: " << gt_snr.size() << std::endl;
+
+      std::vector<std::vector<double> > result_snrs_vector;
+      fs::directory_iterator end_it;
+      // unsigned num_of_snake_sets = 0;
+      for (fs::directory_iterator it(snake_dir); it != end_it; ++it) {
+        multisnake.LoadConvergedSnakes(it->path().string());
+        soax::DataContainer result_snrs;
+        multisnake.ComputeResultSnakesLocalSNRs(
+            radial_near, radial_far, result_snrs);
+        result_snrs_vector.push_back(result_snrs);
+        // num_of_snake_sets++;
+      }
+
 
       for (int i = 1; i <= 10; ++i) {
         double threshold = 0.1 * i * snr;
-        for (int j = 0; j <= 10; ++j) {
-          double penalizer = 1.0 + 0.5 * j;
-          double gt_fvalue = multisnake.ComputeGroundTruthFValue(threshold,
-                                                                 penalizer,
-                                                                 3, 9);
+        for (int j = 1; j <= 20; ++j) {
+          double penalizer = static_cast<double>(j);
+
+          // double gt_fvalue = multisnake.ComputeGroundTruthFValue(
+          //     threshold, penalizer, radial_near, radial_far);
+          double gt_fvalue = multisnake.ComputeFValue(gt_snrs,
+                                                      threshold,
+                                                      penalizer);
+
           bool snakes_greater_fvalue = true;
           // unsigned number_of_violation = 0;
           // std::cout << "t: " << i*0.1 << "\t" << "c: " << penalizer
           //           << "\tgt fvalue: " << gt_fvalue << std::endl;
 
           fs::directory_iterator end_it;
+          unsigned index = 0;
           for (fs::directory_iterator it(snake_dir); it != end_it; ++it) {
             // std::cout << "resultant snake: " << it->path().filename()
             //           << std::endl;
-            multisnake.LoadConvergedSnakes(it->path().string());
+            // multisnake.LoadConvergedSnakes(it->path().string());
+            // soax::DataContainer result_snrs;
+            // multisnake.ComputeResultSnakesLocalSNRs(
+            //     radial_near, radial_far, result_snrs);
+
+
             // std::cout << multisnake.GetNumberOfConvergedSnakes()
             //           << " resultant snakes loaded." << std::endl;
 
-            double fvalue = multisnake.ComputeResultSnakesFValue(threshold,
-                                                                 penalizer,
-                                                                 3, 9);
-            if (fvalue < gt_fvalue + soax::kEpsilon) {
+            // double fvalue = multisnake.ComputeResultSnakesFValue(
+            //     threshold, penalizer, radial_near, radial_far);
+            double result_fvalue = multisnake.ComputeFValue(
+                result_snrs_vector[index], threshold, penalizer);
+
+            if (result_fvalue < gt_fvalue + soax::kEpsilon) {
               snakes_greater_fvalue = false;
               // number_of_violation++;
               // std::cout << it->path().filename() << ": " << fvalue << std::endl;
               break;
             }
+            index++;
           }
 
           // if (number_of_violation < least_number_of_violation) {

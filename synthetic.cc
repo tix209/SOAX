@@ -27,9 +27,10 @@ int main(int argc, char **argv) {
             << " ground truth snakes loaded." << std::endl;
 
   const unsigned background = 200;
-  for (int i = 2; i <= 30; i++) {
-    double sigma = i*0.5;
-    for (unsigned i = 0; i <= 6; i++) {
+  for (int i = 1; i < 10; i++) {
+    // double sigma = static_cast<double>(i);
+    double sigma = 22.1 + 0.01 * i;
+    for (unsigned i = 5; i <= 5; i++) {
       unsigned foreground = 100 + 50*i;
       std::ostringstream buffer;
       buffer << "fg" << foreground << "-sigma" << sigma << ".mha";

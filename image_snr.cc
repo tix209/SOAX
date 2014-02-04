@@ -42,8 +42,8 @@ int main(int argc, char **argv) {
         if (GetSuffix(it->string()) != "mha") continue;
         multisnake.LoadImage(it->string());
         double snr = multisnake.ComputeImageSNR();
-        // if (snr < 4.2 && snr > 3.8)
-          std::cout << it->filename() << " SNR: " << snr << std::endl;
+        // if (snr < 4.5 && snr > 3.5)
+        std::cout << it->filename() << " SNR: " << snr << std::endl;
       }
     } else {
       std::cout << image_dir << " does not exist." << std::endl;

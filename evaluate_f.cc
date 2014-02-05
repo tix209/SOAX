@@ -46,14 +46,14 @@ int main (int argc, char **argv) {
          "Evaluation output file path")
         ;
 
-    int radial_near(4);
-    int radial_far(12);
+    int radial_near(3);
+    int radial_far(15);
     po::options_description optional("Optional options");
     optional.add_options()
         ("near,n", po::value<int>(&radial_near),
-         "Inner radius of annulus for local SNR estimation. (default: 4)")
+         "Inner radius of annulus for local SNR estimation. (default: 3)")
         ("far,f", po::value<int>(&radial_far),
-         "Outer radius of annulus for local SNR estimation. (default: 12)")
+         "Outer radius of annulus for local SNR estimation. (default: 15)")
         ;
 
     po::options_description all("Allowed options");
@@ -109,10 +109,16 @@ int main (int argc, char **argv) {
                 << std::setw(width) << "Stretch"
                 << std::setw(width) << "Fvalue" << std::endl;
 
-        fs::directory_iterator end_it;
-        for (fs::directory_iterator it(snakes_path); it != end_it; ++it) {
+        typedef std::vector<fs::path> Paths;
+        Paths sorted_snakes_path;
+        std::copy(fs::directory_iterator(snakes_path), fs::directory_iterator(),
+                  back_inserter(sorted_snakes_path));
+        std::sort(sorted_snakes_path.begin(), sorted_snakes_path.end());
+
+        for (Paths::const_iterator it = sorted_snakes_path.begin();
+             it != sorted_snakes_path.end(); ++it) {
           // std::cout << "snake: " << it->path().filename() << std::endl;
-          multisnake.LoadConvergedSnakes(it->path().string());
+          multisnake.LoadConvergedSnakes(it->string());
           // std::cout << multisnake.GetNumberOfConvergedSnakes()
           //           << " resultant snakes loaded." << std::endl;
 

@@ -88,10 +88,16 @@ int main(int argc, char **argv) {
                 << std::setw(width) << "Hausdorff"
                 << std::endl;
 
-        fs::directory_iterator end_it;
-        for (fs::directory_iterator it(snakes_path); it != end_it; ++it) {
+        typedef std::vector<fs::path> Paths;
+        Paths sorted_snakes_path;
+        std::copy(fs::directory_iterator(snakes_path), fs::directory_iterator(),
+                  back_inserter(sorted_snakes_path));
+        std::sort(sorted_snakes_path.begin(), sorted_snakes_path.end());
+
+        for (Paths::const_iterator it = sorted_snakes_path.begin();
+             it != sorted_snakes_path.end(); ++it) {
           // std::cout << "snake: " << it->path().filename() << std::endl;
-          multisnake.LoadConvergedSnakes(it->path().string());
+          multisnake.LoadConvergedSnakes(it->string());
           // std::cout << multisnake.GetNumberOfConvergedSnakes()
           //           << " resultant snakes loaded." << std::endl;
           double vertex_error(100.0), hausdorff(100.0);

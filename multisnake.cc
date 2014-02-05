@@ -1241,7 +1241,7 @@ void Multisnake::AddSubsnakesToInitialSnakes(Snake *s) {
 double Multisnake::ComputeImageSNR(const std::string &binary_filename) const {
   ImageType::Pointer img = NULL;
   int threshold = this->ComputeBinaryImage(img);
-  // std::cout << "Otsu threshold: " << threshold << std::endl;
+  std::cout << "Otsu threshold: " << threshold << std::endl;
 
   if (!binary_filename.empty()) {
     typedef itk::ImageFileWriter<ImageType> WriterType;

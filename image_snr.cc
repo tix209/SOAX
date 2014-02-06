@@ -39,11 +39,13 @@ int main(int argc, char **argv) {
       std::sort(image_paths.begin(), image_paths.end());
       for (Paths::const_iterator it(image_paths.begin());
            it != image_paths.end(); ++it) {
-        if (GetSuffix(it->string()) != "mha") continue;
-        multisnake.LoadImage(it->string());
-        double snr = multisnake.ComputeImageSNR();
-        // if (snr < 4.5 && snr > 3.5)
-        std::cout << it->filename() << " SNR: " << snr << std::endl;
+        if (GetSuffix(it->string()) == "mha" ||
+            GetSuffix(it->string()) == "tif") {
+          multisnake.LoadImage(it->string());
+          double snr = multisnake.ComputeImageSNR();
+          // if (snr < 4.5 && snr > 3.5)
+          std::cout << it->filename() << " SNR: " << snr << std::endl;
+        }
       }
     } else {
       std::cout << image_dir << " does not exist." << std::endl;

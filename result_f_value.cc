@@ -51,7 +51,7 @@ int main (int argc, char **argv) {
       int radial_near = atoi(argv[4]);
       int radial_far = atoi(argv[5]);
       std::cout << "radial_near: " << radial_near << "\t"
-                << "radial_near: " << radial_far << std::endl;
+                << "radial_far: " << radial_far << std::endl;
 
       soax::DataContainer gt_snrs;
       multisnake.ComputeGroundTruthLocalSNRs(
@@ -71,64 +71,38 @@ int main (int argc, char **argv) {
       }
 
 
-      for (int i = 1; i <= 10; ++i) {
-        double threshold = 0.1 * i * snr;
-        for (int j = 1; j <= 20; ++j) {
-          double penalizer = static_cast<double>(j);
+      // for (int i = 1; i <= 10; ++i) {
+      // double threshold = 0.1 * i * snr;
+      double threshold = 1.5;
+      for (int j = 1; j <= 20; ++j) {
+        double penalizer = static_cast<double>(j);
+        double gt_fvalue = multisnake.ComputeFValue(gt_snrs,
+                                                    threshold,
+                                                    penalizer);
+        bool snakes_greater_fvalue = true;
+        // unsigned number_of_violation = 0;
+        // std::cout << "t: " << i*0.1 << "\t" << "c: " << penalizer
+        //           << "\tgt fvalue: " << gt_fvalue << std::endl;
 
-          // double gt_fvalue = multisnake.ComputeGroundTruthFValue(
-          //     threshold, penalizer, radial_near, radial_far);
-          double gt_fvalue = multisnake.ComputeFValue(gt_snrs,
-                                                      threshold,
-                                                      penalizer);
+        fs::directory_iterator end_it;
+        unsigned index = 0;
+        for (fs::directory_iterator it(snake_dir); it != end_it; ++it) {
+          double result_fvalue = multisnake.ComputeFValue(
+              result_snrs_vector[index], threshold, penalizer);
 
-          bool snakes_greater_fvalue = true;
-          // unsigned number_of_violation = 0;
-          // std::cout << "t: " << i*0.1 << "\t" << "c: " << penalizer
-          //           << "\tgt fvalue: " << gt_fvalue << std::endl;
-
-          fs::directory_iterator end_it;
-          unsigned index = 0;
-          for (fs::directory_iterator it(snake_dir); it != end_it; ++it) {
-            // std::cout << "resultant snake: " << it->path().filename()
-            //           << std::endl;
-            // multisnake.LoadConvergedSnakes(it->path().string());
-            // soax::DataContainer result_snrs;
-            // multisnake.ComputeResultSnakesLocalSNRs(
-            //     radial_near, radial_far, result_snrs);
-
-
-            // std::cout << multisnake.GetNumberOfConvergedSnakes()
-            //           << " resultant snakes loaded." << std::endl;
-
-            // double fvalue = multisnake.ComputeResultSnakesFValue(
-            //     threshold, penalizer, radial_near, radial_far);
-            double result_fvalue = multisnake.ComputeFValue(
-                result_snrs_vector[index], threshold, penalizer);
-
-            if (result_fvalue < gt_fvalue + soax::kEpsilon) {
-              snakes_greater_fvalue = false;
-              // number_of_violation++;
-              // std::cout << it->path().filename() << ": " << fvalue << std::endl;
-              break;
-            }
-            index++;
+          if (result_fvalue < gt_fvalue + soax::kEpsilon) {
+            snakes_greater_fvalue = false;
+            break;
           }
+          index++;
+        }
 
-          // if (number_of_violation < least_number_of_violation) {
-          //   least_number_of_violation = number_of_violation;
-          //   t = i*0.1;
-          //   c = penalizer;
-          // }
-
-          if (snakes_greater_fvalue) {
-            std::cout << "t: " << i*0.1 << "\t"
-                      << "c: " << penalizer << std::endl;
-          }
+        if (snakes_greater_fvalue) {
+          // std::cout << "t: " << i*0.1 << "\t"
+          std::cout << "c: " << penalizer << std::endl;
         }
       }
-      // std::cout << "Best t, c = " << t << ", " << c
-      //           << "\tviolation: " << least_number_of_violation << std::endl;
+        //}
     } else {
       std::cout << snake_dir << " does not exist." << std::endl;
     }

@@ -32,19 +32,33 @@ int main(int argc, char **argv) {
       //   double snr = multisnake.ComputeImageSNR();
       //   std::cout << it->path().filename() << " SNR: " << snr << std::endl;
       // }
-      typedef std::vector<fs::path> Paths;
-      Paths image_paths;
-      std::copy(fs::directory_iterator(image_dir), fs::directory_iterator(),
-                back_inserter(image_paths));
-      std::sort(image_paths.begin(), image_paths.end());
-      for (Paths::const_iterator it(image_paths.begin());
-           it != image_paths.end(); ++it) {
-        if (GetSuffix(it->string()) == "mha" ||
-            GetSuffix(it->string()) == "tif") {
-          multisnake.LoadImage(it->string());
-          double snr = multisnake.ComputeImageSNR();
+      if (fs::is_regular_file(image_dir)) {
+        if (GetSuffix(image_dir.string()) == "mha" ||
+            GetSuffix(image_dir.string()) == "tif") {
+          multisnake.LoadImage(image_dir.string());
+          double snr1 = multisnake.ComputeImageSNR();
+          std::cout << image_dir.filename() << "old SNR: "
+                    << snr1 << std::endl;
+          double snr2 = multisnake.ComputeForegroundSNR();
           // if (snr < 4.5 && snr > 3.5)
-          std::cout << it->filename() << " SNR: " << snr << std::endl;
+          std::cout << image_dir.filename() << "new SNR: "
+                    << snr2 << std::endl;
+        }
+      } else {
+        typedef std::vector<fs::path> Paths;
+        Paths image_paths;
+        std::copy(fs::directory_iterator(image_dir), fs::directory_iterator(),
+                  back_inserter(image_paths));
+        std::sort(image_paths.begin(), image_paths.end());
+        for (Paths::const_iterator it(image_paths.begin());
+             it != image_paths.end(); ++it) {
+          if (GetSuffix(it->string()) == "mha" ||
+              GetSuffix(it->string()) == "tif") {
+            multisnake.LoadImage(it->string());
+            double snr = multisnake.ComputeImageSNR();
+            // if (snr < 4.5 && snr > 3.5)
+            std::cout << it->filename() << " SNR: " << snr << std::endl;
+          }
         }
       }
     } else {

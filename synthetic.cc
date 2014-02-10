@@ -28,10 +28,10 @@ int main(int argc, char **argv) {
 
   const unsigned background = 200;
   for (int i = 1; i < 10; i++) {
-    // double sigma = static_cast<double>(i);
-    double sigma = 22.1 + 0.01 * i;
-    for (unsigned i = 5; i <= 5; i++) {
-      unsigned foreground = 100 + 50*i;
+    double sigma = static_cast<double>(i*2);
+    // double sigma = 22.1 + 0.01 * i;
+    for (unsigned i = 0; i <= 6; i++) {
+      unsigned foreground = 50 * i;
       std::ostringstream buffer;
       buffer << "fg" << foreground << "-sigma" << sigma << ".mha";
       multisnake.GenerateSyntheticImage(

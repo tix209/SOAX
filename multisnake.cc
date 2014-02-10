@@ -1299,6 +1299,95 @@ void Multisnake::ComputeForegroundBackgroundStatistics(
   //           << "\tbg std: " << bg_std << std::endl;
 }
 
+double Multisnake::ComputeForegroundSNR() const {
+  const unsigned max_intensity_levels = 1 << 16;
+  std::vector<unsigned> histogram(max_intensity_levels, 0);
+  int intensity_threshold = 0;
+  // only consider those voxels with intensity greater than
+  // "intensity_threshold"
+  this->ComputeHistogram(histogram, intensity_threshold);
+  int otsu_threshold1 = this->ComputeOtsuThreshold(histogram);
+  std::cout << "first Otsu's threshold = " << otsu_threshold1 << std::endl;
+  // reset the histogram
+  std::fill(histogram.begin(), histogram.end(), 0);
+  this->ComputeHistogram(histogram, otsu_threshold1);
+  int otsu_threshold2 = this->ComputeOtsuThreshold(histogram);
+  std::cout << "Second Otsu's threshold = " << otsu_threshold2 << std::endl;
+
+  DataContainer fgs, bgs;
+  typedef itk::ImageRegionConstIterator<ImageType> ConstIteratorType;
+  ConstIteratorType it(image_, image_->GetLargestPossibleRegion());
+  it.GoToBegin();
+  while (!it.IsAtEnd()) {
+    if (it.Get() >= otsu_threshold1) {
+      if (it.Get() >= otsu_threshold2) { // foreground
+        fgs.push_back(it.Get());
+      } else { // background
+        bgs.push_back(it.Get());
+      }
+    }
+    ++it;
+  }
+  double fg_mean = Mean(fgs);
+  double bg_mean = Mean(bgs);
+  double bg_std = StandardDeviation(bgs, bg_mean);
+  if (bg_std < kEpsilon) {
+    std::cerr << "Background intensity std is zero!" << std::endl;
+    return 0.0;
+  }
+  return (fg_mean - bg_mean) / bg_std;
+}
+
+void Multisnake::ComputeHistogram(std::vector<unsigned> &hist,
+                                  int threshold) const {
+  typedef itk::ImageRegionConstIterator<ImageType> ConstIteratorType;
+  ConstIteratorType it(image_, image_->GetLargestPossibleRegion());
+  it.GoToBegin();
+  while (!it.IsAtEnd()) {
+    if (it.Get() >= threshold) {
+      hist[it.Get()]++;
+    }
+    ++it;
+  }
+}
+
+double Multisnake::ComputeOtsuThreshold(
+    const std::vector<unsigned> &hist) const {
+  int total_nvoxels = 0;
+  double total_intensities = 0.0;
+  for (unsigned i = 0; i < hist.size(); ++i) {
+    total_nvoxels += hist[i];
+    total_intensities += i * hist[i];
+  }
+
+  double var_max = 0.0;
+  int threshold = 0;
+
+  double sum_bg = 0.0;
+  int weight_bg = 0;
+  int weight_fg = 0;
+  for (int i = 0; i < hist.size(); ++i) {
+    weight_bg += hist[i];
+    if (!weight_bg) continue;
+
+    weight_fg = total_nvoxels - weight_bg;
+    if (!weight_fg) break;
+
+    sum_bg += static_cast<double>(i * hist[i]);
+    double mean_bg = sum_bg / weight_bg;
+    double mean_fg = (total_intensities - sum_bg) / weight_fg;
+    double var = static_cast<double>(
+        weight_bg * weight_fg * (mean_bg - mean_fg) * (mean_bg - mean_fg));
+
+    if (var > var_max) {
+      var_max = var;
+      threshold = i;
+    }
+  }
+
+  return threshold;
+}
+
 // double Multisnake::ComputeFValue(const SnakeContainer &snakes,
 //                                  double threshold, double penalizer,
 //                                  int radial_near, int radial_far) const {
@@ -1391,46 +1480,48 @@ void Multisnake::GenerateSyntheticImage(unsigned foreground,
   image->FillBuffer(0);
 
   // Assign centerline intensities
-  for (SnakeConstIterator it = comparing_snakes1_.begin();
-       it != comparing_snakes1_.end(); ++it) {
-    for (unsigned i = 0; i < (*it)->GetSize(); ++i) {
-      ImageType::IndexType index;
-      image_->TransformPhysicalPointToIndex((*it)->GetPoint(i), index);
-      if (!image->GetPixel(index)) { // only set once
-        image->SetPixel(index, foreground);
+  if (foreground) {
+    for (SnakeConstIterator it = comparing_snakes1_.begin();
+         it != comparing_snakes1_.end(); ++it) {
+      for (unsigned i = 0; i < (*it)->GetSize(); ++i) {
+        ImageType::IndexType index;
+        image_->TransformPhysicalPointToIndex((*it)->GetPoint(i), index);
+        if (!image->GetPixel(index)) { // only set once
+          image->SetPixel(index, foreground);
+        }
       }
     }
+
+    // apply PSF
+    typedef itk::RecursiveGaussianImageFilter<ImageType,
+                                              ImageType>  FilterType;
+    FilterType::Pointer filter_x = FilterType::New();
+    FilterType::Pointer filter_y = FilterType::New();
+    FilterType::Pointer filter_z = FilterType::New();
+    filter_x->SetDirection(0);
+    filter_y->SetDirection(1);
+    filter_z->SetDirection(2);
+    filter_x->SetOrder(FilterType::ZeroOrder);
+    filter_y->SetOrder(FilterType::ZeroOrder);
+    filter_z->SetOrder(FilterType::ZeroOrder);
+    filter_x->SetInput(image);
+    filter_y->SetInput(filter_x->GetOutput());
+    filter_z->SetInput(filter_y->GetOutput());
+    const double psf = 2.0;
+    filter_x->SetSigma(psf);
+    filter_y->SetSigma(psf);
+    filter_z->SetSigma(psf);
+
+    // rescale the intensity back to foreground
+    typedef itk::RescaleIntensityImageFilter<ImageType, ImageType>
+        RescalerType;
+    RescalerType::Pointer rescaler = RescalerType::New();
+    rescaler->SetInput(filter_z->GetOutput());
+    rescaler->SetOutputMinimum(0.0);
+    rescaler->SetOutputMaximum(foreground);
+    rescaler->Update();
+    image = rescaler->GetOutput();
   }
-
-  // apply PSF
-  typedef itk::RecursiveGaussianImageFilter<ImageType,
-                                            ImageType>  FilterType;
-  FilterType::Pointer filter_x = FilterType::New();
-  FilterType::Pointer filter_y = FilterType::New();
-  FilterType::Pointer filter_z = FilterType::New();
-  filter_x->SetDirection(0);
-  filter_y->SetDirection(1);
-  filter_z->SetDirection(2);
-  filter_x->SetOrder(FilterType::ZeroOrder);
-  filter_y->SetOrder(FilterType::ZeroOrder);
-  filter_z->SetOrder(FilterType::ZeroOrder);
-  filter_x->SetInput(image);
-  filter_y->SetInput(filter_x->GetOutput());
-  filter_z->SetInput(filter_y->GetOutput());
-  const double psf = 2.0;
-  filter_x->SetSigma(psf);
-  filter_y->SetSigma(psf);
-  filter_z->SetSigma(psf);
-
-  // rescale the intensity back to foreground
-  typedef itk::RescaleIntensityImageFilter<ImageType, ImageType>
-      RescalerType;
-  RescalerType::Pointer rescaler = RescalerType::New();
-  rescaler->SetInput(filter_z->GetOutput());
-  rescaler->SetOutputMinimum(0.0);
-  rescaler->SetOutputMaximum(foreground);
-  rescaler->Update();
-  image = rescaler->GetOutput();
 
   // add Gaussian noise with u=background and std=sigma
   typedef itk::ImageRegionIterator<ImageType> IteratorType;

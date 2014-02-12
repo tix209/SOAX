@@ -36,12 +36,12 @@ int main(int argc, char **argv) {
         if (GetSuffix(image_dir.string()) == "mha" ||
             GetSuffix(image_dir.string()) == "tif") {
           multisnake.LoadImage(image_dir.string());
-          double snr1 = multisnake.ComputeImageSNR();
-          std::cout << image_dir.filename() << "old SNR: "
+          double snr1 = multisnake.ComputeImageSNR("binary.mha");
+          std::cout << image_dir.filename() << " old SNR: "
                     << snr1 << std::endl;
-          double snr2 = multisnake.ComputeForegroundSNR();
+          double snr2 = multisnake.ComputeImageSNR2("ternary.mha");
           // if (snr < 4.5 && snr > 3.5)
-          std::cout << image_dir.filename() << "new SNR: "
+          std::cout << image_dir.filename() << " new SNR: "
                     << snr2 << std::endl;
         }
       } else {

@@ -162,6 +162,7 @@ class Multisnake {
    * Estimate image SNR using Otsu's method.
    */
   double ComputeImageSNR(const std::string &binary_filename = "") const;
+  double ComputeImageSNR2(const std::string &filename = "") const;
   double ComputeForegroundSNR() const;
 
   // double ComputeGroundTruthFValue(double snr_threshold,

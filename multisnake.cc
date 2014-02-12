@@ -13,6 +13,7 @@
 #include "itkImageRegionIteratorWithIndex.h"
 #include "itkImageRegionIterator.h"
 #include "itkOtsuThresholdImageFilter.h"
+#include "itkOtsuMultipleThresholdsImageFilter.h"
 #include "itkRescaleIntensityImageFilter.h"
 #include "itkNormalVariateGenerator.h"
 #include "itkMinimumMaximumImageCalculator.h"
@@ -1236,6 +1237,53 @@ Snake * Multisnake::PopLastInitialSnake() {
 void Multisnake::AddSubsnakesToInitialSnakes(Snake *s) {
   initial_snakes_.insert(initial_snakes_.end(),
                          s->subsnakes().begin(), s->subsnakes().end());
+}
+
+double Multisnake::ComputeImageSNR2(const std::string &filename) const {
+  typedef itk::OtsuMultipleThresholdsImageFilter<ImageType,
+                                                 ImageType> FilterType;
+  FilterType::Pointer filter = FilterType::New();
+  filter->SetInput(image_);
+  filter->SetNumberOfThresholds(2);
+  filter->Update();
+  if (!filename.empty()) {
+    typedef itk::ImageFileWriter<ImageType> WriterType;
+    WriterType::Pointer writer = WriterType::New();
+    writer->SetFileName(filename);
+    writer->SetInput(filter->GetOutput());
+    writer->Update();
+  }
+
+  FilterType::ThresholdVectorType thresholds = filter->GetThresholds();
+  std::cout << "thresholds: " << std::endl;
+  for (unsigned i = 0; i < thresholds.size(); ++i) {
+    std::cout << thresholds[i] << std::endl;
+  }
+
+  // Compute intensity statistics of foreground and background voxels
+  // foreground voxels have intensity [thresholds[1], max_intensity]
+  // background voxels have intensity [thresholds[0], thresholds[1])
+  DataContainer fgs, bgs;
+  typedef itk::ImageRegionConstIterator<ImageType> ConstIteratorType;
+  ConstIteratorType it(image_, image_->GetLargestPossibleRegion());
+  it.GoToBegin();
+  while (!it.IsAtEnd()) {
+    if (it.Get() >= thresholds[1]) { // foreground
+      fgs.push_back(it.Get());
+    } else if (it.Get() >= thresholds[0]) { // background
+      bgs.push_back(it.Get());
+    }
+    ++it;
+  }
+
+  double fg_mean = Mean(fgs);
+  double bg_mean = Mean(bgs);
+  double bg_std = StandardDeviation(bgs, bg_mean);
+  if (bg_std < kEpsilon) {
+    std::cerr << "Background intensity std is zero!" << std::endl;
+    return 0.0;
+  }
+  return (fg_mean - bg_mean) / bg_std;
 }
 
 double Multisnake::ComputeImageSNR(const std::string &binary_filename) const {

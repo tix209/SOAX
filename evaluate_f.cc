@@ -46,14 +46,14 @@ int main (int argc, char **argv) {
          "Evaluation output file path")
         ;
 
-    int radial_near(3);
-    int radial_far(15);
+    int radial_near(4);
+    int radial_far(12);
     po::options_description optional("Optional options");
     optional.add_options()
         ("near,n", po::value<int>(&radial_near),
-         "Inner radius of annulus for local SNR estimation. (default: 3)")
+         "Inner radius of annulus for local SNR estimation. (default: 4)")
         ("far,f", po::value<int>(&radial_far),
-         "Outer radius of annulus for local SNR estimation. (default: 15)")
+         "Outer radius of annulus for local SNR estimation. (default: 12)")
         ;
 
     po::options_description all("Allowed options");

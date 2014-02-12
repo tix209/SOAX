@@ -71,38 +71,38 @@ int main (int argc, char **argv) {
       }
 
 
-      // for (int i = 1; i <= 10; ++i) {
-      // double threshold = 0.1 * i * snr;
-      double threshold = 1.5;
-      for (int j = 1; j <= 20; ++j) {
-        double penalizer = static_cast<double>(j);
-        double gt_fvalue = multisnake.ComputeFValue(gt_snrs,
-                                                    threshold,
-                                                    penalizer);
-        bool snakes_greater_fvalue = true;
-        // unsigned number_of_violation = 0;
-        // std::cout << "t: " << i*0.1 << "\t" << "c: " << penalizer
-        //           << "\tgt fvalue: " << gt_fvalue << std::endl;
+      for (int i = 1; i <= 10; ++i) {
+        double threshold = 0.1 * i * snr;
+        // double threshold = 1.5;
+        for (int j = 1; j <= 20; ++j) {
+          double penalizer = j * 0.5;
+          double gt_fvalue = multisnake.ComputeFValue(gt_snrs,
+                                                      threshold,
+                                                      penalizer);
+          bool snakes_greater_fvalue = true;
+          // unsigned number_of_violation = 0;
+          // std::cout << "t: " << i*0.1 << "\t" << "c: " << penalizer
+          //           << "\tgt fvalue: " << gt_fvalue << std::endl;
 
-        fs::directory_iterator end_it;
-        unsigned index = 0;
-        for (fs::directory_iterator it(snake_dir); it != end_it; ++it) {
-          double result_fvalue = multisnake.ComputeFValue(
-              result_snrs_vector[index], threshold, penalizer);
+          fs::directory_iterator end_it;
+          unsigned index = 0;
+          for (fs::directory_iterator it(snake_dir); it != end_it; ++it) {
+            double result_fvalue = multisnake.ComputeFValue(
+                result_snrs_vector[index], threshold, penalizer);
 
-          if (result_fvalue < gt_fvalue + soax::kEpsilon) {
-            snakes_greater_fvalue = false;
-            break;
+            if (result_fvalue < gt_fvalue + soax::kEpsilon) {
+              snakes_greater_fvalue = false;
+              break;
+            }
+            index++;
           }
-          index++;
-        }
 
-        if (snakes_greater_fvalue) {
-          // std::cout << "t: " << i*0.1 << "\t"
-          std::cout << "c: " << penalizer << std::endl;
+          if (snakes_greater_fvalue) {
+            std::cout << "t: " << i*0.1 << "\t";
+            std::cout << "c: " << penalizer << std::endl;
+          }
         }
       }
-        //}
     } else {
       std::cout << snake_dir << " does not exist." << std::endl;
     }

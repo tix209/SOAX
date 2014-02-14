@@ -99,9 +99,9 @@ int main(int argc, char **argv) {
 
           double ridge_threshold = ridge_range[0];
           while (ridge_threshold < ridge_range[2]) {
-          // for (int ridge_exp = ridge_range[0]; ridge_exp < ridge_range[2];
-          //      ridge_exp += static_cast<int>(ridge_range[1])) {
-          //   double ridge_threshold = std::pow(2, ridge_exp);
+            // for (int ridge_exp = ridge_range[0]; ridge_exp < ridge_range[2];
+            //      ridge_exp += static_cast<int>(ridge_range[1])) {
+            //   double ridge_threshold = std::pow(2, ridge_exp);
             std::cout << "\nSegmentation started on " << image_path
                       << std::endl
                       << "ridge_threshold is set to: " << ridge_threshold
@@ -109,10 +109,10 @@ int main(int argc, char **argv) {
             multisnake.set_ridge_threshold(ridge_threshold);
             double stretch = stretch_range[0];
             while (stretch < stretch_range[2]) {
-            // for (int stretch_exp = stretch_range[0];
-            //      stretch_exp < stretch_range[2];
-            //      stretch_exp += static_cast<int>(stretch_range[1])) {
-            //   double stretch = std::pow(2, stretch_exp);
+              // for (int stretch_exp = stretch_range[0];
+              //      stretch_exp < stretch_range[2];
+              //      stretch_exp += static_cast<int>(stretch_range[1])) {
+              //   double stretch = std::pow(2, stretch_exp);
               std::cout << "stretch is set to: " << stretch << std::endl;
               soax::Snake::set_stretch_factor(stretch);
 
@@ -208,11 +208,56 @@ int main(int argc, char **argv) {
                     << std::endl;
         }
       } else if (!vm.count("ridge") && !vm.count("stretch")) {
-        std::cout << "Using parameters in the parameter file" << std::endl;
+        std::cout << "Using default parameters in file" << std::endl;
         if (fs::is_regular_file(image_path)) {
           std::cout << "one image" << std::endl;
         } else if (fs::is_directory(image_path)) {
           std::cout << "multi image" << std::endl;
+
+          fs::directory_iterator image_end_it;
+          for (fs::directory_iterator image_it(image_path);
+               image_it != image_end_it; ++image_it) {
+            std::string suffix = GetImageSuffix(image_it->path().string());
+            if (suffix != "mha" && suffix != "tif") {
+              std::cout << "Unknown image type: " << suffix << std::endl;
+              continue;
+            }
+            multisnake.LoadImage(image_it->path().string());
+            multisnake.LoadParameters(parameter_path.string());
+            multisnake.ComputeImageGradient();
+
+            std::cout << "\nSegmentation started on " << image_it->path()
+                      << std::endl;
+
+            std::cout << "=========== Current Parameters ==========="
+                      << std::endl;
+            multisnake.WriteParameters(std::cout);
+            std::cout << "=========================================="
+                      << std::endl;
+
+            multisnake.InitializeSnakes();
+
+            time_t start, end;
+            time(&start);
+            multisnake.DeformSnakes();
+            time(&end);
+            double time_elasped = difftime(end, start);
+
+            multisnake.CutSnakesAtTJunctions();
+            multisnake.GroupSnakes();
+
+            std::string path_str = image_it->path().string();
+            std::string::size_type slash_pos = path_str.find_last_of("/\\");
+            std::string::size_type dot_pos = path_str.find_last_of(".");
+            std::string extracted_name = path_str.substr(
+                slash_pos+1, dot_pos-slash_pos-1);
+            multisnake.SaveSnakes(multisnake.converged_snakes(),
+                                  snake_path.string() + extracted_name + ".txt");
+
+            std::cout << "Segmentation completed (Evolution time: "
+                      << time_elasped << "s)" << std::endl;
+            multisnake.junctions().Reset();
+          }
         } else {
           std::cout << image_path << " exists, but is neither a regular file nor a directory" << std::endl;
         }
@@ -220,58 +265,6 @@ int main(int argc, char **argv) {
         std::cerr << "Cannot varing one parameter only." << std::endl;
       }
 
-      // soax::Multisnake multisnake;
-      // // vary the image
-      // fs::directory_iterator image_end_it;
-      // for (fs::directory_iterator image_it(image_path);
-      //      image_it != image_end_it; ++image_it) {
-      //   std::string suffix = GetImageSuffix(image_it->path().string());
-      //   if (suffix != "mha") {
-      //     std::cout << "Unknown image type: " << suffix << std::endl;
-      //     continue;
-      //   }
-      //   multisnake.LoadImage(image_it->path().string());
-      //   multisnake.LoadParameters(parameter_path);
-      //   multisnake.ComputeImageGradient();
-      //   // vary ridge_threshold and stretch
-      //   double ridge_threshold = ridge_range[0];
-      //   while (ridge_threshold < ridge_range[2]) {
-      //     std::cout << "\nSegmentation started on " << image_it->path()
-      //               << std::endl
-      //               << "ridge_threshold is set to: " << ridge_threshold
-      //               << std::endl;
-      //     multisnake.set_ridge_threshold(ridge_threshold);
-      //     double stretch = stretch_range[0];
-      //     while (stretch < stretch_range[2]) {
-      //       std::cout << "stretch is set to: " << stretch << std::endl;
-      //       soax::Snake::set_stretch_factor(stretch);
-      //       std::cout << "=========== Current Parameters ==========="
-      //                 << std::endl;
-      //       multisnake.WriteParameters(std::cout);
-      //       std::cout << "=========================================="
-      //                 << std::endl;
-      //       multisnake.InitializeSnakes();
-
-      //       time_t start, end;
-      //       time(&start);
-      //       multisnake.DeformSnakes();
-      //       time(&end);
-      //       double time_elasped = difftime(end, start);
-
-      //       multisnake.CutSnakesAtTJunctions();
-      //       multisnake.GroupSnakes();
-      //       std::string snake_name = ConstructSnakeFilename(
-      //           image_it->path().string(), ridge_threshold, stretch);
-      //       multisnake.SaveSnakes(multisnake.converged_snakes(),
-      //                             snakes_dir + snake_name);
-      //       std::cout << "Segmentation completed (Evolution time: "
-      //                 << time_elasped << "s)" << std::endl;
-      //       multisnake.junctions().Reset();
-      //       stretch += stretch_range[1];
-      //     }
-      //     ridge_threshold += ridge_range[1];
-      //   }
-      // }
     } catch (const fs::filesystem_error &e) {
       std::cout << e.what() << std::endl;
       return EXIT_FAILURE;

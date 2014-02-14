@@ -86,7 +86,7 @@ int main (int argc, char **argv) {
       if (fs::exists(snakes_path)) {
         soax::Multisnake multisnake;
         multisnake.LoadImage(image_path);
-        double snr = multisnake.ComputeImageSNR();
+        double snr = multisnake.ComputeImageSNR2();
         std::cout << "Image SNR: " << snr << std::endl;
         double threshold = t * snr;
 

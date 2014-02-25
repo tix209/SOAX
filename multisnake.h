@@ -179,6 +179,10 @@ class Multisnake {
   void ComputeResultSnakesLocalSNRs(int radial_near, int radial_far,
                                    DataContainer &snrs) const;
 
+  double ComputeGroundTruthFValue(const DataContainer &snrs,
+                                  double threshold, double penalizer) const;
+  double ComputeResultSnakesFValue(const DataContainer &snrs,
+                                   double threshold, double penalizer) const;
   double ComputeFValue(const DataContainer &snrs,
                        double threshold, double penalizer) const;
 

@@ -1008,7 +1008,8 @@ void MainWindow::ComputeSphericalOrientation() {
 
 void MainWindow::ComputeRadialOrientation() {
   QString filename = QFileDialog::getSaveFileName(
-      this, tr("Save radial orientation file"), "..", tr("Text files(*.txt)"));
+      this, tr("Save radial orientation file"), "..",
+      tr("Text files(*.txt)"));
   if (filename.isEmpty()) return;
 
   PointType center;

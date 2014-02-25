@@ -111,7 +111,8 @@ int main (int argc, char **argv) {
 
         typedef std::vector<fs::path> Paths;
         Paths sorted_snakes_path;
-        std::copy(fs::directory_iterator(snakes_path), fs::directory_iterator(),
+        std::copy(fs::directory_iterator(snakes_path),
+                  fs::directory_iterator(),
                   back_inserter(sorted_snakes_path));
         std::sort(sorted_snakes_path.begin(), sorted_snakes_path.end());
 

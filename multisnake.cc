@@ -1030,13 +1030,22 @@ void Multisnake::ComputeRadialOrientation(const PointType &center,
     return;
   }
 
+  const unsigned width = 15;
+  outfile << "Image file\t" << image_filename_ << "\n"
+          << "Image center\t" << center << "\n"
+          << std::setw(width) << "radius (um)"
+          << std::setw(width) << "theta" << std::endl;
+
+  const double spacing = 0.166; // droplet image
+
   for (SnakeConstIterator it = converged_snakes_.begin();
        it != converged_snakes_.end(); ++it) {
     for (unsigned i = 0; i < (*it)->GetSize() - 1; ++i) {
       double r, theta;
       this->ComputeRTheta((*it)->GetPoint(i), (*it)->GetPoint(i+1),
                           center, r, theta);
-      outfile << r << "\t" << theta << std::endl;
+      outfile << std::setw(width) << r * spacing
+              << std::setw(width) << theta << std::endl;
     }
   }
 
@@ -1070,6 +1079,15 @@ void Multisnake::ComputePointDensity(const PointType &center, double radius,
               << std::endl;
     return;
   }
+
+  const unsigned width = 20;
+  outfile << "Image file\t" << image_filename_
+          << "\nImage center\t" << center
+          << "\nMax radius\t" << radius << "\n"
+          << std::setw(width) << "radius (um)"
+          << std::setw(width) << "snake density"
+          << std::setw(width) << "snake intensity"
+          << std::setw(width) << "voxel intensity" << std::endl;
 
   unsigned max_r = static_cast<unsigned>(radius);
   double *snake_intensities = new double[max_r];
@@ -1119,13 +1137,16 @@ void Multisnake::ComputePointDensity(const PointType &center, double radius,
     ++iter;
   }
 
+  const double spacing = 0.166; // droplet voxel spacing
   for (unsigned i = 0; i < max_r; ++i) {
     if (snaxel_counts[i] > 0)
       snake_intensities[i] /= snaxel_counts[i];
     voxel_intensities[i] /= voxel_counts[i];
     double density = snaxel_counts[i] / (4 * kPi * (i+1) * (i+1));
-    outfile << density << "\t" << snake_intensities[i]
-            << "\t" << voxel_intensities[i] << std::endl;
+    outfile << std::setw(width) << i * spacing
+            << std::setw(width) << density
+            << std::setw(width) << snake_intensities[i]
+            << std::setw(width) << voxel_intensities[i] << std::endl;
   }
   outfile.close();
 
@@ -1144,6 +1165,9 @@ void Multisnake::ComputeCurvature(int coarse_graining,
               << std::endl;
     return;
   }
+
+  outfile << "Image file\t" << image_filename_ << "\n"
+          << "Coarse graining\t" << coarse_graining << std::endl;
 
   for (SnakeConstIterator it = converged_snakes_.begin();
        it != converged_snakes_.end(); ++it) {
@@ -1174,13 +1198,18 @@ void Multisnake::ComputeSphericalOrientation(
     return;
   }
 
+  const unsigned width = 15;
+  outfile << "Image file\t" << image_filename_ << "\n"
+          << std::setw(width) << "theta"
+          << std::setw(width) << "phi" << std::endl;
   for (SnakeConstIterator it = converged_snakes_.begin();
        it != converged_snakes_.end(); ++it) {
     for (unsigned i = 0; i < (*it)->GetSize() - 1; ++i) {
       VectorType vector = (*it)->GetPoint(i) - (*it)->GetPoint(i+1);
       double theta, phi;
       this->ComputeThetaPhi(vector, theta, phi);
-      outfile << theta << "\t" << phi << std::endl;
+      outfile << std::setw(width) << theta
+              << std::setw(width) << phi << std::endl;
     }
   }
   outfile.close();
@@ -1462,6 +1491,19 @@ double Multisnake::ComputeOtsuThreshold(
 //   }
 //   return fvalue;
 // }
+double Multisnake::ComputeGroundTruthFValue(const DataContainer &snrs,
+                                            double threshold,
+                                            double penalizer) const {
+  return this->ComputeFValue(snrs, threshold, penalizer) /
+      comparing_snakes1_.size();
+}
+
+double Multisnake::ComputeResultSnakesFValue(const DataContainer &snrs,
+                                             double threshold,
+                                             double penalizer) const {
+  return this->ComputeFValue(snrs, threshold, penalizer) /
+      converged_snakes_.size();
+}
 
 double Multisnake::ComputeFValue(const DataContainer &snrs,
                                  double threshold, double penalizer) const {

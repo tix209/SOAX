@@ -44,7 +44,7 @@ int main(int argc, char **argv) {
           std::cout << image_dir.filename() << " new SNR: "
                     << snr2 << std::endl;
         }
-      } else {
+      } else { // directory
         typedef std::vector<fs::path> Paths;
         Paths image_paths;
         std::copy(fs::directory_iterator(image_dir), fs::directory_iterator(),
@@ -55,7 +55,7 @@ int main(int argc, char **argv) {
           if (GetSuffix(it->string()) == "mha" ||
               GetSuffix(it->string()) == "tif") {
             multisnake.LoadImage(it->string());
-            double snr = multisnake.ComputeImageSNR();
+            double snr = multisnake.ComputeImageSNR2();
             // if (snr < 4.5 && snr > 3.5)
             std::cout << it->filename() << " SNR: " << snr << std::endl;
           }

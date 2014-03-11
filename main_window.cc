@@ -518,6 +518,9 @@ void MainWindow::OpenImage() {
 
   analysis_options_dialog_->SetImageCenter(multisnake_->GetImageCenter());
 
+  bool invert_intensity = true;
+  if (invert_intensity) multisnake_->InvertImageIntensity();
+
   open_image_->setEnabled(false);
   save_as_isotropic_image_->setEnabled(true);
   load_snakes_->setEnabled(true);
@@ -815,6 +818,7 @@ void MainWindow::ShowViewOptions() {
 
 void MainWindow::InitializeSnakes() {
   multisnake_->ComputeImageGradient();
+
   multisnake_->InitializeSnakes();
   QString msg = QString::number(multisnake_->GetNumberOfInitialSnakes()) +
       " snakes initialized.";
@@ -882,13 +886,15 @@ void MainWindow::DeformSnakes() {
 }
 
 void MainWindow::DeformSnakesInAction() {
+  bool is_2d = multisnake_->is_2d();
   viewer_->RemoveSnakes();
   while (!multisnake_->initial_snakes().empty()) {
     Snake *s = multisnake_->PopLastInitialSnake();
     viewer_->SetupSnake(s, 0);
     viewer_->Render();
     s->Evolve(multisnake_->solver_bank(),
-              multisnake_->converged_snakes(), Snake::iterations_per_press());
+              multisnake_->converged_snakes(),
+              Snake::iterations_per_press(), is_2d);
 
     if (s->viable()) {
       if (s->converged()) {
@@ -942,7 +948,10 @@ void MainWindow::DeformOneSnake() {
     if (!multisnake_->external_force()) {
       multisnake_->ComputeImageGradient();
     }
-    viewer_->trimmed_snake()->EvolveWithTipFixed(multisnake_->solver_bank());
+
+    viewer_->trimmed_snake()->EvolveWithTipFixed(
+        multisnake_->solver_bank(), Snake::iterations_per_press(),
+        multisnake_->is_2d());
 
     if (viewer_->trimmed_snake()->converged()) {
       statusBar()->showMessage(tr("Snake is converged."));
@@ -1126,7 +1135,7 @@ void MainWindow::SaveSnapshot() {
 
 void MainWindow::AboutSOAX() {
   QMessageBox::about(this, tr("About SOAX"),
-                     tr("<h3>SOAX 3.5.2</h3>"
+                     tr("<h3>SOAX 3.5.3</h3>"
                         "<p>Copyright &copy; 2014 Ting Xu, IDEA Lab, "
                         "Lehigh University "
                         "<p>SOAX extracts curvilinear network structure "

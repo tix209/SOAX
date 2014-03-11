@@ -17,20 +17,21 @@
 #include "itkRescaleIntensityImageFilter.h"
 #include "itkNormalVariateGenerator.h"
 #include "itkMinimumMaximumImageCalculator.h"
+#include "itkInvertIntensityImageFilter.h"
 #include "solver_bank.h"
 #include "utility.h"
 
 namespace soax {
 
-Multisnake::Multisnake() :
-    image_(NULL), external_force_(NULL), intensity_scaling_(0.004),
-    sigma_(0.0), ridge_threshold_(0.01), foreground_(65535), background_(0),
-    initialize_z_(false) {
+Multisnake::Multisnake() : image_(NULL), external_force_(NULL),
+                           intensity_scaling_(0.004), sigma_(0.0),
+                           ridge_threshold_(0.01), foreground_(65535),
+                           background_(0), initialize_z_(false),
+                           is_2d_(false) {
   interpolator_ = InterpolatorType::New();
   vector_interpolator_ = VectorInterpolatorType::New();
   transform_ = TransformType::New();
   solver_bank_ = new SolverBank;
-  // Snake::set_solver_bank(solver_bank_);
 }
 
 Multisnake::~Multisnake() {
@@ -54,22 +55,48 @@ void Multisnake::Reset() {
 }
 
 void Multisnake::LoadImage(const std::string &filename) {
+  image_filename_ = filename;
+
+  // // Find out the pixel type of the image in file
+  // typedef itk::ImageIOBase::IOComponentType  ScalarPixelType;
+
+  // itk::ImageIOBase::Pointer io = itk::ImageIOFactory::CreateImageIO(
+  //     filename.c_str(), itk::ImageIOFactory::ReadMode);
+
+  // if( !io ) {
+  //   std::cerr << "NO IMAGEIO WAS FOUND" << std::endl;
+  //   return;
+  // }
+
+  // // Now that we found the appropriate ImageIO class, ask it to
+  // // read the meta data from the image file.
+  // io->SetFileName(filename);
+  // io->ReadImageInformation();
+  // ScalarPixelType pixel_type = io->GetComponentType();
+  // std::cout << itk::ImageIOBase::GetComponentTypeAsString(pixel_type) << std::endl;
+  // unsigned num_dimensions = io->GetNumberOfDimensions();
+  // std::cout << num_dimensions << std::endl;
+
   typedef itk::ImageFileReader<ImageType> ReaderType;
   ReaderType::Pointer reader = ReaderType::New();
   reader->SetFileName(filename);
-  image_ = reader->GetOutput();
+
   try {
     reader->Update();
   } catch(itk::ExceptionObject &e) {
     std::cerr << "Exception caught when reading an image!" << std::endl;
     std::cerr << e << std::endl;
   }
-  image_filename_ = filename;
-  interpolator_->SetInputImage(image_);
-  // const ImageType::SizeType &size =
-  //     image_->GetLargestPossibleRegion().GetSize();
+
+  image_ = reader->GetOutput();
+
+  const ImageType::SizeType &size =
+      image_->GetLargestPossibleRegion().GetSize();
   // std::cout << "Image size: " << size << std::endl;
-  // std::cout << image_filename_ << std::endl;
+  if (size[2] < 2) {
+    is_2d_ = true;
+  }
+  interpolator_->SetInputImage(image_);
 }
 
 PointType Multisnake::GetImageCenter() const {
@@ -249,18 +276,45 @@ void Multisnake::WriteParameters(std::ostream &os) const {
   os << std::noboolalpha;
 }
 
+void Multisnake::InvertImageIntensity() {
+  ImageType::PixelType maximum = this->GetMaxImageIntensity();
+  std::cout << "Previous Maximum intensity: " << maximum << std::endl;
+
+  typedef itk::InvertIntensityImageFilter<ImageType> FilterType;
+  FilterType::Pointer filter = FilterType::New();
+  filter->SetInput(image_);
+  filter->SetMaximum(maximum);
+
+  // typedef itk::RescaleIntensityImageFilter<ImageType, ImageType>
+  //     RescalerType;
+  // RescalerType::Pointer rescaler = RescalerType::New();
+  // rescaler->SetInput(filter->GetOutput());
+  // rescaler->SetOutputMinimum(0);
+  // rescaler->SetOutputMaximum(255);
+  // rescaler->Update();
+  // image_ = rescaler->GetOutput();
+  // std::cout << "maximum: " << filter->GetMaximum() << std::endl;
+  filter->Update();
+  image_ = filter->GetOutput();
+  interpolator_->SetInputImage(image_);
+  maximum = this->GetMaxImageIntensity();
+  std::cout << "Current Maximum intensity: " << maximum << std::endl;
+}
+
 void Multisnake::ComputeImageGradient(bool reset) {
   if (!reset && external_force_) return;
   external_force_ = NULL;
+
   typedef itk::Image<double, kDimension> InternalImageType;
-  typedef itk::ShiftScaleImageFilter<ImageType, InternalImageType> ScalerType;
+  typedef itk::ShiftScaleImageFilter<ImageType,
+                                     InternalImageType> ScalerType;
   ScalerType::Pointer scaler = ScalerType::New();
   scaler->SetInput(image_);
   scaler->SetScale(intensity_scaling_);
   scaler->SetShift(0.0);
   scaler->Update();
 
-  if (sigma_ < 0.01) { // no smoothing
+  if (is_2d_ || sigma_ < 0.01) { // no smoothing
     typedef itk::GradientImageFilter<InternalImageType> FilterType;
     FilterType::Pointer filter = FilterType::New();
     // filter->SetInput(image_);
@@ -300,19 +354,20 @@ void Multisnake::InitializeSnakes() {
   this->ClearSnakeContainer(initial_snakes_);
   BoolVectorImageType::Pointer ridge_image =
       InitializeBoolVectorImage();
-  ScanGradient(ridge_image);
+  this->ScanGradient(ridge_image);
 
-  unsigned num_directions = initialize_z_ ? 3 : 2;
+  unsigned num_directions = 2;
+  if (!is_2d_ && initialize_z_) num_directions = 3;
   // unsigned num_directions = 1; // for blood vessels
   BoolVectorImageType::Pointer candidate_image =
       InitializeBoolVectorImage();
 
   for (unsigned d = 0; d < num_directions; ++d) {
-    GenerateCandidates(ridge_image, candidate_image, d);
+    this->GenerateCandidates(ridge_image, candidate_image, d);
   }
 
   for (unsigned d = 0; d < num_directions; ++d) {
-    LinkCandidates(candidate_image, d);
+    this->LinkCandidates(candidate_image, d);
   }
   std::sort(initial_snakes_.begin(), initial_snakes_.end(), IsShorter);
 }
@@ -337,13 +392,17 @@ void Multisnake::ScanGradient(BoolVectorImageType::Pointer ridge_image) {
   OutputIteratorType iter(ridge_image,
                           ridge_image->GetLargestPossibleRegion());
 
-  for (unsigned i = 0; i < kDimension; ++i) {
+  const unsigned d = is_2d_? 2 : 3;
+  for (unsigned i = 0; i < d; ++i) {
     for (iter.GoToBegin(); !iter.IsAtEnd(); ++iter) {
       VectorImageType::IndexType index = iter.GetIndex();
       VectorImageType::IndexType current_index = index;
 
       unsigned cnt = 0;
-      if (external_force_->GetPixel(index)[i] < ridge_threshold_) {
+      double grad_comp = external_force_->GetPixel(index)[i];
+      // if (invert_intensity_) grad_comp = -grad_comp;
+
+      if (grad_comp < ridge_threshold_) {
         continue;
       } else {
         while (true) {
@@ -353,11 +412,12 @@ void Multisnake::ScanGradient(BoolVectorImageType::Pointer ridge_image) {
           if (!image_->GetLargestPossibleRegion().IsInside(current_index))
             break;
 
-          if (external_force_->GetPixel(current_index)[i] >
-              ridge_threshold_) {
+          double curr_grad_comp = external_force_->GetPixel(current_index)[i];
+          // if (invert_intensity_) curr_grad_comp = - curr_grad_comp;
+
+          if (curr_grad_comp > ridge_threshold_) {
             break;
-          } else if (external_force_->GetPixel(current_index)[i] <
-                     -ridge_threshold_) {
+          } else if (curr_grad_comp < -ridge_threshold_) {
             current_index[i] -= cnt/2;
             ridge_image->GetPixel(current_index)[i] = true;
             break;
@@ -385,10 +445,15 @@ void Multisnake::GenerateCandidates(
     if (iter2.Value() > foreground_ || iter2.Value() < background_)
       continue;
     BoolVectorImageType::IndexType index = iter.GetIndex();
+    BoolVectorImageType::PixelType ridge_value = ridge_image->GetPixel(index);
 
-    iter.Value()[direction] =
-        ridge_image->GetPixel(index)[(direction+1) % kDimension]
-        && ridge_image->GetPixel(index)[(direction+2) % kDimension];
+    unsigned d = is_2d_ ? 2 : 3;
+    if (is_2d_) {
+      iter.Value()[direction] = ridge_value[(direction+1) % d];
+    } else {
+      iter.Value()[direction] = ridge_value[(direction+1) % d] &&
+          ridge_value[(direction+2) % d];
+    }
   }
 }
 
@@ -396,16 +461,30 @@ void Multisnake::LinkCandidates(
     BoolVectorImageType::Pointer candidate_image, unsigned direction) {
   ImageType::SizeType size = image_->GetLargestPossibleRegion().GetSize();
 
-  for (unsigned c0 = 0; c0 < size[direction]; ++c0) {
-    for (unsigned c1 = 0; c1 < size[(direction+1)%3]; ++c1) {
-      for (unsigned c2 = 0; c2 < size[(direction+2)%3]; ++c2) {
+  if (is_2d_) {
+    for (unsigned c0 = 0; c0 < size[direction]; ++c0) {
+      for (unsigned c1 = 0; c1 < size[(direction+1)%2]; ++c1) {
         BoolVectorImageType::IndexType current_index;
         current_index[direction] = c0;
-        current_index[(direction+1)%3] = c1;
-        current_index[(direction+2)%3] = c2;
+        current_index[(direction+1)%2] = c1;
+        current_index[2] = 0;
 
         if (candidate_image->GetPixel(current_index)[direction])
           LinkFromIndex(candidate_image, current_index, direction);
+      }
+    }
+  } else {
+    for (unsigned c0 = 0; c0 < size[direction]; ++c0) {
+      for (unsigned c1 = 0; c1 < size[(direction+1)%3]; ++c1) {
+        for (unsigned c2 = 0; c2 < size[(direction+2)%3]; ++c2) {
+          BoolVectorImageType::IndexType current_index;
+          current_index[direction] = c0;
+          current_index[(direction+1)%3] = c1;
+          current_index[(direction+2)%3] = c2;
+
+          if (candidate_image->GetPixel(current_index)[direction])
+            LinkFromIndex(candidate_image, current_index, direction);
+        }
       }
     }
   }
@@ -459,21 +538,33 @@ bool Multisnake::FindNextCandidate(
   if (!candidate_image->GetLargestPossibleRegion().IsInside(index))
     return false;
 
-  int d1 = (direction + 1) % 3;
-  int d2 = (direction + 2) % 3;
-
   if (candidate_image->GetPixel(index)[direction])
     return true;
 
-  for (int c1 = current_index[d1] - 1;
-       c1 <= current_index[d1] + 1; ++c1) {
-    for (int c2 = current_index[d2] - 1;
-         c2 <= current_index[d2] + 1; ++c2) {
+  if (is_2d_) {
+    int d1 = (direction + 1) % 2;
+    for (int c1 = current_index[d1] - 1;
+         c1 <= current_index[d1] + 1; ++c1) {
       index[d1] = c1;
-      index[d2] = c2;
+      index[2] = 0;
       if (candidate_image->GetLargestPossibleRegion().IsInside(index) &&
           candidate_image->GetPixel(index)[direction])
         return true;
+    }
+  } else {
+    int d1 = (direction + 1) % 3;
+    int d2 = (direction + 2) % 3;
+
+    for (int c1 = current_index[d1] - 1;
+         c1 <= current_index[d1] + 1; ++c1) {
+      for (int c2 = current_index[d2] - 1;
+           c2 <= current_index[d2] + 1; ++c2) {
+        index[d1] = c1;
+        index[d2] = c2;
+        if (candidate_image->GetLargestPossibleRegion().IsInside(index) &&
+            candidate_image->GetPixel(index)[direction])
+          return true;
+      }
     }
   }
   return false;
@@ -488,7 +579,7 @@ void Multisnake::DeformSnakes(QProgressBar * progress_bar) {
     initial_snakes_.pop_back();
 
     solver_bank_->Reset(false);
-    snake->Evolve(solver_bank_, converged_snakes_, kBigNumber);
+    snake->Evolve(solver_bank_, converged_snakes_, kBigNumber, is_2d_);
 
     if (snake->viable()) {
       converged_snakes_.push_back(snake);
@@ -549,7 +640,7 @@ void Multisnake::GroupSnakes() {
   SnakeIterator it = converged_snakes_.begin();
   while (it != converged_snakes_.end()) {
     solver_bank_->Reset(false);
-    (*it)->EvolveWithTipFixed(solver_bank_, 100);
+    (*it)->EvolveWithTipFixed(solver_bank_, 100, is_2d_);
     if ((*it)->viable()) {
       it++;
     } else {
@@ -1645,8 +1736,8 @@ void Multisnake::set_intensity_scaling(double scale) {
     intensity_scaling_ = 1.0 / this->GetMaxImageIntensity();
 }
 
-double Multisnake::GetMaxImageIntensity() const {
-  if (!image_) return 0.0;
+ImageType::PixelType Multisnake::GetMaxImageIntensity() const {
+  if (!image_) return 0;
   typedef itk::MinimumMaximumImageCalculator<ImageType> FilterType;
   FilterType::Pointer filter = FilterType::New();
   filter->SetImage(image_);

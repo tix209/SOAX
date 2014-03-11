@@ -64,7 +64,14 @@ class Multisnake {
   bool initialize_z() const {return initialize_z_;}
   void set_initialize_z(bool init_z) {initialize_z_ = init_z;}
 
+  bool is_2d() const {return is_2d_;}
+
   SolverBank *solver_bank() const {return solver_bank_;}
+
+  /*
+   * Invert image intensity by subtracting from the maximum intensity.
+   */
+  void InvertImageIntensity();
 
   /*
    * Compute image gradient field for both snake initialization and
@@ -302,7 +309,7 @@ class Multisnake {
                                              double &bg_mean,
                                              double &bg_std) const;
 
-  double GetMaxImageIntensity() const;
+  ImageType::PixelType GetMaxImageIntensity() const;
 
   void ComputeLocalSNRs(const SnakeContainer &snakes,
                         int radial_near, int radial_far,
@@ -362,6 +369,17 @@ class Multisnake {
    * True if initialize snakes along z axis direction.
    */
   bool initialize_z_;
+
+  /*
+   * True if input image is 2d. If true, SOAX behaviour is adapted to
+   * 2D. The output SOACs z coordinates is 0.
+   */
+  bool is_2d_;
+
+  // /*
+  //  * True if the intensity of input image needs to be inverted.
+  //  */
+  // bool invert_intensity_;
 
   DISALLOW_COPY_AND_ASSIGN(Multisnake);
 };

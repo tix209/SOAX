@@ -147,9 +147,8 @@ class Snake {
   const SnakeContainer &subsnakes() const {return subsnakes_;}
 
   void Evolve(SolverBank *solver, const SnakeContainer &converged_snakes,
-              unsigned max_iter);
-  void EvolveWithTipFixed(SolverBank *solver,
-                          unsigned max_iter = iterations_per_press_);
+              unsigned max_iter, bool is_2d);
+  void EvolveWithTipFixed(SolverBank *solver, unsigned max_iter, bool is_2d);
   void UpdateHookedIndices();
   void CopySubSnakes(SnakeContainer &c);
   bool PassThrough(const PointType &p, double threshold) const;
@@ -202,22 +201,22 @@ class Snake {
                                Snake * &s, unsigned &index);
   double FindClosestIndexTo(const PointType &p, unsigned &ind);
 
-  void IterateOnce(SolverBank *solver);
+  void IterateOnce(SolverBank *solver, bool is_2d);
 
   /*
    * Ensure the updated snake points stay within image after each
    * iteration.
    */
   void CopySolutionToVertices(SolverBank *solver, unsigned direction);
-  void ComputeRHSVector(double gamma, VectorContainer &rhs);
+  void ComputeRHSVector(double gamma, VectorContainer &rhs, bool is_2d);
   void AddExternalForce(VectorContainer &rhs);
-  void AddStretchingForce(VectorContainer &rhs);
+  void AddStretchingForce(VectorContainer &rhs, bool is_2d);
   void AddVerticesInfo(double gamma, VectorContainer &rhs);
 
   void UpdateHeadTangent();
   void UpdateTailTangent();
 
-  double ComputeLocalStretch(bool is_head);
+  double ComputeLocalStretch(bool is_head, bool is_2d);
 
   double ComputeCircularMeanIntensity(bool is_head, bool is_fg);
 
@@ -230,6 +229,15 @@ class Snake {
    */
   double ComputeForegroundMeanIntensity(bool is_head) const;
   double ComputeBackgroundMeanIntensity(bool is_head) const;
+  double ComputeForegroundMeanIntensity2d(bool is_head) const;
+  double ComputeBackgroundMeanIntensity2d(bool is_head) const;
+
+  double ComputePodX(double x, const VectorType &tvec,
+                     double dist, bool plus_root) const;
+  double ComputePodY(double y, const VectorType &tvec,
+                     double dist, bool plus_root) const;
+  bool CheckOrthogonality(const VectorType &vec1,
+                          const VectorType &vec2) const;
 
   void GetStartingRadialDirection(VectorType &direction,
                                   const VectorType &normal,
@@ -240,7 +248,8 @@ class Snake {
                           const VectorType &radial,
                           const VectorType &normal,
                           int d, int s) const;
-  bool IsInsideImage(const PointType &point) const;
+  bool IsInsideImage(const PointType &point,
+                     unsigned dim = kDimension) const;
 
   void CheckBodyOverlap(const SnakeContainer &converged_snakes);
 

@@ -5,7 +5,7 @@
 
 namespace soax {
 
-// SolverBank *Snake::solver_bank_ = NULL;
+
 
 double Snake::intensity_scaling_ = 0.004;
 unsigned short Snake::foreground_ = 65535;
@@ -16,7 +16,6 @@ unsigned Snake::max_iterations_ = 10000;
 double Snake::change_threshold_ = 0.05;
 unsigned Snake::check_period_ = 100;
 unsigned Snake::iterations_per_press_ = 100;
-// double Snake::gamma_ = 2;
 double Snake::external_factor_ = 1.0;
 double Snake::stretch_factor_ = 0.5;
 int Snake::number_of_sectors_ = 8;
@@ -148,7 +147,7 @@ void Snake::InterpolateVertices(const PairContainer *sums,
 
 
 void Snake::Evolve(SolverBank *solver, const SnakeContainer &converged_snakes,
-                   unsigned max_iter) {
+                   unsigned max_iter, bool is_2d) {
   unsigned iter = 0;
 
   while (iter <= max_iter) {
@@ -170,7 +169,7 @@ void Snake::Evolve(SolverBank *solver, const SnakeContainer &converged_snakes,
     if (!viable_)  break;
     this->HandleTailOverlap(converged_snakes);
     if (!viable_)  break;
-    this->IterateOnce(solver);
+    this->IterateOnce(solver, is_2d);
     // this->PrintSelf();
     this->Resample();
     iter++;
@@ -368,11 +367,12 @@ double Snake::FindClosestIndexTo(const PointType &p, unsigned &ind) {
   return min_d;
 }
 
-void Snake::IterateOnce(SolverBank *solver) {
+void Snake::IterateOnce(SolverBank *solver, bool is_2d) {
   VectorContainer rhs;
-  this->ComputeRHSVector(solver->gamma(), rhs);
+  this->ComputeRHSVector(solver->gamma(), rhs, is_2d);
   // this->PrintVectorContainer(rhs);
-  for (unsigned dim = 0; dim < kDimension; ++dim) {
+  const unsigned d = is_2d ? 2 : 3;
+  for (unsigned dim = 0; dim < d; ++dim) {
     solver->SolveSystem(rhs, dim, open_);
     this->CopySolutionToVertices(solver, dim);
   }
@@ -400,10 +400,10 @@ void Snake::CopySolutionToVertices(SolverBank *solver, unsigned dim) {
   }
 }
 
-void Snake::ComputeRHSVector(double gamma, VectorContainer &rhs) {
+void Snake::ComputeRHSVector(double gamma, VectorContainer &rhs, bool is_2d) {
   this->AddExternalForce(rhs);
   if (open_)
-    this->AddStretchingForce(rhs);
+    this->AddStretchingForce(rhs, is_2d);
   this->AddVerticesInfo(gamma, rhs);
 }
 
@@ -416,14 +416,14 @@ void Snake::AddExternalForce(VectorContainer &rhs) {
 }
 
 
-void Snake::AddStretchingForce(VectorContainer &rhs) {
+void Snake::AddStretchingForce(VectorContainer &rhs, bool is_2d) {
   if (!this->HeadIsFixed()) {
     this->UpdateHeadTangent();
     double z_damp = 1;
     if (damp_z_)
       z_damp = exp(-fabs(head_tangent_[2]));
 
-    double head_multiplier = this->ComputeLocalStretch(true);
+    double head_multiplier = this->ComputeLocalStretch(true, is_2d);
     rhs.front() += stretch_factor_ * z_damp * head_multiplier * head_tangent_;
   }
 
@@ -433,7 +433,7 @@ void Snake::AddStretchingForce(VectorContainer &rhs) {
     if (damp_z_)
       z_damp = exp(-fabs(tail_tangent_[2]));
 
-    double tail_multiplier = this->ComputeLocalStretch(false);
+    double tail_multiplier = this->ComputeLocalStretch(false, is_2d);
     rhs.back() += stretch_factor_ * z_damp * tail_multiplier * tail_tangent_;
   }
 }
@@ -463,29 +463,41 @@ void Snake::UpdateTailTangent() {
 }
 
 
-double Snake::ComputeLocalStretch(bool is_head) {
-  // PointType &vertex = is_head ? vertices_.front() : vertices_.back();
+double Snake::ComputeLocalStretch(bool is_head, bool is_2d) {
+  PointType &vertex = is_head ? vertices_.front() : vertices_.back();
   // double fg = this->ComputeVertexIntensity(vertex);
 
   // Good for noisy images such as OCT vessels and microtubules,
   // and actin rings.
   // double fg1 = this->ComputeCircularMeanIntensity(is_head, true);
-  double fg = this->ComputeForegroundMeanIntensity(is_head);
+  double fg = 0.0;
+  if (is_2d)
+    // fg = this->ComputeForegroundMeanIntensity2d(is_head);
+    fg = intensity_scaling_ * interpolator_->Evaluate(vertex);
+  else
+    fg = this->ComputeForegroundMeanIntensity(is_head);
 
   if (fg < background_ * intensity_scaling_ + kEpsilon ||
       fg > foreground_ * intensity_scaling_)
     return 0.0;
-  // std::cout << "fg1: " << fg1 << "\tfg: " << fg << std::endl;
+  // std::cout << "fg: " << fg;
 
   // double bg1 = this->ComputeCircularMeanIntensity(is_head, false);
-  double bg = this->ComputeBackgroundMeanIntensity(is_head);
+  double bg = 0.0;
+  if (is_2d)
+    bg = this->ComputeBackgroundMeanIntensity2d(is_head);
+  else
+    bg = this->ComputeBackgroundMeanIntensity(is_head);
 
   // if (abs(bg1-bg) > kEpsilon) {
-  //   std::cout << "bg1: " << bg1 << "\tbg: " << bg << std::endl;
+  // std::cout << "\tbg: " << bg << std::endl;
   // }
   if (bg < 0.0)
     return 0.0;
 
+  // if (is_2d) // a symmetric definition, good for inverted intensity
+  //   return abs((fg - bg) / (fg + bg));
+  // else
   return 1 - bg / fg;
 }
 
@@ -541,6 +553,102 @@ double Snake::ComputeBackgroundMeanIntensity(bool is_head) const {
   } // return a negative value intentionally
   else  return Mean(bgs);
 }
+
+double Snake::ComputeForegroundMeanIntensity2d(bool is_head) const {
+  DataContainer fgs;
+  const unsigned npts = 3;
+  for (unsigned i = 0; i < npts; i++) {
+    double intensity = 0.0;
+    if (is_head)
+      intensity = interpolator_->Evaluate(vertices_.at(i));
+    else
+      intensity = interpolator_->Evaluate(
+          vertices_.at(vertices_.size() - 1 - i));
+
+    fgs.push_back(intensity_scaling_ * intensity);
+  }
+  return Mean(fgs);
+}
+
+double Snake::ComputeBackgroundMeanIntensity2d(bool is_head) const {
+  const VectorType &normal = is_head ? head_tangent_ : tail_tangent_;
+  PointType vertex = is_head ? vertices_.front() : vertices_.back();
+  DataContainer bgs;
+
+  for (int d = radial_near_; d < radial_far_; d++) {
+    PointType pod;
+    pod[0] = this->ComputePodX(vertex[0], normal, d, true);
+    pod[1] = this->ComputePodY(vertex[1], normal, d, false);
+    pod[2] = vertex[2];
+
+    // if (!this->CheckOrthogonality(pod-vertex, normal))
+    //   std::cerr << "Pod is not orthogonal!" << std::endl;
+
+    if (this->IsInsideImage(pod, 2)) {
+      double intensity = interpolator_->Evaluate(pod);
+      bgs.push_back(intensity_scaling_ * intensity);
+    }
+
+    pod[0] = this->ComputePodX(vertex[0], normal, d, false);
+    pod[1] = this->ComputePodY(vertex[1], normal, d, true);
+    pod[2] = vertex[2];
+
+    // if (!this->CheckOrthogonality(pod-vertex, normal))
+    //   std::cerr << "Pod is not orthogonal!" << std::endl;
+
+    if (this->IsInsideImage(pod, 2)) {
+      double intensity = interpolator_->Evaluate(pod);
+      bgs.push_back(intensity_scaling_ * intensity);
+    }
+  }
+
+  if (bgs.empty()) return -1.0;
+  else  return Mean(bgs);
+}
+
+double Snake::ComputePodX(double x, const VectorType &tvec,
+                          double dist, bool plus_root) const {
+  if (std::abs(tvec[0]) < kEpsilon) {
+    if (plus_root)
+      return x + dist;
+    else
+      return x - dist;
+  } else {
+    double frac = tvec[1] / tvec[0];
+    if (plus_root)
+      return x + frac * dist / std::sqrt(1 + frac * frac);
+    else
+      return x - frac * dist / std::sqrt(1 + frac * frac);
+  }
+}
+
+
+double Snake::ComputePodY(double y, const VectorType &tvec,
+                          double dist, bool plus_root) const {
+  if (std::abs(tvec[0]) < kEpsilon) {
+    return y;
+  } else {
+    double frac = tvec[1] / tvec[0];
+    if (plus_root)
+      return y + dist / std::sqrt(1 + frac * frac);
+    else
+      return y - dist / std::sqrt(1 + frac * frac);
+  }
+}
+
+bool Snake::CheckOrthogonality(const VectorType &vec1,
+                               const VectorType &vec2) const {
+  const double angle = 90;
+
+  double dotprod = vec1 * vec2;
+  double result = std::acos(dotprod) * 180.0 / kPi;
+
+  if (std::abs(result-angle) < 1.0)
+    return true;
+  else
+    return false;
+}
+
 
 double Snake::ComputeCircularMeanIntensity(bool is_head, bool is_fg) {
   const VectorType &normal = is_head ? head_tangent_ : tail_tangent_;
@@ -618,9 +726,9 @@ void Snake::ComputeSamplePoint(PointType &point, const PointType &origin,
   }
 }
 
-bool Snake::IsInsideImage(const PointType &point) const {
+bool Snake::IsInsideImage(const PointType &point, unsigned dim) const {
   ImageType::SizeType size = image_->GetLargestPossibleRegion().GetSize();
-  for (unsigned i = 0; i < kDimension; ++i) {
+  for (unsigned i = 0; i < dim; ++i) {
     if (point[i] < kBoundary || point[i] >= size[i] - kBoundary)
       return false;
   }
@@ -779,7 +887,8 @@ void Snake::CopySubSnakes(SnakeContainer &c) {
     delete snake;
 }
 
-void Snake::EvolveWithTipFixed(SolverBank *solver, unsigned max_iter) {
+void Snake::EvolveWithTipFixed(SolverBank *solver, unsigned max_iter,
+                               bool is_2d) {
   unsigned iter = 0;
   fixed_head_ = vertices_.front();
   fixed_tail_ = vertices_.back();
@@ -790,7 +899,7 @@ void Snake::EvolveWithTipFixed(SolverBank *solver, unsigned max_iter) {
         break;
     }
 
-    this->IterateOnce(solver);
+    this->IterateOnce(solver, is_2d);
     this->Resample();
     iter++;
   }

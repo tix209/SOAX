@@ -518,7 +518,7 @@ void MainWindow::OpenImage() {
 
   analysis_options_dialog_->SetImageCenter(multisnake_->GetImageCenter());
 
-  bool invert_intensity = true;
+  bool invert_intensity = false;
   if (invert_intensity) multisnake_->InvertImageIntensity();
 
   open_image_->setEnabled(false);

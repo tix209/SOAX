@@ -20,10 +20,13 @@ class Multisnake {
   Multisnake();
   ~Multisnake();
   void Reset();
+
   /*
    * Load the image and set image_filename_.
    */
   void LoadImage(const std::string &filename);
+
+  std::string GetImageName(bool suffix = true) const;
 
   PointType GetImageCenter() const;
 

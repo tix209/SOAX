@@ -99,6 +99,16 @@ void Multisnake::LoadImage(const std::string &filename) {
   interpolator_->SetInputImage(image_);
 }
 
+std::string Multisnake::GetImageName(bool suffix) const {
+  unsigned last_slash_pos = image_filename_.find_last_of("/\\");
+  if (!suffix) {
+    unsigned last_dot_pos = image_filename_.find_last_of(".");
+    return image_filename_.substr(last_slash_pos+1, last_dot_pos-last_slash_pos-1);
+  } else {
+    return image_filename_.substr(last_slash_pos+1);
+  }
+}
+
 PointType Multisnake::GetImageCenter() const {
   PointType center;
   center.Fill(0.0);

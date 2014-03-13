@@ -1,8 +1,9 @@
 /*
  * File: batch_soax.cc
  *
- * This file implements the batch processing of SOAX commandline program.
- * The input images can be more than one, and the parameters can vary.
+ * This file implements the batch processing of SOAX commandline
+ * program.  The input images can be more than one, and the parameters
+ * can vary.
  *
  * Copyright (C) 2014 Ting Xu, IDEA Lab, Lehigh University.
  */
@@ -10,7 +11,7 @@
 #include <sstream>
 #include <iomanip>
 #include "boost/program_options.hpp"
-#include <boost/filesystem.hpp>
+#include "boost/filesystem.hpp"
 #include "multisnake.h"
 
 std::string ConstructSnakeFilename(const std::string &image_path,
@@ -81,7 +82,7 @@ int main(int argc, char **argv) {
 
     fs::path snake_path(vm["snake"].as<std::string>());
     if (!fs::exists(snake_path)) {
-      std::cerr << image_path << " does not exist. Abort." << std::endl;
+      std::cerr << snake_path << " does not exist. Abort." << std::endl;
       return EXIT_FAILURE;
     }
 

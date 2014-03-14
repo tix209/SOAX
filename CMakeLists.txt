@@ -78,7 +78,7 @@ add_executable(eval_f evaluate_f.cc ${common_srcs})
 add_executable(rsf result_f_value.cc ${common_srcs})
 add_executable(snr image_snr.cc ${common_srcs})
 add_executable(syn synthetic.cc ${common_srcs})
-add_executable(snapshots batch_snapshots.cc ${gui_srcs} ${common_srcs} ${mocs} ${rccs})
+add_executable(snapshots batch_snapshots.cc)
 
 target_link_libraries(soax
   ${QT_LIBRARIES}

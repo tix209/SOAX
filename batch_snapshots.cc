@@ -1,38 +1,60 @@
 /*
+ * File: batch_snapshots.cc
+ * ~~~~~~~~~~~~~~~~~~~~~~~~
  * This file implements the batch generation of snapshots of a vtk
  * rendering window without showing it.
+ *
  */
+
+#include "vtkSmartPointer.h"
+#include "vtkRenderWindow.h"
+#include "vtkRenderWindowInteractor.h"
+#include "vtkRenderer.h"
+#include "vtkImageMapper3D.h"
+#include "vtkImageActor.h"
+#include "vtkWindowToImageFilter.h"
+#include "vtkPNGWriter.h"
+#include "vtkActor.h"
+#include "vtkPolyData.h"
+#include "vtkPolyDataMapper.h"
+#include "vtkPoints.h"
+#include "vtkCellArray.h"
+#include "vtkProperty.h"
+#include "vtkSphereSource.h"
+
+#include "itkRescaleIntensityImageFilter.h"
+#include "itkImageFileReader.h"
+#include "itkImageToVTKImageFilter.h"
 
 #include "boost/program_options.hpp"
 #include "boost/filesystem.hpp"
-#include "multisnake.h"
 #include <iostream>
-#include <vtkSmartPointer.h>
-#include <vtkRenderWindow.h>
-#include <vtkRenderWindowInteractor.h>
-#include <vtkInteractorStyleImage.h>
-#include <vtkRenderer.h>
-#include <vtkImageMapper3D.h>
-#include <vtkImageActor.h>
-#include <vtkWindowToImageFilter.h>
-#include <vtkPNGWriter.h>
-#include <vtkActor.h>
-#include <itkRescaleIntensityImageFilter.h>
-#include <itkImageFileReader.h>
-#include <itkImageToVTKImageFilter.h>
+#include <fstream>
+#include <sstream>
 
 
-typedef std::vector<vtkSmartPointer<vtkActor> > ActorsType;
+
+typedef itk::Image<unsigned short, 2> ImageType;
+typedef std::vector<vtkSmartPointer<vtkPolyData> > PolyDataContainer;
 
 
 std::string GetImageName(const std::string &name, bool suffix = false);
-// vtkSmartPointer<vtkImageActor> ImportImage(const std::string &filename);
-vtkSmartPointer<vtkActor> ImportSnakesAndJunctions(
-    const std::string &filename, ActorsType &junction_actors);
-void SaveScene(vtkSmartPointer<vtkImageActor> image_actor,
-               vtkSmartPointer<vtkActor> snake_actor,
-               const ActorsType &junction_actors,
+
+ImageType::Pointer ReadImage(const std::string &filename);
+
+vtkSmartPointer<vtkPolyData> ImportSnakesAndJunctions(
+    const std::string &filename, PolyDataContainer &junctions);
+
+void SaveScene(vtkImageData *image, vtkSmartPointer<vtkPolyData> snakes,
+               const PolyDataContainer &junctions,
                const std::string &filename);
+
+vtkSmartPointer<vtkActor> SetupSnakeActor(
+    vtkSmartPointer<vtkPolyData> snakes);
+vtkSmartPointer<vtkActor> SetupJunction(
+    vtkSmartPointer<vtkPolyData> junction);
+
+
 
 
 int main(int argc, char **argv) {
@@ -56,9 +78,9 @@ int main(int argc, char **argv) {
     all.add(generic).add(required);
     po::variables_map vm;
     po::store(parse_command_line(argc, argv, all), vm);
+
     if (vm.count("version")) {
-      const std::string version_msg(
-          "Batch snapshots 1.0\n"
+      const std::string version_msg("Batch snapshots 1.0\n"
           "Copyright (C) 2014 Ting Xu, IDEA Lab, Lehigh University.");
       std::cout << version_msg << std::endl;
       return EXIT_SUCCESS;
@@ -86,62 +108,42 @@ int main(int argc, char **argv) {
               back_inserter(image_paths));
     std::sort(image_paths.begin(), image_paths.end());
 
-    typedef itk::Image<unsigned short, 2> ImageType;
-    typedef itk::ImageFileReader<ImageType> ReaderType;
-    ReaderType::Pointer reader = ReaderType::New();
-
-    typedef itk::RescaleIntensityImageFilter<ImageType,
-                                             ImageType> RescalerType;
-    RescalerType::Pointer rescaler = RescalerType::New();
-    rescaler->SetInput(reader->GetOutput());
-    rescaler->SetOutputMinimum(0);
-    rescaler->SetOutputMaximum(255);
-
-    typedef itk::ImageToVTKImageFilter<ImageType> ConnectorType;
-    ConnectorType::Pointer connector = ConnectorType::New();
-    connector->SetInput(rescaler->GetOutput());
-
     for (Paths::const_iterator image_it(image_paths.begin());
          image_it != image_paths.end(); ++image_it) {
-      // fs::directory_iterator image_end_it;
-      // for (fs::directory_iterator image_it(image_path);
-      //      image_it != image_end_it; ++image_it) {
+      ImageType::Pointer itk_image = ReadImage(image_it->string());
 
-      // vtkSmartPointer<vtkImageActor> image_actor = ImportImage(
-      //     image_it->string());
-
-      reader->SetFileName(image_it->string());
-      reader->UpdateLargestPossibleRegion();
-      rescaler->Update();
+      // connecting to VTK
+      typedef itk::ImageToVTKImageFilter<ImageType> ConnectorType;
+      ConnectorType::Pointer connector = ConnectorType::New();
+      connector->SetInput(itk_image);
       connector->Update();
+      // vtkSmartPointer<vtkImageData> vtk_image;
+      // vtk_image.TakeReference(connector->GetOutput());
+      vtkImageData *vtk_image = connector->GetOutput();
 
-      vtkSmartPointer<vtkImageActor> image_actor =
-          vtkSmartPointer<vtkImageActor>::New();
-      image_actor->GetMapper()->SetInputData(connector->GetOutput());
+      // Get snake file path and output image path
+      std::string image_filename = GetImageName(image_it->string());
+      std::string snake_filename = snake_dir + image_filename + ".txt";
+      std::string output_filename = output_dir + image_filename + ".png";
+      std::cout << output_filename << std::endl;
 
-      std::string image_name = GetImageName(image_it->string());
-      std::string snake_filename = snake_dir + image_name + ".txt";
-      std::cout << snake_filename << std::endl;
+      PolyDataContainer junctions;
+      vtkSmartPointer<vtkPolyData> snakes = ImportSnakesAndJunctions(
+          snake_filename, junctions);
 
-      ActorsType junction_actors;
-      vtkSmartPointer<vtkActor> snake_actor =
-          ImportSnakesAndJunctions(snake_filename, junction_actors);
-      // std::cout << image_it->filename() << std::endl;
-      std::string output_name = output_dir + image_name + ".png";
-      SaveScene(image_actor, snake_actor, junction_actors, output_name);
+      SaveScene(vtk_image, snakes, junctions, output_filename);
+      // vtk_image->Delete(); // connector owns it, no need to delete
     }
   } catch (std::exception &e) {
     std::cout << e.what() << std::endl;
     return EXIT_FAILURE;
   }
-
   return EXIT_SUCCESS;
-
 }
 
 /*
  * Function: GetImageName
- * Usage: image_name = GetImageName(image_path);
+ * Usage: image_filename = GetImageName(image_path);
  * ---------------------------------------------
  * Extract the image name from image path without the image format
  * suffix. For example, given "/path/to/my/image.png", this function
@@ -158,95 +160,141 @@ std::string GetImageName(const std::string &name, bool suffix) {
 }
 
 /*
- * Function: ImportImage
- * Usage: image_actor_smart_ptr = ImportImage(image_filename);
+ * Function: ReadImage
+ * Usage: itk_image_smart_ptr = ReadImage(image_filename);
  * -----------------------------------------------------------
- * Import an image as a vtkImageActor.
+ * Import an image as a itkImage and rescale the intensity to 0~255.
  */
-// vtkSmartPointer<vtkImageActor> ImportImage(const std::string &filename) {
-//   typedef itk::Image<unsigned short, 2> ImageType;
-//   typedef itk::ImageFileReader<ImageType> ReaderType;
-//   ReaderType::Pointer reader = ReaderType::New();
-//   reader->SetFileName(filename);
-//   reader->Update();
+ImageType::Pointer ReadImage(const std::string &filename) {
+  typedef itk::ImageFileReader<ImageType> ReaderType;
+  ReaderType::Pointer reader = ReaderType::New();
+  reader->SetFileName(filename);
+  // reader->Update();
 
-//   typedef itk::RescaleIntensityImageFilter<ImageType,
-//                                            ImageType> RescalerType;
-//   RescalerType::Pointer rescaler = RescalerType::New();
-//   rescaler->SetInput(reader->GetOutput());
-//   rescaler->SetOutputMinimum(0);
-//   rescaler->SetOutputMaximum(255);
-//   rescaler->Update();
-
-//   typedef itk::ImageToVTKImageFilter<ImageType> ConnectorType;
-//   ConnectorType::Pointer connector = ConnectorType::New();
-//   connector->SetInput(rescaler->GetOutput());
-//   connector->Update();
-
-//   vtkSmartPointer<vtkImageActor> image_actor =
-//       vtkSmartPointer<vtkImageActor>::New();
-//   vtkImageData *image_data = NULL;
-//   image_data->ShallowCopy(connector->GetOutput());
-//   // image_actor->GetMapper()->SetInputData(connector->GetOutput());
-//   image_actor->GetMapper()->SetInputData(image_data);
-
-//   return image_actor;
-// }
+  typedef itk::RescaleIntensityImageFilter<ImageType,
+                                           ImageType> RescalerType;
+  RescalerType::Pointer rescaler = RescalerType::New();
+  rescaler->SetInput(reader->GetOutput());
+  rescaler->SetOutputMinimum(0);
+  rescaler->SetOutputMaximum(255);
+  rescaler->Update();
+  return rescaler->GetOutput();
+}
 
 
 /*
  * Function: ImportSnakesAndJunctions
- *
- * Usage: image_actor_smart_ptr =
- * ImportSnakesAndJunctions(image_filename, junction_actors);
- *
- * Import snakes from file as a single vtkActor and construct actors
- * for each junction locations and put them into the junction_actors
- * container.
+ * Usage: polydata_ptr = ImportSnakesAndJunctions(filename, junctions);
+ * --------------------------------------------------------------------
+ * Import snakes from file as a single vtkPolyData and junction coordinates
+ * as many vtkPolyData and put them into junctions.
  */
-vtkSmartPointer<vtkActor> ImportSnakesAndJunctions(
-    const std::string &filename, ActorsType &junction_actors) {
-  return NULL;
+vtkSmartPointer<vtkPolyData> ImportSnakesAndJunctions(
+    const std::string &filename, PolyDataContainer &junctions) {
+  std::ifstream infile(filename.c_str());
+  if (!infile.is_open()) {
+    std::cerr << "Couldn't open snake file: " << filename << std::endl;
+    return NULL;
+  }
+
+  vtkSmartPointer<vtkPolyData> curve = vtkSmartPointer<vtkPolyData>::New();
+  vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
+  vtkSmartPointer<vtkCellArray> cells = vtkSmartPointer<vtkCellArray>::New();
+
+  bool open = true;
+  std::string line;
+  unsigned index = 0;
+  vtkIdType cell_index[2];
+  vtkFloatingPointType coordinates[2];
+  unsigned start = 0;
+  while(std::getline(infile, line)) {
+    if (isalpha(line[0])) {
+      continue;
+    } else if (line[0] == '#') { // previous is a last point
+      if (!open && index) {
+        cell_index[0] = index-1;
+        cell_index[1] = start;
+        cells->InsertNextCell(2, cell_index);
+      }
+      open = (line[1] != '0');
+    } else if (line[0] == '[') {
+      std::istringstream buffer(line);
+      char padding;
+      double x, y, z;
+      buffer >> padding >> x >> padding >> y >> padding >> z >> padding;
+      vtkSmartPointer<vtkSphereSource> source =
+          vtkSmartPointer<vtkSphereSource>::New();
+      source->SetCenter(x, y, z);
+      source->SetRadius(3.0);
+      source->Update();
+      junctions.push_back(source->GetOutput());
+    } else {
+      std::istringstream stream(line);
+      int snake_index, point_index;
+      double x, y, z;
+      stream >> snake_index >> point_index >> x >> y >> z;
+
+      coordinates[0] = x;
+      coordinates[1] = y;
+      coordinates[2] = z;
+      points->InsertPoint(index, coordinates);
+      if (point_index) {
+        cell_index[0] = index-1;
+        cell_index[1] = index;
+        cells->InsertNextCell(2, cell_index);
+      } else {
+        start = index;
+      }
+      index++;
+    }
+  }
+
+  curve->SetPoints(points);
+  curve->SetLines(cells);
+  return curve;
 }
 
 
 /*
  * Function: SaveScene
- * Usage: SaveScene(image_actor, snake_actor, output_image_filename);
+ * Usage: SaveScene(image, snakes, junctions, output_filename);
  * ------------------------------------------------------------------
  * Save the off-screen rendered scene as a png image.
  */
-void SaveScene(vtkSmartPointer<vtkImageActor> image_actor,
-               vtkSmartPointer<vtkActor> snake_actor,
-               const ActorsType &junction_actors,
+void SaveScene(vtkImageData *image, vtkSmartPointer<vtkPolyData> snakes,
+               const PolyDataContainer &junctions,
                const std::string &filename) {
+  vtkSmartPointer<vtkImageActor> image_actor =
+      vtkSmartPointer<vtkImageActor>::New();
+  image_actor->GetMapper()->SetInputData(image);
+
+  vtkSmartPointer<vtkActor> snake_actor = SetupSnakeActor(snakes);
+
   vtkSmartPointer<vtkRenderer> renderer =
       vtkSmartPointer<vtkRenderer>::New();
-  if (image_actor) {
-    // image_actor->Print(std::cout);
-    renderer->AddActor(image_actor);
-  }
+  renderer->AddActor(image_actor);
   if (snake_actor)
     renderer->AddActor(snake_actor);
 
-  for (ActorsType::const_iterator it = junction_actors.begin();
-       it != junction_actors.end(); ++it) {
-    renderer->AddActor(*it);
+  for (PolyDataContainer::const_iterator it = junctions.begin();
+       it != junctions.end(); ++it) {
+    vtkSmartPointer<vtkActor> junction = SetupJunction(*it);
+    renderer->AddActor(junction);
   }
-  renderer->ResetCamera();
 
   vtkSmartPointer<vtkRenderWindow> window =
       vtkSmartPointer<vtkRenderWindow>::New();
-  window->OffScreenRenderingOn(); // important for removing
-  // misplaced image patches!!
+  window->OffScreenRenderingOn(); // important for removing misplaced
+                                  // image patches!!
   window->AddRenderer(renderer);
   // window->SetAlphaBitPlanes(1); //enable usage of alpha channel
   window->Render();
 
   vtkSmartPointer<vtkWindowToImageFilter> w2i =
       vtkSmartPointer<vtkWindowToImageFilter>::New();
+  w2i->Modified();
   w2i->SetInput(window);
-  w2i->SetMagnification(4);
+  w2i->SetMagnification(8);
   // w2i->SetInputBufferTypeToRGBA();
   w2i->Update();
 
@@ -255,4 +303,56 @@ void SaveScene(vtkSmartPointer<vtkImageActor> image_actor,
   writer->SetInputConnection(w2i->GetOutputPort());
   writer->SetFileName(filename.c_str());
   writer->Write();
+
+  // vtkSmartPointer<vtkRenderWindowInteractor> renderWindowInteractor =
+  //     vtkSmartPointer<vtkRenderWindowInteractor>::New();
+  // renderWindowInteractor->SetRenderWindow(window);
+  // renderer->ResetCamera();
+  // window->Render();
+  // renderWindowInteractor->Start();
+}
+
+
+/*
+ * Function: SetupSnakeActor
+ * Usage: snake_actor_ptr = SetupSnakeActor(snake_polydata)
+ *---------------------------------------------------------
+ * Turn the snake polydata into a snake actor.
+ */
+vtkSmartPointer<vtkActor> SetupSnakeActor(
+    vtkSmartPointer<vtkPolyData> snakes) {
+  if (!snakes) return NULL;
+  vtkSmartPointer<vtkPolyDataMapper> mapper =
+      vtkSmartPointer<vtkPolyDataMapper>::New();
+  mapper->SetInputData(snakes);
+  vtkSmartPointer<vtkActor> actor = vtkSmartPointer<vtkActor>::New();
+  actor->SetMapper(mapper);
+
+  actor->GetProperty()->SetInterpolationToPhong();
+  actor->GetProperty()->SetOpacity(1.0);
+  actor->GetProperty()->SetAmbient(0.2);
+  actor->GetProperty()->SetDiffuse(0.7);
+  actor->GetProperty()->SetSpecular(0.6);
+  actor->GetProperty()->SetSpecularPower(50);
+  actor->GetProperty()->SetColor(1.0, 0.0, 1.0);
+  actor->GetProperty()->SetLineWidth(2.0);
+
+  return actor;
+}
+
+/*
+ * Function: SetupJunction
+ * Usage: junction_actor = SetupJunction(junction_polydata)
+ * -------------------------------------------------------
+ * Turn a junction polydata into a sphere actor.
+ */
+vtkSmartPointer<vtkActor> SetupJunction(
+    vtkSmartPointer<vtkPolyData> junction) {
+  vtkSmartPointer<vtkPolyDataMapper> mapper =
+      vtkSmartPointer<vtkPolyDataMapper>::New();
+  mapper->SetInputData(junction);
+  vtkSmartPointer<vtkActor> sphere = vtkSmartPointer<vtkActor>::New();
+  sphere->SetMapper(mapper);
+  sphere->GetProperty()->SetColor(0, 1, 0);
+  return sphere;
 }

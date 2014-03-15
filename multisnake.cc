@@ -1177,18 +1177,18 @@ void Multisnake::ComputePointDensity(const PointType &center, double radius,
   std::ofstream outfile;
   outfile.open(filename.c_str());
   if (!outfile.is_open()) {
-    std::cerr << "Cannot open file for snake point density results."
+    std::cerr << "Cannot open file for writing point densities."
               << std::endl;
     return;
   }
 
-  const unsigned width = 20;
+  const unsigned width = 25;
   outfile << "Image file\t" << image_filename_
           << "\nImage center\t" << center
           << "\nMax radius\t" << radius << "\n"
           << std::setw(width) << "radius (um)"
-          << std::setw(width) << "snake density"
-          << std::setw(width) << "snake intensity"
+          << std::setw(width) << "soac density"
+          << std::setw(width) << "soac intensity"
           << std::setw(width) << "voxel intensity" << std::endl;
 
   unsigned max_r = static_cast<unsigned>(radius);
@@ -1202,8 +1202,6 @@ void Multisnake::ComputePointDensity(const PointType &center, double radius,
     voxel_intensities[i] = 0.0;
     voxel_counts[i] = 0;
   }
-
-  // interpolator_->SetInputImage(image_);
 
   for (SnakeConstIterator it = converged_snakes_.begin();
        it != converged_snakes_.end(); ++it) {

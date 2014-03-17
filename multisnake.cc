@@ -1170,90 +1170,70 @@ void Multisnake::ComputeRTheta(const PointType &point1,
   theta = theta > 90.0 ? (180.0 - theta) : theta;
 }
 
-void Multisnake::ComputePointDensity(const PointType &center, double radius,
-                                     const std::string &filename) const {
+void Multisnake::ComputePointDensityAndIntensity(const PointType &center,
+                                                 unsigned max_r,
+                                                 double pixel_size,
+                                                 std::ostream & os) const {
   if (converged_snakes_.empty()) return;
 
-  std::ofstream outfile;
-  outfile.open(filename.c_str());
-  if (!outfile.is_open()) {
-    std::cerr << "Cannot open file for writing point densities."
-              << std::endl;
-    return;
-  }
+  const unsigned width = 16;
+  os << "Image file\t" << image_filename_
+     << "\nImage center\t" << center
+     << "\nMax radius\t" << max_r << "\n"
+     << std::setw(width) << "radius (um)"
+     << std::setw(width) << "soac density"
+     << std::setw(width) << "soac intensity"
+     << std::setw(width) << "voxel intensity" << std::endl;
 
-  const unsigned width = 25;
-  outfile << "Image file\t" << image_filename_
-          << "\nImage center\t" << center
-          << "\nMax radius\t" << radius << "\n"
-          << std::setw(width) << "radius (um)"
-          << std::setw(width) << "soac density"
-          << std::setw(width) << "soac intensity"
-          << std::setw(width) << "voxel intensity" << std::endl;
+  DataContainer snake_intensities(max_r, 0.0);
+  DataContainer voxel_intensities(max_r, 0.0);
+  std::vector<unsigned> snaxel_counts(max_r, 0);
+  std::vector<unsigned> voxel_counts(max_r, 0);
 
-  unsigned max_r = static_cast<unsigned>(radius);
-  double *snake_intensities = new double[max_r];
-  unsigned *snaxel_counts = new unsigned[max_r];
-  double *voxel_intensities = new double[max_r];
-  unsigned *voxel_counts = new unsigned[max_r];
-  for (unsigned i = 0; i < max_r; ++i) {
-    snake_intensities[i] = 0.0;
-    snaxel_counts[i] = 0;
-    voxel_intensities[i] = 0.0;
-    voxel_counts[i] = 0;
-  }
-
+  // snaxel counts and snake intensities
   for (SnakeConstIterator it = converged_snakes_.begin();
        it != converged_snakes_.end(); ++it) {
     for (unsigned i = 0; i < (*it)->GetSize(); ++i) {
       const PointType &p = (*it)->GetPoint(i);
-      double r = center.EuclideanDistanceTo(p);
-      unsigned index_r = static_cast<unsigned>(r);
-
-      if (index_r < max_r) {
-        snaxel_counts[index_r]++;
-        snake_intensities[index_r] += interpolator_->Evaluate(p);
+      unsigned r = static_cast<unsigned>(center.EuclideanDistanceTo(p));
+      if (r < max_r) {
+        snaxel_counts[r]++;
+        snake_intensities[r] += interpolator_->Evaluate(p);
       }
     }
   }
 
-  // Compute voxel average intensity along radial direction
-  itk::ImageRegionConstIteratorWithIndex<ImageType> iter(
-      image_, image_->GetLargestPossibleRegion());
-  iter.GoToBegin();
-  while (!iter.IsAtEnd()) {
-    ImageType::IndexType index = iter.GetIndex();
-    PointType point;
-    point[0] = index[0];
-    point[1] = index[1];
-    point[2] = index[2];
-
-    double r = center.EuclideanDistanceTo(point);
-    unsigned index_r = static_cast<unsigned>(r);
-    if (index_r < max_r) {
-      voxel_counts[index_r]++;
-      voxel_intensities[index_r] += iter.Value();
+  // voxel counts and voxel intensities
+  itk::ImageRegionConstIteratorWithIndex<ImageType>
+      it(image_, image_->GetLargestPossibleRegion());
+  it.GoToBegin();
+  while (!it.IsAtEnd()) {
+    ImageType::IndexType index = it.GetIndex();
+    PointType p;
+    p[0] = index[0];
+    p[1] = index[1];
+    p[2] = index[2];
+    unsigned r = static_cast<unsigned>(center.EuclideanDistanceTo(p));
+    if (r < max_r) {
+      voxel_counts[r]++;
+      voxel_intensities[r] += it.Value();
     }
-    ++iter;
+    ++it;
   }
 
-  const double spacing = 0.166; // droplet voxel spacing
+  // compute density and average intensity
   for (unsigned i = 0; i < max_r; ++i) {
     if (snaxel_counts[i] > 0)
       snake_intensities[i] /= snaxel_counts[i];
-    voxel_intensities[i] /= voxel_counts[i];
-    double density = snaxel_counts[i] / (4 * kPi * (i+1) * (i+1));
-    outfile << std::setw(width) << i * spacing
-            << std::setw(width) << density
-            << std::setw(width) << snake_intensities[i]
-            << std::setw(width) << voxel_intensities[i] << std::endl;
-  }
-  outfile.close();
 
-  delete [] snake_intensities;
-  delete [] snaxel_counts;
-  delete [] voxel_intensities;
-  delete [] voxel_counts;
+    voxel_intensities[i] /= voxel_counts[i];
+    double r = (i+1) * pixel_size;
+    double density = snaxel_counts[i] / (4 * kPi * r * r);
+    os << std::setw(width) << r
+       << std::setw(width) << density
+       << std::setw(width) << snake_intensities[i]
+       << std::setw(width) << voxel_intensities[i] << std::endl;
+  }
 }
 
 void Multisnake::ComputeCurvature(int coarse_graining,

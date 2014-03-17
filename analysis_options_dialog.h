@@ -18,16 +18,17 @@ class AnalysisOptionsDialog : public QDialog {
   void SetImageCenter(const PointType &center);
   void GetImageCenter(PointType &center) const;
 
-  int GetCoarseGraining();
+  int GetCoarseGraining() const;
 
-  double GetCenterX();
-  double GetCenterY();
-  double GetCenterZ();
+  double GetCenterX() const;
+  double GetCenterY() const;
+  double GetCenterZ() const;
   void SetCenterX(double value);
   void SetCenterY(double value);
   void SetCenterZ(double value);
 
-  double GetRadius();
+  unsigned GetRadius() const;
+  double GetPixelSize() const;
 
  public slots:
   void EnableOKButton();
@@ -42,6 +43,7 @@ class AnalysisOptionsDialog : public QDialog {
   QLineEdit *center_y_edit_;
   QLineEdit *center_z_edit_;
   QLineEdit *radius_edit_;
+  QLineEdit *pixel_size_edit_;
   QDialogButtonBox *button_box_;
 
   DISALLOW_COPY_AND_ASSIGN(AnalysisOptionsDialog);

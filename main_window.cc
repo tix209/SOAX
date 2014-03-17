@@ -518,8 +518,8 @@ void MainWindow::OpenImage() {
 
   analysis_options_dialog_->SetImageCenter(multisnake_->GetImageCenter());
 
-  bool invert_intensity = false;
-  if (invert_intensity) multisnake_->InvertImageIntensity();
+  // bool invert_intensity = false;
+  // if (invert_intensity) multisnake_->InvertImageIntensity();
 
   open_image_->setEnabled(false);
   save_as_isotropic_image_->setEnabled(true);
@@ -1030,15 +1030,30 @@ void MainWindow::ComputeRadialOrientation() {
 
 void MainWindow::ComputePointDensity() {
   QString filename = QFileDialog::getSaveFileName(
-      this, tr("Save snake point density file"), "..", tr("Text files(*.txt)"));
+      this, tr("Save SOAC point density/intensity file"), "..",
+      tr("Text files(*.txt)"));
   if (filename.isEmpty()) return;
   PointType center;
   analysis_options_dialog_->GetImageCenter(center);
-  std::cout << "Image center: " << center << std::endl;
-  double radius = analysis_options_dialog_->GetRadius();
-  std::cout << "Radius: " << radius << std::endl;
-  multisnake_->ComputePointDensity(center, radius, filename.toStdString());
-  statusBar()->showMessage(tr("Snake point density file saved."));
+  unsigned max_radius = analysis_options_dialog_->GetRadius();
+  double pixel_size = analysis_options_dialog_->GetPixelSize();
+  std::cout << "pixel size: " << pixel_size << std::endl;
+
+  std::ofstream outfile;
+  outfile.open(filename.toStdString().c_str());
+  if (!outfile.is_open()) {
+    QMessageBox msg_box;
+    msg_box.setText("Opening file failed.");
+    msg_box.setIcon(QMessageBox::Critical);
+    msg_box.exec();
+    return;
+  }
+
+  multisnake_->ComputePointDensityAndIntensity(center, max_radius,
+                                               pixel_size, outfile);
+  outfile.close();
+  statusBar()->showMessage(
+      tr("SOAC point density/intensity written successfully."));
 }
 
 void MainWindow::ComputeCurvature() {

@@ -154,8 +154,11 @@ class Multisnake {
 
   void ComputeRadialOrientation(const PointType &center,
                                 const std::string &filename) const;
-  void ComputePointDensity(const PointType &center, double radius,
-                           const std::string &filename) const;
+
+  void ComputePointDensityAndIntensity(const PointType &center,
+                                       unsigned max_r, double pixel_size,
+                                       std::ostream & os) const;
+
   void ComputeCurvature(int coarse_graining,
                         const std::string &filename) const;
   void ComputeSphericalOrientation(const std::string &filename) const;

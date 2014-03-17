@@ -54,6 +54,7 @@ QGroupBox * AnalysisOptionsDialog::CreatePointDensityGroup() {
   center_y_edit_ = new QLineEdit("0");
   center_z_edit_ = new QLineEdit("0");
   radius_edit_ = new QLineEdit("100");
+  pixel_size_edit_ = new QLineEdit("1.0");
 
   connect(center_x_edit_, SIGNAL(textChanged(const QString &)),
           this, SLOT(EnableOKButton()));
@@ -63,14 +64,17 @@ QGroupBox * AnalysisOptionsDialog::CreatePointDensityGroup() {
           this, SLOT(EnableOKButton()));
   connect(radius_edit_, SIGNAL(textChanged(const QString &)),
           this, SLOT(EnableOKButton()));
+  connect(pixel_size_edit_, SIGNAL(textChanged(const QString &)),
+          this, SLOT(EnableOKButton()));
 
-  QLabel *center_x_label = new QLabel(tr("Center (x, y, z)"));
+  QLabel *center_label = new QLabel(tr("Center (x, y, z)"));
   // QLabel *center_y_label = new QLabel(tr("Center y"));
   // QLabel *center_z_label = new QLabel(tr("Center z"));
   QLabel *radius_label = new QLabel(tr("Maximum radius"));
+  QLabel *pixel_size_label = new QLabel(tr("Pixel size (um)"));
 
   QHBoxLayout *hlayout1 = new QHBoxLayout;
-  hlayout1->addWidget(center_x_label);
+  hlayout1->addWidget(center_label);
   hlayout1->addWidget(center_x_edit_);
   hlayout1->addWidget(center_y_edit_);
   hlayout1->addWidget(center_z_edit_);
@@ -86,6 +90,8 @@ QGroupBox * AnalysisOptionsDialog::CreatePointDensityGroup() {
   QHBoxLayout *hlayout4 = new QHBoxLayout;
   hlayout4->addWidget(radius_label);
   hlayout4->addWidget(radius_edit_);
+  hlayout4->addWidget(pixel_size_label);
+  hlayout4->addWidget(pixel_size_edit_);
   hlayout4->addStretch();
 
   QVBoxLayout *vlayout  = new QVBoxLayout;
@@ -106,19 +112,19 @@ void AnalysisOptionsDialog::EnableOKButton() {
   button_box_->button(QDialogButtonBox::Ok)->setEnabled(true);
 }
 
-int AnalysisOptionsDialog::GetCoarseGraining() {
+int AnalysisOptionsDialog::GetCoarseGraining() const {
   return coarse_graining_edit_->text().toInt();
 }
 
-double AnalysisOptionsDialog::GetCenterX() {
+double AnalysisOptionsDialog::GetCenterX() const {
   return center_x_edit_->text().toDouble();
 }
 
-double AnalysisOptionsDialog::GetCenterY() {
+double AnalysisOptionsDialog::GetCenterY() const {
   return center_y_edit_->text().toDouble();
 }
 
-double AnalysisOptionsDialog::GetCenterZ() {
+double AnalysisOptionsDialog::GetCenterZ() const {
   return center_z_edit_->text().toDouble();
 }
 
@@ -140,8 +146,12 @@ void AnalysisOptionsDialog::SetCenterZ(double value) {
   center_z_edit_->setText(s);
 }
 
-double AnalysisOptionsDialog::GetRadius() {
-  return radius_edit_->text().toDouble();
+unsigned AnalysisOptionsDialog::GetRadius() const {
+  return radius_edit_->text().toUInt();
+}
+
+double AnalysisOptionsDialog::GetPixelSize() const {
+  return pixel_size_edit_->text().toDouble();
 }
 
 } // namespace soax

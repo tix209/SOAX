@@ -82,7 +82,7 @@ class MainWindow : public QMainWindow {
   void CreateStatusBar();
 
   void ResetActions();
-  QString GetLastDirectory(const std::string &filename);
+  QString GetLastDirectory(const std::string &filename) const;
   void SetParameters();
 
   QWidget *central_widget_;
@@ -178,6 +178,7 @@ class MainWindow : public QMainWindow {
   std::string snake_filename_;
   std::string viewpoint_filename_;
   std::string snapshot_filename_;
+
   Multisnake *multisnake_;
   Viewer *viewer_;
 

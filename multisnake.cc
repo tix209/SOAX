@@ -92,7 +92,7 @@ void Multisnake::LoadImage(const std::string &filename) {
 
   const ImageType::SizeType &size =
       image_->GetLargestPossibleRegion().GetSize();
-  // std::cout << "Image size: " << size << std::endl;
+  std::cout << "Image size: " << size << std::endl;
   if (size[2] < 2) {
     is_2d_ = true;
   }

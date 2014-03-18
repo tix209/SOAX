@@ -480,9 +480,9 @@ void MainWindow::ResetActions() {
   save_snapshot_->setEnabled(false);
 }
 
-QString MainWindow::GetLastDirectory(const std::string &filename) {
+QString MainWindow::GetLastDirectory(const std::string &filename) const {
   QString dir = "..";
-  if (!filename.empty()) {
+  if (!filename.empty()) { // extract the last directory
     std::string::size_type pos = filename.find_last_of("/\\");
     dir = QString(filename.substr(0, pos).c_str());
   }
@@ -491,12 +491,14 @@ QString MainWindow::GetLastDirectory(const std::string &filename) {
 
 void MainWindow::OpenImage() {
   QString dir = this->GetLastDirectory(image_filename_);
-  image_filename_ = QFileDialog::getOpenFileName(
-      this, tr("Open an image"), dir,
-      tr("Image Files (*.tif *.tiff *.mhd *.mha)")).toStdString();
-  if (image_filename_.empty()) return;
+  QString filename = QFileDialog::getOpenFileName(
+      this, tr("Open Image"), dir,
+      tr("Image Files (*.tif *.tiff *.mhd *.mha *.png *.jpg *.bmp)"));
+  // if (image_filename_.empty()) return;
+  if (filename.isEmpty()) return;
+  image_filename_ = filename.toStdString();
+  this->setWindowTitle(filename.prepend("SOAX - "));
 
-  this->setWindowTitle(QString("SOAX - ") + image_filename_.c_str());
   multisnake_->LoadImage(image_filename_);
   viewer_->SetupImage(multisnake_->image());
   toggle_planes_->setChecked(true);
@@ -506,8 +508,6 @@ void MainWindow::OpenImage() {
   toggle_bounding_box_->setChecked(false);
   toggle_cube_axes_->setChecked(false);
   statusBar()->showMessage(tr("Image loaded."), message_timeout_);
-
-  // this->SetParameters();
 
   view_options_dialog_->SetWindow(viewer_->window());
   view_options_dialog_->SetLevel(viewer_->level());
@@ -550,9 +550,11 @@ void MainWindow::SaveAsIsotropicImage() {
 
   if (std::fabs(z_spacing - 1) > kEpsilon) {
     QString dir = this->GetLastDirectory(image_filename_);
-    image_filename_ = QFileDialog::getSaveFileName(
-        this, tr("Save as Isotropic Image"), dir).toStdString();
-    if (image_filename_.empty()) return;
+    QString filename = QFileDialog::getSaveFileName(
+        this, tr("Save as Isotropic Image"), dir);
+    if (filename.isEmpty()) return;
+    image_filename_ = filename.toStdString();
+
     multisnake_->SaveAsIsotropicImage(image_filename_, z_spacing);
     statusBar()->showMessage(tr("Image has been resampled and saved."),
                              message_timeout_);
@@ -564,29 +566,32 @@ void MainWindow::SaveAsIsotropicImage() {
 
 void MainWindow::LoadParameters() {
   QString dir = this->GetLastDirectory(parameter_filename_);
-  parameter_filename_ = QFileDialog::getOpenFileName(
-      this, tr("Open a parameter file"), dir,
-      tr("Text files(*.txt)")).toStdString();
-  if (parameter_filename_.empty()) return;
+  QString filename = QFileDialog::getOpenFileName(
+      this, tr("Open Parameter File"), dir, tr("Text Files (*.txt)"));
+  if (filename.isEmpty()) return;
+  parameter_filename_ = filename.toStdString();
+
   multisnake_->LoadParameters(parameter_filename_);
   statusBar()->showMessage(tr("Parameters loaded."), message_timeout_);
 }
 
 void MainWindow::SaveParameters() {
   QString dir = this->GetLastDirectory(parameter_filename_);
-  parameter_filename_ = QFileDialog::getSaveFileName(
-      this, tr("Save current parameters"), dir,
-      tr("Text files(*.txt)")).toStdString();
-  if (parameter_filename_.empty()) return;
+  QString filename = QFileDialog::getSaveFileName(
+      this, tr("Save Parameters"), dir, tr("Text Files (*.txt)"));
+  if (filename.isEmpty()) return;
+  parameter_filename_ = filename.toStdString();
+
   multisnake_->SaveParameters(parameter_filename_);
   statusBar()->showMessage("Parameters saved.", message_timeout_);
 }
 
 void MainWindow::LoadSnakes() {
   QString dir = this->GetLastDirectory(snake_filename_);
-  snake_filename_ = QFileDialog::getOpenFileName(
-      this, tr("Load Snakes"), dir, "Text files(*.txt)").toStdString();
-  if (snake_filename_.empty()) return;
+  QString filename = QFileDialog::getOpenFileName(
+      this, tr("Load Snakes"), dir, tr("Text Files (*.txt)"));
+  if (filename.isEmpty()) return;
+  snake_filename_ = filename.toStdString();
 
   multisnake_->LoadConvergedSnakes(snake_filename_);
   unsigned num_snakes = multisnake_->GetNumberOfConvergedSnakes();
@@ -631,18 +636,22 @@ void MainWindow::LoadSnakes() {
 
 void MainWindow::SaveSnakes() {
   QString dir = this->GetLastDirectory(snake_filename_);
-  snake_filename_ = QFileDialog::getSaveFileName(
-      this, tr("Save Snakes"), dir, "Text files(*.txt)").toStdString();
-  if (snake_filename_.empty()) return;
+  QString filename = QFileDialog::getSaveFileName(
+      this, tr("Save Snakes"), dir, tr("Text Files (*.txt)"));
+  if (filename.isEmpty()) return;
+  snake_filename_ = filename.toStdString();
+
   multisnake_->SaveSnakes(multisnake_->converged_snakes(), snake_filename_);
   statusBar()->showMessage(tr("Snakes are saved."), message_timeout_);
 }
 
 void MainWindow::LoadJFilamentSnakes() {
   QString dir = this->GetLastDirectory(snake_filename_);
-  snake_filename_ = QFileDialog::getOpenFileName(
-      this, tr("Load JFilament Snakes"), dir, "Text files(*.txt)").toStdString();
-  if (snake_filename_.empty()) return;
+  QString filename = QFileDialog::getOpenFileName(
+      this, tr("Load JFilament Snakes"), dir, tr("Text Files (*.txt)"));
+  if (filename.isEmpty()) return;
+  snake_filename_ = filename.toStdString();
+
   multisnake_->LoadGroundTruthSnakes(snake_filename_);
   unsigned num_snakes = multisnake_->GetNumberOfComparingSnakes1();
   QString msg = "Number of JFilament snakes loaded: " +
@@ -681,9 +690,11 @@ void MainWindow::LoadJFilamentSnakes() {
 
 void MainWindow::SaveJFilamentSnakes() {
   QString dir = this->GetLastDirectory(snake_filename_);
-  snake_filename_ = QFileDialog::getSaveFileName(
-      this, tr("Save JFilament Snakes"), dir, "Text files(*.txt)").toStdString();
-  if (snake_filename_.empty()) return;
+  QString filename = QFileDialog::getSaveFileName(
+      this, tr("Save JFilament Snakes"), dir, tr("Text Files (*.txt)"));
+  if (filename.isEmpty()) return;
+  snake_filename_ = filename.toStdString();
+
   multisnake_->SaveConvergedSnakesAsJFilamentFormat(snake_filename_);
   statusBar()->showMessage(tr("Snakes are saved in JFilament format"),
                            message_timeout_);
@@ -691,9 +702,11 @@ void MainWindow::SaveJFilamentSnakes() {
 
 void MainWindow::CompareSnakes() {
   QString dir = this->GetLastDirectory(snake_filename_);
-  snake_filename_ = QFileDialog::getOpenFileName(
-      this, tr("Compare Snakes"), dir, "Text files(*.txt)").toStdString();
-  if (snake_filename_.empty()) return;
+  QString filename = QFileDialog::getOpenFileName(
+      this, tr("Compare Snakes"), dir, tr("Text Files (*.txt)"));
+  if (filename.isEmpty()) return;
+  snake_filename_ = filename.toStdString();
+
   multisnake_->LoadComparingSnakes1(snake_filename_);
   unsigned num_snakes = multisnake_->GetNumberOfComparingSnakes1();
   QString msg = "Number of comparing snakes loaded: " +
@@ -724,9 +737,11 @@ void MainWindow::CompareSnakes() {
 
 void MainWindow::CompareAnotherSnakes() {
   QString dir = this->GetLastDirectory(snake_filename_);
-  snake_filename_ = QFileDialog::getOpenFileName(
-      this, tr("Compare other snakes"), dir, "Text files(*.txt)").toStdString();
-  if (snake_filename_.empty()) return;
+  QString filename = QFileDialog::getOpenFileName(
+      this, tr("Compare Other Snakes"), dir, tr("Text Files (*.txt)"));
+  if (filename.isEmpty()) return;
+  snake_filename_ = filename.toStdString();
+
   multisnake_->LoadComparingSnakes2(snake_filename_);
   unsigned num_snakes = multisnake_->GetNumberOfComparingSnakes2();
   QString msg = "Number of other comparing snakes loaded: " +
@@ -1117,33 +1132,35 @@ void MainWindow::SetParameters() {
 
 void MainWindow::LoadViewpoint() {
   QString dir = this->GetLastDirectory(viewpoint_filename_);
-  viewpoint_filename_ = QFileDialog::getOpenFileName(
-      this, tr("Load viewpoint"), dir,
-      tr("Camera files (*.cam)")).toStdString();
-  if (viewpoint_filename_.empty()) return;
+  QString filename = QFileDialog::getOpenFileName(
+      this, tr("Load Viewpoint"), dir, tr("Text Files (*.cam *.txt)"));
+  if (filename.isEmpty()) return;
+  viewpoint_filename_ = filename.toStdString();
+
   viewer_->LoadViewpoint(viewpoint_filename_);
   statusBar()->showMessage(tr("Viewpoint loaded."), message_timeout_);
 }
 
 void MainWindow::SaveViewpoint() {
   QString dir = this->GetLastDirectory(viewpoint_filename_);
-  viewpoint_filename_ = QFileDialog::getSaveFileName(
-      this, tr("Save viewpoint"), dir,
-      tr("Camera files (*.cam)")).toStdString();
-  if (viewpoint_filename_.empty()) return;
+  QString filename = QFileDialog::getSaveFileName(
+      this, tr("Save Viewpoint"), dir, tr("Text Files (*.cam *.txt)"));
+  if (filename.isEmpty()) return;
+  viewpoint_filename_ = filename.toStdString();
+
   viewer_->SaveViewpoint(viewpoint_filename_);
   statusBar()->showMessage("Viewpoint saved.", message_timeout_);
 }
 
 void MainWindow::SaveSnapshot() {
   QString dir = this->GetLastDirectory(snapshot_filename_);
-  snapshot_filename_ = QFileDialog::getSaveFileName(
-      this, tr("Save snapshot"), dir,
-      tr("Image files (*.png *.tif)")).toStdString();
-  if (snapshot_filename_.empty()) return;
+  QString filename = QFileDialog::getSaveFileName(
+      this, tr("Save Snapshot"), dir, tr("PNG Image Files (*.png)"));
+  if (filename.isEmpty()) return;
+  snapshot_filename_ = filename.toStdString();
 
   viewer_->PrintScreenAsPNGImage(snapshot_filename_);
-  viewer_->PrintScreenAsTIFFImage(snapshot_filename_);
+  // viewer_->PrintScreenAsTIFFImage(snapshot_filename_);
   // viewer_->PrintScreenAsVectorImage(snapshot_filename_);
   statusBar()->showMessage("Snapshots saved.", message_timeout_);
 }

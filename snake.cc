@@ -1031,4 +1031,12 @@ void Snake::TrimAndInsert(unsigned start, unsigned end, const PointType &p) {
                                    vertices_.begin() + end), p);
 }
 
+double Snake::ComputeIntensity() const {
+  double intensity_sum = 0.0;
+  for (unsigned i = 0; i < vertices_.size(); ++i) {
+    intensity_sum += interpolator_->Evaluate(vertices_.at(i));
+  }
+  return intensity_sum / vertices_.size();
+}
+
 } // namespace soax

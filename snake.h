@@ -156,6 +156,8 @@ class Snake {
   bool ComputeLocalSNR(unsigned index, int radial_near, int radial_far,
                        double &local_snr);
 
+  double ComputeIntensity() const;
+
  private:
   typedef std::vector<std::pair<double, double> > PairContainer;
   typedef std::set<unsigned> IndexSet;

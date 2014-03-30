@@ -257,6 +257,10 @@ class Multisnake {
     return s1->length() < s2->length();
   }
 
+  static bool IsDarker(Snake *s1, Snake *s2) {
+    return s1->ComputeIntensity() < s2->ComputeIntensity();
+  }
+
   void AssignParameters(const std::string &name,
                         const std::string &value);
 

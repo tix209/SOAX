@@ -195,10 +195,10 @@ void Multisnake::AssignParameters(const std::string &name,
   } else if (name == "grad-diff") {
     ridge_threshold_ = String2Double(value);
   } else if (name == "foreground") {
-    foreground_ = String2UShort(value);
+    foreground_ = String2Unsigned(value);
     Snake::set_foreground(foreground_);
   } else if (name == "background") {
-    background_ = String2UShort(value);
+    background_ = String2Unsigned(value);
     Snake::set_background(background_);
   } else if (name == "spacing") {
     Snake::set_desired_spacing(String2Double(value));

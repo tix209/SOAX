@@ -10,7 +10,7 @@ double String2Double(const std::string &s) {
   double value;
   if (converter >> value)
     return value;
-  std::cerr << "Conversion to double failed!" << std::endl;
+  std::cerr << "Converting " << s << " to double failed!" << std::endl;
   return 0.0;
 }
 
@@ -19,7 +19,7 @@ unsigned String2Unsigned(const std::string &s) {
   unsigned value;
   if (converter >> value)
     return value;
-  std::cerr << "Conversion to unsigned failed!" << std::endl;
+  std::cerr << "Converting " << s << " to unsigned int failed!" << std::endl;
   return 0;
 }
 
@@ -28,7 +28,7 @@ unsigned short String2UShort(const std::string &s) {
   unsigned short value;
   if (converter >> value)
     return value;
-  std::cerr << "Conversion to unsigned failed!" << std::endl;
+  std::cerr << "Converting " << s << " to unsigned short failed!" << std::endl;
   return 0;
 }
 

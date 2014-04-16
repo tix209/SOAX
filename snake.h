@@ -156,6 +156,9 @@ class Snake {
   bool ComputeLocalSNR(unsigned index, int radial_near, int radial_far,
                        double &local_snr);
 
+  /*
+   * Compute the current average intensity along the snake.
+   */
   double ComputeIntensity() const;
 
  private:

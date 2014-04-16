@@ -382,6 +382,7 @@ void Multisnake::InitializeSnakes() {
   }
   // std::sort(initial_snakes_.begin(), initial_snakes_.end(), IsShorter);
   std::sort(initial_snakes_.begin(), initial_snakes_.end(), IsDarker);
+  // this->PrintSnakes(initial_snakes_);
 }
 
 Multisnake::BoolVectorImageType::Pointer
@@ -586,10 +587,12 @@ void Multisnake::DeformSnakes(QProgressBar * progress_bar) {
   unsigned ncompleted = 0;
   std::cout << "Initial # snakes: " << initial_snakes_.size() << std::endl;
   this->ClearSnakeContainer(converged_snakes_);
+
+  // std::ofstream outfile("initial-intensities.txt");
   while (!initial_snakes_.empty()) {
     Snake *snake = initial_snakes_.back();
     initial_snakes_.pop_back();
-
+    // outfile << snake->ComputeIntensity() << std::endl;
     solver_bank_->Reset(false);
     snake->Evolve(solver_bank_, converged_snakes_, kBigNumber, is_2d_);
 

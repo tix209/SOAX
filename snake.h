@@ -153,13 +153,18 @@ class Snake {
   void CopySubSnakes(SnakeContainer &c);
   bool PassThrough(const PointType &p, double threshold) const;
 
-  bool ComputeLocalSNR(unsigned index, int radial_near, int radial_far,
-                       double &local_snr);
+  bool ComputeLocalSNRAtIndex(unsigned index, int radial_near, int radial_far,
+                              double &local_snr) const;
 
   /*
-   * Compute the current average intensity along the snake.
+   * Return the average intensity along the snake.
    */
   double ComputeIntensity() const;
+
+  /**
+   * Return the average local SNR of the snake.
+   */
+  double ComputeSNR() const;
 
  private:
   typedef std::vector<std::pair<double, double> > PairContainer;
@@ -260,11 +265,11 @@ class Snake {
 
   void AddJunctionIndex(unsigned index);
 
-  double ComputeLocalForegroundMean(unsigned index, int radial_near);
-  bool ComputeLocalBackgroundMeanStd(unsigned index,int radial_near,
-                                     int radial_far, double &mean,
-                                     double &std);
-  VectorType ComputeUnitTangentVector(unsigned index);
+  double ComputeLocalForegroundMean(unsigned index, int radial_near) const;
+  bool ComputeLocalBackgroundMeanStd(unsigned index,int radial_near, int radial_far,
+                                     double &mean, double &std) const;
+  VectorType ComputeUnitTangentVector(unsigned index) const;
+
 
 
   PointContainer vertices_;

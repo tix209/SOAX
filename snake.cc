@@ -785,19 +785,20 @@ void Snake::PrintSelf() const {
   // std::cout << "size: " << this->GetSize() << std::endl;
   std::cout << "spacing: " << spacing_ << std::endl;
   std::cout << "intensity: " << this->ComputeIntensity() << std::endl;
+  std::cout << "local snr: " << this->ComputeSNR() << std::endl;
   // std::cout << "fixed head: " << fixed_head_ << std::endl;
   // std::cout << "fixed tail: " << fixed_tail_ << std::endl;
 
-  // const unsigned column_width = 15;
-  // std::cout << "#" << std::endl;
-  // for (unsigned j = 0; j != vertices_.size(); ++j) {
-  //   std::cout << j << "\t";
-  //   std::cout << std::setw(column_width) << this->GetX(j)
-  //             << std::setw(column_width) << this->GetY(j)
-  //             << std::setw(column_width) << this->GetZ(j)
-  //             << std::setw(column_width) << interpolator_->Evaluate(
-  //                 this->GetPoint(j)) << std::endl;
-  // }
+  const unsigned column_width = 15;
+  std::cout << "#" << std::endl;
+  for (unsigned j = 0; j != vertices_.size(); ++j) {
+    std::cout << j << "\t";
+    std::cout << std::setw(column_width) << this->GetX(j)
+              << std::setw(column_width) << this->GetY(j)
+              << std::setw(column_width) << this->GetZ(j)
+              << std::setw(column_width) << interpolator_->Evaluate(
+                  this->GetPoint(j)) << std::endl;
+  }
 }
 
 void Snake::PrintVectorContainer(const VectorContainer &vc) {
@@ -915,8 +916,8 @@ const PointType &Snake::GetTip(bool is_head) const {
     return this->GetTail();
 }
 
-bool Snake::ComputeLocalSNR(unsigned index, int radial_near, int radial_far,
-                            double &local_snr) {
+bool Snake::ComputeLocalSNRAtIndex(unsigned index, int radial_near, int radial_far,
+                                   double &local_snr) const {
   double foreground = interpolator_->Evaluate(this->GetPoint(index));
   // double foreground = this->ComputeLocalForegroundMean(index, radial_near);
 
@@ -934,7 +935,7 @@ bool Snake::ComputeLocalSNR(unsigned index, int radial_near, int radial_far,
   return local_bg_defined;
 }
 
-double Snake::ComputeLocalForegroundMean(unsigned index, int radial_near) {
+double Snake::ComputeLocalForegroundMean(unsigned index, int radial_near) const {
   if (radial_near < 1) {
     std::cerr << "Fatal error: radial_near is less than 1!" << std::endl;
     return 0.0;
@@ -945,7 +946,7 @@ double Snake::ComputeLocalForegroundMean(unsigned index, int radial_near) {
 
   if (radial_near > 1) {
     const VectorType normal = this->ComputeUnitTangentVector(index);
-    PointType &vertex = vertices_.at(index);
+    PointType vertex = vertices_.at(index);
     VectorType radial;
     this->GetStartingRadialDirection(radial, normal, vertex);
     // std::cout << "staring radial direction: " << radial << std::endl;
@@ -967,10 +968,10 @@ double Snake::ComputeLocalForegroundMean(unsigned index, int radial_near) {
 
 bool Snake::ComputeLocalBackgroundMeanStd(unsigned index,int radial_near,
                                           int radial_far, double &mean,
-                                          double &std) {
+                                          double &std) const {
   DataContainer bgs;
   const VectorType normal = this->ComputeUnitTangentVector(index);
-  PointType &vertex = vertices_.at(index);
+  PointType vertex = vertices_.at(index);
   VectorType radial;
   this->GetStartingRadialDirection(radial, normal, vertex);
   // std::cout << "staring radial direction: " << radial << std::endl;
@@ -994,19 +995,16 @@ bool Snake::ComputeLocalBackgroundMeanStd(unsigned index,int radial_near,
   return local_bg_defined;
 }
 
-VectorType Snake::ComputeUnitTangentVector(unsigned index) {
-  if (index == 0) {
-    this->UpdateHeadTangent();
-    return head_tangent_;
-  } else if (index == vertices_.size() - 1) {
-    this->UpdateTailTangent();
-    return tail_tangent_;
-  } else {
-    VectorType tangent;
+VectorType Snake::ComputeUnitTangentVector(unsigned index) const {
+  VectorType tangent;
+  if (index == 0)
+    tangent = vertices_.at(0) - vertices_.at(1);
+  else if (index == vertices_.size() - 1)
+    tangent = vertices_.at(vertices_.size()-2) - vertices_.at(vertices_.size()-1);
+  else
     tangent = vertices_.at(index-1) - vertices_.at(index+1);
-    tangent.Normalize();
-    return tangent;
-  }
+  tangent.Normalize();
+  return tangent;
 }
 
 void Snake::Trim(unsigned start, unsigned end) {
@@ -1038,6 +1036,23 @@ double Snake::ComputeIntensity() const {
     intensity_sum += interpolator_->Evaluate(vertices_.at(i));
   }
   return intensity_sum / vertices_.size();
+}
+
+double Snake::ComputeSNR() const {
+  if (vertices_.empty()) return 0.0;
+  double sum = 0.0;
+  unsigned cnt = 0;
+  for (unsigned i = 0; i < vertices_.size(); i++) {
+    double snr = 0.0;
+    bool bg_exist = this->ComputeLocalSNRAtIndex(i, radial_near_, radial_far_, snr);
+    if (bg_exist) {
+      sum += snr;
+      cnt++;
+    }
+  }
+
+  if (cnt) return sum / cnt;
+  else return 0.0;
 }
 
 } // namespace soax

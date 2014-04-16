@@ -1107,7 +1107,7 @@ void Multisnake::PrintGroundTruthLocalSNRValues(int radial_near,
        it != comparing_snakes1_.end(); ++it) {
     for (unsigned i = 0; i < (*it)->GetSize(); i++) {
       double local_snr = 0.0;
-      bool local_bg_defined = (*it)->ComputeLocalSNR(
+      bool local_bg_defined = (*it)->ComputeLocalSNRAtIndex(
           i, radial_near, radial_far, local_snr);
       if (local_bg_defined) {
         snrs.push_back(local_snr);
@@ -1617,7 +1617,7 @@ void Multisnake::ComputeLocalSNRs(const SnakeContainer &snakes,
   for (SnakeConstIterator it = snakes.begin(); it != snakes.end(); it++) {
     for (unsigned i = 0; i < (*it)->GetSize(); i++) {
       double local_snr = 0.0;
-      bool local_bg_defined = (*it)->ComputeLocalSNR(
+      bool local_bg_defined = (*it)->ComputeLocalSNRAtIndex(
           i, radial_near, radial_far, local_snr);
 
       if (local_bg_defined)

@@ -377,6 +377,9 @@ void Multisnake::InitializeSnakes() {
     this->GenerateCandidates(ridge_image, candidate_image, d);
   }
 
+  // std::ofstream ofs("x-ridges.txt");
+  // this->PrintCandidatePoints(ridge_image, ofs, 0);
+
   for (unsigned d = 0; d < num_directions; ++d) {
     this->LinkCandidates(candidate_image, d);
   }
@@ -467,6 +470,17 @@ void Multisnake::GenerateCandidates(
       iter.Value()[direction] = ridge_value[(direction+1) % d] &&
           ridge_value[(direction+2) % d];
     }
+  }
+}
+
+void Multisnake::PrintCandidatePoints(
+    BoolVectorImageType::Pointer image, std::ostream &os,
+    unsigned direction) const {
+  typedef itk::ImageRegionIteratorWithIndex<BoolVectorImageType> IteratorType;
+  IteratorType it(image, image->GetLargestPossibleRegion());
+  for (it.GoToBegin(); !it.IsAtEnd(); ++it) {
+    if (it.Value()[direction])
+      os << it.GetIndex() << std::endl;
   }
 }
 

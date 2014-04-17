@@ -1039,7 +1039,6 @@ double Snake::ComputeIntensity() const {
 }
 
 double Snake::ComputeSNR() const {
-  if (vertices_.empty()) return 0.0;
   double sum = 0.0;
   unsigned cnt = 0;
   for (unsigned i = 0; i < vertices_.size(); i++) {
@@ -1051,8 +1050,10 @@ double Snake::ComputeSNR() const {
     }
   }
 
-  if (cnt) return sum / cnt;
-  else return 0.0;
+  if (cnt)
+    return sum / cnt;
+  else
+    return 0.0;
 }
 
 } // namespace soax

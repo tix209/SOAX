@@ -330,6 +330,11 @@ class Multisnake {
 
   double ComputeOtsuThreshold(const std::vector<unsigned> &hist) const;
 
+  void PrintCandidatePoints(BoolVectorImageType::Pointer image,
+                            std::ostream &os, unsigned direction) const;
+
+
+
   std::string image_filename_;
   ImageType::Pointer image_;
   VectorImageType::Pointer external_force_;

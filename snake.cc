@@ -463,6 +463,7 @@ void Snake::UpdateTailTangent() {
 }
 
 
+/* Note that scaling the intensity is not necessary here */
 double Snake::ComputeLocalStretch(bool is_head, bool is_2d) {
   PointType &vertex = is_head ? vertices_.front() : vertices_.back();
   // double fg = this->ComputeVertexIntensity(vertex);
@@ -470,15 +471,14 @@ double Snake::ComputeLocalStretch(bool is_head, bool is_2d) {
   // Good for noisy images such as OCT vessels and microtubules,
   // and actin rings.
   // double fg1 = this->ComputeCircularMeanIntensity(is_head, true);
-  double fg = 0.0;
-  if (is_2d)
-    // fg = this->ComputeForegroundMeanIntensity2d(is_head);
-    fg = intensity_scaling_ * interpolator_->Evaluate(vertex);
-  else
-    fg = this->ComputeForegroundMeanIntensity(is_head);
+  double fg = interpolator_->Evaluate(vertex);
+  // if (is_2d)
+  //   // fg = this->ComputeForegroundMeanIntensity2d(is_head);
+  //   fg = intensity_scaling_ * interpolator_->Evaluate(vertex);
+  // else
+  //   fg = this->ComputeForegroundMeanIntensity(is_head);
 
-  if (fg < background_ * intensity_scaling_ + kEpsilon ||
-      fg > foreground_ * intensity_scaling_)
+  if (fg < background_ + kEpsilon || fg > foreground_)
     return 0.0;
   // std::cout << "fg: " << fg;
 
@@ -498,7 +498,7 @@ double Snake::ComputeLocalStretch(bool is_head, bool is_2d) {
   // if (is_2d) // a symmetric definition, good for inverted intensity
   //   return abs((fg - bg) / (fg + bg));
   // else
-  return 1 - bg / fg;
+  return 1.0 - bg / fg;
 }
 
 double Snake::ComputeForegroundMeanIntensity(bool is_head) const {
@@ -523,7 +523,7 @@ double Snake::ComputeForegroundMeanIntensity(bool is_head) const {
     }
     return Mean(fgs);
   } else if (radial_near_ == 1) {
-    return interpolator_->Evaluate(vertex);
+    return intensity_scaling_ * interpolator_->Evaluate(vertex);
   } else { // should never reach here
     std::cerr << "Fatal error: radial_near_ is less than 1!" << std::endl;
     return 0.0;
@@ -542,16 +542,16 @@ double Snake::ComputeBackgroundMeanIntensity(bool is_head) const {
       this->ComputeSamplePoint(sample_point, vertex, radial, normal, d, s);
       if (this->IsInsideImage(sample_point)) {
         double intensity = interpolator_->Evaluate(sample_point);
-        bgs.push_back(intensity_scaling_ * intensity);
+        bgs.push_back(intensity);
       }
     }
   }
 
   if (bgs.empty())  {
-    // std::cout << "bgs empty!" << std::endl;
-    return -1.0;
-  } // return a negative value intentionally
-  else  return Mean(bgs);
+    return -1.0; // return a negative value intentionally
+  } else {
+    return Mean(bgs);
+  }
 }
 
 double Snake::ComputeForegroundMeanIntensity2d(bool is_head) const {
@@ -565,7 +565,7 @@ double Snake::ComputeForegroundMeanIntensity2d(bool is_head) const {
       intensity = interpolator_->Evaluate(
           vertices_.at(vertices_.size() - 1 - i));
 
-    fgs.push_back(intensity_scaling_ * intensity);
+    fgs.push_back(intensity);
   }
   return Mean(fgs);
 }
@@ -586,7 +586,7 @@ double Snake::ComputeBackgroundMeanIntensity2d(bool is_head) const {
 
     if (this->IsInsideImage(pod, 2)) {
       double intensity = interpolator_->Evaluate(pod);
-      bgs.push_back(intensity_scaling_ * intensity);
+      bgs.push_back(intensity);
     }
 
     pod[0] = this->ComputePodX(vertex[0], normal, d, false);
@@ -598,7 +598,7 @@ double Snake::ComputeBackgroundMeanIntensity2d(bool is_head) const {
 
     if (this->IsInsideImage(pod, 2)) {
       double intensity = interpolator_->Evaluate(pod);
-      bgs.push_back(intensity_scaling_ * intensity);
+      bgs.push_back(intensity);
     }
   }
 
@@ -789,16 +789,16 @@ void Snake::PrintSelf() const {
   // std::cout << "fixed head: " << fixed_head_ << std::endl;
   // std::cout << "fixed tail: " << fixed_tail_ << std::endl;
 
-  const unsigned column_width = 15;
-  std::cout << "#" << std::endl;
-  for (unsigned j = 0; j != vertices_.size(); ++j) {
-    std::cout << j << "\t";
-    std::cout << std::setw(column_width) << this->GetX(j)
-              << std::setw(column_width) << this->GetY(j)
-              << std::setw(column_width) << this->GetZ(j)
-              << std::setw(column_width) << interpolator_->Evaluate(
-                  this->GetPoint(j)) << std::endl;
-  }
+  // const unsigned column_width = 15;
+  // std::cout << "#" << std::endl;
+  // for (unsigned j = 0; j != vertices_.size(); ++j) {
+  //   std::cout << j << "\t";
+  //   std::cout << std::setw(column_width) << this->GetX(j)
+  //             << std::setw(column_width) << this->GetY(j)
+  //             << std::setw(column_width) << this->GetZ(j)
+  //             << std::setw(column_width) << interpolator_->Evaluate(
+  //                 this->GetPoint(j)) << std::endl;
+  // }
 }
 
 void Snake::PrintVectorContainer(const VectorContainer &vc) {
@@ -987,7 +987,7 @@ bool Snake::ComputeLocalBackgroundMeanStd(unsigned index,int radial_near,
       }
     }
   }
-  bool local_bg_defined = bgs.size() > 3; // why 3? Greater than a quadrant
+  bool local_bg_defined = bgs.size() > 1;
   if (local_bg_defined) {
     mean = Mean(bgs);
     std = StandardDeviation(bgs, mean);

@@ -152,7 +152,7 @@ QGroupBox * ParametersDialog::CreateSnakeGroup() {
           this, SLOT(EnableOKButton()));
 
   QFormLayout *layout_left  = new QFormLayout;
-  layout_left->addRow(tr("Image Intensity Scaling"),
+  layout_left->addRow(tr("Intensity Scaling (0 for automatic)"),
                       intensity_scaling_edit_);
   layout_left->addRow(tr("Gaussian Standard Deviation (pixels)"),
                       sigma_edit_);

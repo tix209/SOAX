@@ -468,7 +468,7 @@ void Multisnake::GenerateCandidates(
       iter.Value()[direction] = ridge_value[(direction+1) % d];
     } else {
       iter.Value()[direction] = ridge_value[(direction+1) % d] &&
-          ridge_value[(direction+2) % d];
+                                ridge_value[(direction+2) % d];
     }
   }
 }
@@ -1528,7 +1528,7 @@ void Multisnake::ComputeHistogram(std::vector<unsigned> &hist,
 
 double Multisnake::ComputeOtsuThreshold(
     const std::vector<unsigned> &hist) const {
-  int total_nvoxels = 0;
+  unsigned total_nvoxels = 0;
   double total_intensities = 0.0;
   for (unsigned i = 0; i < hist.size(); ++i) {
     total_nvoxels += hist[i];
@@ -1536,12 +1536,12 @@ double Multisnake::ComputeOtsuThreshold(
   }
 
   double var_max = 0.0;
-  int threshold = 0;
+  unsigned threshold = 0;
 
   double sum_bg = 0.0;
-  int weight_bg = 0;
-  int weight_fg = 0;
-  for (int i = 0; i < hist.size(); ++i) {
+  unsigned weight_bg = 0;
+  unsigned weight_fg = 0;
+  for (unsigned i = 0; i < hist.size(); ++i) {
     weight_bg += hist[i];
     if (!weight_bg) continue;
 
@@ -1644,17 +1644,18 @@ void Multisnake::ComputeLocalSNRs(const SnakeContainer &snakes,
 
 void Multisnake::ComputeResultSnakesVertexErrorHausdorffDistance(
     double &vertex_error, double &hausdorff) const {
-    if (converged_snakes_.empty()) return;
+  if (converged_snakes_.empty() || comparing_snakes1_.empty()) return;
 
-    DataContainer errors1, errors2;
+  DataContainer errors1, errors2;
 
-    this->ComputeErrorFromSnakesToComparingSnakes(errors1);
-    this->ComputeErrorFromComparingSnakesToSnakes(errors2);
-    vertex_error = (Mean(errors1) + Mean(errors2))/2;
-
-    double max_error1 = Maximum(errors1);
-    double max_error2 = Maximum(errors2);
-    hausdorff = max_error1 > max_error2 ? max_error1 : max_error2;
+  this->ComputeErrorFromSnakesToComparingSnakes(errors1);
+  this->ComputeErrorFromComparingSnakesToSnakes(errors2);
+  vertex_error = (Mean(errors1) + Mean(errors2))/2;
+  // std::cout << "ve: " << vertex_error << std::endl;
+  double max_error1 = Maximum(errors1);
+  double max_error2 = Maximum(errors2);
+  hausdorff = max_error1 > max_error2 ? max_error1 : max_error2;
+  // std::cout << "hausdorff: " << hausdorff << std::endl;
 }
 
 void Multisnake::GenerateSyntheticImage(unsigned foreground,

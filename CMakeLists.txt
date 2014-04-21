@@ -75,7 +75,8 @@ add_executable(soax soax.cc ${common_srcs} ${gui_srcs} ${mocs} ${rccs})
 add_executable(batch_soax batch_soax.cc ${common_srcs})
 add_executable(eval_gt evaluate_gt.cc ${common_srcs})
 add_executable(eval_f evaluate_f.cc ${common_srcs})
-add_executable(rsf result_f_value.cc ${common_srcs})
+#add_executable(rsf result_f_value.cc ${common_srcs})
+add_executable(bestt best_t.cc ${common_srcs})
 add_executable(snr image_snr.cc ${common_srcs})
 add_executable(syn synthetic.cc ${common_srcs})
 add_executable(snapshots batch_snapshots.cc)
@@ -115,7 +116,7 @@ target_link_libraries(snr
   ${Boost_SYSTEM_LIBRARY}
   )
 
-target_link_libraries(rsf
+target_link_libraries(bestt
   ${ITK_LIBRARIES}
   ${Boost_PROGRAM_OPTIONS_LIBRARY}
   ${Boost_FILESYSTEM_LIBRARY}

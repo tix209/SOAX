@@ -97,6 +97,8 @@ void Multisnake::LoadImage(const std::string &filename) {
     is_2d_ = true;
   }
   interpolator_->SetInputImage(image_);
+
+  this->set_intensity_scaling(intensity_scaling_);
 }
 
 std::string Multisnake::GetImageName(bool suffix) const {
@@ -1738,10 +1740,11 @@ void Multisnake::GenerateSyntheticImage(unsigned foreground,
 }
 
 void Multisnake::set_intensity_scaling(double scale) {
-  if (scale > kEpsilon)
+  if (scale > kEpsilon) {
     intensity_scaling_ = scale;
-  else
+  } else if (image_) {
     intensity_scaling_ = 1.0 / this->GetMaxImageIntensity();
+  }
 }
 
 ImageType::PixelType Multisnake::GetMaxImageIntensity() const {

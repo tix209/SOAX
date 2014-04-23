@@ -9,6 +9,8 @@
 #include "itkShiftScaleImageFilter.h"
 #include "itkGradientImageFilter.h"
 #include "itkVectorCastImageFilter.h"
+#include "itkDiscreteGaussianImageFilter.h"
+#include "itkCastImageFilter.h"
 #include "itkGradientRecursiveGaussianImageFilter.h"
 #include "itkImageRegionIteratorWithIndex.h"
 #include "itkImageRegionIterator.h"
@@ -1663,73 +1665,94 @@ void Multisnake::ComputeResultSnakesVertexErrorHausdorffDistance(
 void Multisnake::GenerateSyntheticImage(unsigned foreground,
                                         unsigned background,
                                         double sigma,
-                                        const std::string &filename) const {
+                                        const std::string &filename)
+    const {
   if (!image_ || comparing_snakes1_.empty()) return;
-  ImageType::Pointer image = ImageType::New();
-  image->SetRegions(image_->GetLargestPossibleRegion());
-  image->Allocate();
-  image->FillBuffer(0);
+
+  typedef itk::Image<double, kDimension> FloatImageType;
+  FloatImageType::Pointer img = FloatImageType::New();
+  img->SetRegions(image_->GetLargestPossibleRegion());
+  img->Allocate();
+  img->FillBuffer(0.0);
 
   // Assign centerline intensities
   if (foreground) {
     for (SnakeConstIterator it = comparing_snakes1_.begin();
          it != comparing_snakes1_.end(); ++it) {
       for (unsigned i = 0; i < (*it)->GetSize(); ++i) {
-        ImageType::IndexType index;
-        image_->TransformPhysicalPointToIndex((*it)->GetPoint(i), index);
-        if (!image->GetPixel(index)) { // only set once
-          image->SetPixel(index, foreground);
+        FloatImageType::IndexType index;
+        img->TransformPhysicalPointToIndex((*it)->GetPoint(i), index);
+        if (img->GetPixel(index) <= 0.0) { // only set once
+          img->SetPixel(index, static_cast<double>(foreground));
         }
       }
     }
 
     // apply PSF
-    typedef itk::RecursiveGaussianImageFilter<ImageType,
-                                              ImageType>  FilterType;
-    FilterType::Pointer filter_x = FilterType::New();
-    FilterType::Pointer filter_y = FilterType::New();
-    FilterType::Pointer filter_z = FilterType::New();
-    filter_x->SetDirection(0);
-    filter_y->SetDirection(1);
-    filter_z->SetDirection(2);
-    filter_x->SetOrder(FilterType::ZeroOrder);
-    filter_y->SetOrder(FilterType::ZeroOrder);
-    filter_z->SetOrder(FilterType::ZeroOrder);
-    filter_x->SetInput(image);
-    filter_y->SetInput(filter_x->GetOutput());
-    filter_z->SetInput(filter_y->GetOutput());
-    const double psf = 2.0;
-    filter_x->SetSigma(psf);
-    filter_y->SetSigma(psf);
-    filter_z->SetSigma(psf);
+    typedef itk::DiscreteGaussianImageFilter<
+      FloatImageType, FloatImageType> GaussianFilterType;
+    GaussianFilterType::Pointer gaussian = GaussianFilterType::New();
+    gaussian->SetInput(img);
+    gaussian->SetVariance(4.0);
+    // gaussian->Update();
+    // img = gaussian->GetOutput();
+
+
+    // typedef itk::RecursiveGaussianImageFilter<ImageType,
+    //                                           ImageType>  FilterType;
+    // FilterType::Pointer filter_x = FilterType::New();
+    // FilterType::Pointer filter_y = FilterType::New();
+    // FilterType::Pointer filter_z = FilterType::New();
+    // filter_x->SetDirection(0);
+    // filter_y->SetDirection(1);
+    // filter_z->SetDirection(2);
+    // filter_x->SetOrder(FilterType::ZeroOrder);
+    // filter_y->SetOrder(FilterType::ZeroOrder);
+    // filter_z->SetOrder(FilterType::ZeroOrder);
+    // const double psf = 2.0;
+    // filter_x->SetSigma(psf);
+    // filter_y->SetSigma(psf);
+    // filter_z->SetSigma(psf);
+    // filter_x->SetInput(image);
+    // filter_y->SetInput(filter_x->GetOutput());
+    // filter_z->SetInput(filter_y->GetOutput());
+    // filter_z->Update();
+    // image = filter_z->GetOutput();
 
     // rescale the intensity back to foreground
-    typedef itk::RescaleIntensityImageFilter<ImageType, ImageType>
-        RescalerType;
+    typedef itk::RescaleIntensityImageFilter<
+      FloatImageType, FloatImageType> RescalerType;
     RescalerType::Pointer rescaler = RescalerType::New();
-    rescaler->SetInput(filter_z->GetOutput());
+    rescaler->SetInput(gaussian->GetOutput());
     rescaler->SetOutputMinimum(0.0);
     rescaler->SetOutputMaximum(foreground);
     rescaler->Update();
-    image = rescaler->GetOutput();
+    img = rescaler->GetOutput();
   }
 
   // add Gaussian noise with u=background and std=sigma
-  typedef itk::ImageRegionIterator<ImageType> IteratorType;
-  IteratorType iter(image, image->GetLargestPossibleRegion());
+  if (sigma > 0) {
+    typedef itk::ImageRegionIterator<FloatImageType> IteratorType;
+    IteratorType iter(img, img->GetLargestPossibleRegion());
 
-  typedef itk::Statistics::NormalVariateGenerator GeneratorType;
-  GeneratorType::Pointer generator = GeneratorType::New();
-  generator->Initialize(2003);
+    typedef itk::Statistics::NormalVariateGenerator GeneratorType;
+    GeneratorType::Pointer generator = GeneratorType::New();
+    generator->Initialize(2003);
 
-  for (iter.GoToBegin(); !iter.IsAtEnd(); ++iter) {
-    iter.Value() += background + sigma * generator->GetVariate();
+    for (iter.GoToBegin(); !iter.IsAtEnd(); ++iter) {
+      iter.Value() += background + sigma * generator->GetVariate();
+    }
   }
+
+  typedef itk::CastImageFilter<FloatImageType, ImageType> CasterType;
+  CasterType::Pointer caster = CasterType::New();
+  caster->SetInput(img);
 
   typedef itk::ImageFileWriter<ImageType> WriterType;
   WriterType::Pointer writer = WriterType::New();
   writer->SetFileName(filename);
-  writer->SetInput(image);
+  // writer->SetInput(img);
+  writer->SetInput(caster->GetOutput());
   try {
     writer->Update();
   } catch(itk::ExceptionObject &e) {

@@ -41,10 +41,10 @@ int main(int argc, char **argv) {
     optional.add_options()
         ("ridge",
          po::value<soax::DataContainer>(&ridge_range)->multitoken(),
-         "Range of ridge threshold for SOAC initialization (start step end)")
+         "Range of ridge threshold (start step end)")
         ("stretch",
          po::value<soax::DataContainer>(&stretch_range)->multitoken(),
-         "Range of stretching factor for SOAC evolution (start step end)")
+         "Range of stretching factor (start step end)")
         ("invert", "Use inverted image intensity");
 
     po::options_description all("Allowed options");

@@ -38,7 +38,7 @@ int main(int argc, char **argv) {
   for (int i = 2; i < 11; i+=2) {
     double sigma = static_cast<double>(i);
 
-    for (unsigned i = 1; i < 6; i++) {
+    for (unsigned i = 1; i < 4; i++) {
       unsigned foreground = 20 * i;
       std::ostringstream buffer;
       buffer << "fg" << foreground << "-sigma" << sigma << ".mha";

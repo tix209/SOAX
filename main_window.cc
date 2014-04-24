@@ -641,7 +641,10 @@ void MainWindow::SaveSnakes() {
   if (filename.isEmpty()) return;
   snake_filename_ = filename.toStdString();
 
-  multisnake_->SaveSnakes(multisnake_->converged_snakes(), snake_filename_);
+  multisnake_->SaveSnakes(multisnake_->converged_snakes(),
+                          snake_filename_);
+  // multisnake_->SaveSnakes(multisnake_->comparing_snakes1(),
+  //                         snake_filename_);
   statusBar()->showMessage(tr("Snakes are saved."), message_timeout_);
 }
 

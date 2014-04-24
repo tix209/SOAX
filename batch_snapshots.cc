@@ -1,6 +1,6 @@
 /*
- * File: batch_snapshots.cc
- * ~~~~~~~~~~~~~~~~~~~~~~~~
+ * File: batch_snapshots.
+ *
  * This file implements the batch generation of snapshots of a vtk
  * rendering window without showing it.
  *

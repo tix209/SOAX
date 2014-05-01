@@ -15,8 +15,8 @@
 
 int main(int argc, char **argv) {
   if (argc < 4) {
-    std::cout << "Usage: ./syn <original-image> <snake> <output-dir>"
-              << std::endl;
+    std::cout << "Usage: ./syn <original-image-path> <snake-path> "
+        "<output-dir>" << std::endl;
     return -1;
   }
 
@@ -27,6 +27,7 @@ int main(int argc, char **argv) {
             << " ground truth snakes loaded." << std::endl;
 
   const unsigned background = 200;
+  const unsigned foreground = 20;
 
   // double sigma = 10.0;
   // unsigned foreground = 40;
@@ -34,26 +35,16 @@ int main(int argc, char **argv) {
   // buffer << "fg" << foreground << "-sigma" << sigma << ".mha";
   // multisnake.GenerateSyntheticImage(foreground, background, sigma,
   //                                   std::string(argv[3]) + buffer.str());
-
-  for (int i = 2; i < 11; i+=2) {
+  // const double fg_ratio = atof(argv[3]);
+  for (int i = 0; i <= 10; i++) {
     double sigma = static_cast<double>(i);
-
-    for (unsigned i = 1; i < 4; i++) {
-      unsigned foreground = 20 * i;
-      std::ostringstream buffer;
-      buffer << "fg" << foreground << "-sigma" << sigma << ".mha";
-      multisnake.GenerateSyntheticImage(foreground, background, sigma,
-          std::string(argv[3]) + buffer.str());
-    }
+    std::ostringstream buffer;
+    buffer << "sigma" << sigma << ".mha";
+    std::string output_file_path = std::string(argv[3]) + buffer.str();
+    multisnake.GenerateSyntheticImage(foreground, background, sigma,
+                                      output_file_path);
+    // multisnake.GenerateSyntheticRealImage(fg_ratio, sigma,
+    //                                       output_file_path);
   }
-
-  // const unsigned foreground = 100;
-  // const double sigma = 5.5;
-  // std::ostringstream buffer;
-  // buffer << "fg" << foreground << "-sigma" << sigma << ".mha";
-
-  // multisnake.GenerateSyntheticImage(foreground, background, sigma,
-  //     std::string(argv[3]) + buffer.str());
-
   return 0;
 }

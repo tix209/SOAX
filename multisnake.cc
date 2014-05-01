@@ -1669,11 +1669,13 @@ void Multisnake::GenerateSyntheticImage(unsigned foreground,
     const {
   if (!image_ || comparing_snakes1_.empty()) return;
 
-  typedef itk::Image<double, kDimension> FloatImageType;
   FloatImageType::Pointer img = FloatImageType::New();
   img->SetRegions(image_->GetLargestPossibleRegion());
   img->Allocate();
-  img->FillBuffer(0.0);
+  if (sigma <= 0.0)
+    img->FillBuffer(background);
+  else
+    img->FillBuffer(0.0);
 
   // Assign centerline intensities
   if (foreground) {
@@ -1682,56 +1684,36 @@ void Multisnake::GenerateSyntheticImage(unsigned foreground,
       for (unsigned i = 0; i < (*it)->GetSize(); ++i) {
         FloatImageType::IndexType index;
         img->TransformPhysicalPointToIndex((*it)->GetPoint(i), index);
-        if (img->GetPixel(index) <= 0.0) { // only set once
-          img->SetPixel(index, static_cast<double>(foreground));
-        }
+        img->SetPixel(index, img->GetPixel(index) + foreground);
       }
     }
 
     // apply PSF
+    double variance[3] = {3.0, 3.0, 3*2.88*2.88};
     typedef itk::DiscreteGaussianImageFilter<
       FloatImageType, FloatImageType> GaussianFilterType;
     GaussianFilterType::Pointer gaussian = GaussianFilterType::New();
     gaussian->SetInput(img);
-    gaussian->SetVariance(4.0);
-    // gaussian->Update();
-    // img = gaussian->GetOutput();
-
-
-    // typedef itk::RecursiveGaussianImageFilter<ImageType,
-    //                                           ImageType>  FilterType;
-    // FilterType::Pointer filter_x = FilterType::New();
-    // FilterType::Pointer filter_y = FilterType::New();
-    // FilterType::Pointer filter_z = FilterType::New();
-    // filter_x->SetDirection(0);
-    // filter_y->SetDirection(1);
-    // filter_z->SetDirection(2);
-    // filter_x->SetOrder(FilterType::ZeroOrder);
-    // filter_y->SetOrder(FilterType::ZeroOrder);
-    // filter_z->SetOrder(FilterType::ZeroOrder);
-    // const double psf = 2.0;
-    // filter_x->SetSigma(psf);
-    // filter_y->SetSigma(psf);
-    // filter_z->SetSigma(psf);
-    // filter_x->SetInput(image);
-    // filter_y->SetInput(filter_x->GetOutput());
-    // filter_z->SetInput(filter_y->GetOutput());
-    // filter_z->Update();
-    // image = filter_z->GetOutput();
+    gaussian->SetVariance(variance);
 
     // rescale the intensity back to foreground
     typedef itk::RescaleIntensityImageFilter<
       FloatImageType, FloatImageType> RescalerType;
     RescalerType::Pointer rescaler = RescalerType::New();
     rescaler->SetInput(gaussian->GetOutput());
-    rescaler->SetOutputMinimum(0.0);
-    rescaler->SetOutputMaximum(foreground);
+    if (sigma <= 0.0) {
+      rescaler->SetOutputMinimum(background);
+      rescaler->SetOutputMaximum(foreground + background);
+    } else {
+      rescaler->SetOutputMinimum(0.0);
+      rescaler->SetOutputMaximum(foreground);
+    }
     rescaler->Update();
     img = rescaler->GetOutput();
   }
 
   // add Gaussian noise with u=background and std=sigma
-  if (sigma > 0) {
+  if (sigma > 0.0) {
     typedef itk::ImageRegionIterator<FloatImageType> IteratorType;
     IteratorType iter(img, img->GetLargestPossibleRegion());
 
@@ -1751,7 +1733,6 @@ void Multisnake::GenerateSyntheticImage(unsigned foreground,
   typedef itk::ImageFileWriter<ImageType> WriterType;
   WriterType::Pointer writer = WriterType::New();
   writer->SetFileName(filename);
-  // writer->SetInput(img);
   writer->SetInput(caster->GetOutput());
   try {
     writer->Update();
@@ -1760,6 +1741,87 @@ void Multisnake::GenerateSyntheticImage(unsigned foreground,
               << e << std::endl;
   }
   return;
+}
+
+void Multisnake::GenerateSyntheticRealImage(
+    double ratio, double sigma, const std::string &filename) const {
+  if (!image_ || comparing_snakes1_.empty()) return;
+
+  const double background = 230.0;
+  FloatImageType::Pointer img = FloatImageType::New();
+  img->SetRegions(image_->GetLargestPossibleRegion());
+  img->Allocate();
+  if (sigma <= 0.0)
+    img->FillBuffer(background);
+  else
+    img->FillBuffer(0.0);
+
+  // Assign centerline intensities
+  double max_intensity = .0;
+  for (SnakeConstIterator it = comparing_snakes1_.begin();
+       it != comparing_snakes1_.end(); ++it) {
+    for (unsigned i = 0; i < (*it)->GetSize(); ++i) {
+      double intensity = interpolator_->Evaluate((*it)->GetPoint(i));
+      FloatImageType::IndexType index;
+      img->TransformPhysicalPointToIndex((*it)->GetPoint(i), index);
+      img->SetPixel(index, img->GetPixel(index) + intensity);
+      if (intensity > max_intensity)
+        max_intensity = intensity;
+    }
+  }
+
+  // apply PSF
+  double variance[3] = {3.0, 3.0, 3*2.88*2.88};
+  typedef itk::DiscreteGaussianImageFilter<
+    FloatImageType, FloatImageType> GaussianFilterType;
+  GaussianFilterType::Pointer gaussian = GaussianFilterType::New();
+  gaussian->SetInput(img);
+  gaussian->SetVariance(variance);
+
+  const double foreground = ratio * (max_intensity - background);
+  // rescale the intensity back to foreground
+  typedef itk::RescaleIntensityImageFilter<
+    FloatImageType, FloatImageType> RescalerType;
+  RescalerType::Pointer rescaler = RescalerType::New();
+  rescaler->SetInput(gaussian->GetOutput());
+  if (sigma <= 0.0) {
+    rescaler->SetOutputMinimum(background);
+    rescaler->SetOutputMaximum(background + foreground);
+  } else {
+    rescaler->SetOutputMinimum(0.0);
+    rescaler->SetOutputMaximum(foreground);
+  }
+  rescaler->Update();
+  img = rescaler->GetOutput();
+
+  // add Gaussian noise with u=background and std=sigma
+  if (sigma > 0.0) {
+    typedef itk::ImageRegionIterator<FloatImageType> IteratorType;
+    IteratorType iter(img, img->GetLargestPossibleRegion());
+
+    typedef itk::Statistics::NormalVariateGenerator GeneratorType;
+    GeneratorType::Pointer generator = GeneratorType::New();
+    generator->Initialize(2003);
+
+    for (iter.GoToBegin(); !iter.IsAtEnd(); ++iter) {
+      iter.Value() += background + sigma * generator->GetVariate();
+    }
+  }
+
+  typedef itk::CastImageFilter<FloatImageType, ImageType> CasterType;
+  CasterType::Pointer caster = CasterType::New();
+  caster->SetInput(img);
+
+  typedef itk::ImageFileWriter<ImageType> WriterType;
+  WriterType::Pointer writer = WriterType::New();
+  writer->SetFileName(filename);
+  writer->SetInput(caster->GetOutput());
+  try {
+    writer->Update();
+  } catch(itk::ExceptionObject &e) {
+    std::cerr << "Snake::SaveImageUShort: Exception caught!\n"
+              << e << std::endl;
+  }
 }
 
 void Multisnake::set_intensity_scaling(double scale) {

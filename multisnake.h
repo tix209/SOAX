@@ -17,6 +17,9 @@ class SolverBank;
  */
 class Multisnake {
  public:
+  typedef itk::Image<double, kDimension> FloatImageType;
+
+
   Multisnake();
   ~Multisnake();
   void Reset();
@@ -190,7 +193,7 @@ class Multisnake {
   void ComputeGroundTruthLocalSNRs(int radial_near, int radial_far,
                                    DataContainer &snrs) const;
   void ComputeResultSnakesLocalSNRs(int radial_near, int radial_far,
-                                   DataContainer &snrs) const;
+                                    DataContainer &snrs) const;
 
   double ComputeGroundTruthFValue(const DataContainer &snrs,
                                   double threshold, double penalizer) const;
@@ -215,6 +218,8 @@ class Multisnake {
                               unsigned background,
                               double sigma,
                               const std::string &filename) const;
+  void GenerateSyntheticRealImage(double ratio, double sigma,
+                                  const std::string &filename) const;
 
  private:
   typedef itk::Vector<bool, kDimension> BoolVectorType;
@@ -332,6 +337,7 @@ class Multisnake {
 
   void PrintCandidatePoints(BoolVectorImageType::Pointer image,
                             std::ostream &os, unsigned direction) const;
+
 
 
 

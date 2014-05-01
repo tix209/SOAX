@@ -15,12 +15,13 @@
 #include <cstdlib>
 #include <vector>
 #include <map>
+#include <set>
 #include <fstream>
 // #include <iomanip>
 #include <boost/program_options.hpp>
 #include <boost/filesystem.hpp>
 #include "multisnake.h"
-// #include "utility.h"
+#include "utility.h"
 
 namespace po = boost::program_options;
 namespace fs = boost::filesystem;
@@ -31,6 +32,8 @@ typedef std::map<std::string, TCFMap> FValuesMap;
 typedef std::map<std::pair<double, double>, std::string> TCFilenameMap;
 typedef std::map<std::pair<double, double>,
                  std::pair<double, double> > TCErrorMap;
+typedef std::set<std::string> StringSet;
+
 
 void CreateSortedSnakePaths(const fs::path &snake_dir, Paths &snake_paths);
 void ComputeFilenameFValuesMap(soax::Multisnake &ms,
@@ -41,6 +44,7 @@ void ComputeFilenameFValuesMap(soax::Multisnake &ms,
                                FValuesMap &fmap);
 void ComputeBestSnakes(soax::Multisnake &ms,
                        const FValuesMap &fmap,
+                       int rnear, int rfar,
                        const std::vector<double> &t_range,
                        const std::vector<double> &c_range,
                        const std::string &gt_path,
@@ -49,7 +53,8 @@ void ComputeBestSnakes(soax::Multisnake &ms,
 void PrintFMap(const FValuesMap &fmap);
 void PrintTCFMap(const TCFMap &m);
 void PrintTCFilenameMap(const TCFilenameMap &m, std::ostream &os);
-std::string GetBestFilename(const FValuesMap &m, double t, double c);
+std::string GetBestFilename(const FValuesMap &m, double t, double c,
+                            double &min_f);
 void PrintTCErrorMap(const TCErrorMap &m, std::ostream &os);
 
 
@@ -79,16 +84,18 @@ int main (int argc, char **argv) {
 
     po::options_description optional("Optional options");
     optional.add_options()
-        ("rnear,n", po::value<int>()->default_value(4),
+        ("rnear,n", po::value<int>()->default_value(3),
          "Inner radius of local background annulus")
-        ("rfar,f", po::value<int>()->default_value(16),
+        ("rfar,f", po::value<int>()->default_value(6),
          "Outer radius of local background annulus")
         ("t-range,t",
          po::value<std::vector<double> >(&t_range)->multitoken(),
-         "Range of low SNR threshold (start step end)")
+         "Range of low SNR threshold (start step end)"
+         " Default: 1.0 0.1 10.01")
         ("c-range,c",
          po::value<std::vector<double> >(&c_range)->multitoken(),
-         "Range of penalizing factor (start step end)")
+         "Range of penalizing factor (start step end)"
+         " Default: 1.0 0.1 10.01")
         ("ground-truth,g", po::value<std::string>(),
          "Path of the ground truth snake")
         ("error,e", po::value<std::string>(),
@@ -130,12 +137,12 @@ int main (int argc, char **argv) {
         FValuesMap fmap;
         int rnear = vm["rnear"].as<int>();
         int rfar = vm["rfar"].as<int>();
-        // std::cout << rnear << std::endl;
-        // std::cout << rfar << std::endl;
-        // std::cout << "t-range: " << t_range[0] << ' ' << t_range[1]
-        //           << ' ' << t_range[2] << std::endl;
-        // std::cout << "c-range: " << c_range[0] << ' ' << c_range[1]
-        //           << ' ' << c_range[2] << std::endl;
+        std::cout << rnear << std::endl;
+        std::cout << rfar << std::endl;
+        std::cout << "t-range: " << t_range[0] << ' ' << t_range[1]
+                  << ' ' << t_range[2] << std::endl;
+        std::cout << "c-range: " << c_range[0] << ' ' << c_range[1]
+                  << ' ' << c_range[2] << std::endl;
         ComputeFilenameFValuesMap(ms, snake_paths, rnear, rfar,
                                   t_range, c_range, fmap);
 
@@ -146,7 +153,7 @@ int main (int argc, char **argv) {
           gt_path = vm["ground-truth"].as<std::string>();
           // std::cout << "ground-truth: " << gt_path << std::endl;
         }
-        ComputeBestSnakes(ms, fmap, t_range, c_range, gt_path,
+        ComputeBestSnakes(ms, fmap, rnear, rfar, t_range, c_range, gt_path,
                           tc_filenames, tc_errors);
 
         // PrintFMap(fmap);
@@ -155,7 +162,8 @@ int main (int argc, char **argv) {
         PrintTCFilenameMap(tc_filenames, tc_filenames_file);
 
         if (vm.count("error")) {
-          std::ofstream tc_error_file(vm["error"].as<std::string>().c_str());
+          std::ofstream tc_error_file(
+              vm["error"].as<std::string>().c_str());
           PrintTCErrorMap(tc_errors, tc_error_file);
         }
       } else {
@@ -187,14 +195,21 @@ void ComputeFilenameFValuesMap(soax::Multisnake &ms,
                                FValuesMap &fmap) {
   for (Paths::const_iterator it = snake_paths.begin();
        it != snake_paths.end(); ++it) {
-    std::cout << it->filename() << std::endl;
+    // std::cout << it->filename() << std::endl;
     ms.LoadConvergedSnakes(it->string());
+    // ms.PrintSnakes(ms.converged_snakes());
     soax::DataContainer snrs;
     ms.ComputeResultSnakesLocalSNRs(rnear, rfar, snrs);
+    // std::cout << rnear << ", " << rfar << ", "
+    //           << snrs[0] << std::endl;
+    // std::cout << ms.GetNumberOfConvergedSnakes() << std::endl;
     TCFMap tcf;
     for (double t = t_range[0]; t < t_range[2]; t += t_range[1]) {
       for (double c = c_range[0]; c < c_range[2]; c += c_range[1]) {
-        tcf[std::make_pair(t, c)] = ms.ComputeFValue(snrs, t, c);
+        double fvalue = ms.ComputeFValue(snrs, t, c);
+        // std::cout << "[" << t << ", " << c << "]: " << fvalue
+        //           << "\tsnrs: " << soax::Mean(snrs) << std::endl;
+        tcf[std::make_pair(t, c)] = fvalue;
       }
     }
     fmap[it->string()] = tcf;
@@ -203,22 +218,36 @@ void ComputeFilenameFValuesMap(soax::Multisnake &ms,
 
 void ComputeBestSnakes(soax::Multisnake &ms,
                        const FValuesMap &fmap,
+                       int rnear, int rfar,
                        const std::vector<double> &t_range,
                        const std::vector<double> &c_range,
                        const std::string &gt_path,
                        TCFilenameMap &tc_filenames,
                        TCErrorMap &tc_errors) {
+  soax::DataContainer gt_snrs;
   if (!gt_path.empty()) {
     ms.LoadGroundTruthSnakes(gt_path);
+    ms.ComputeGroundTruthLocalSNRs(rnear, rfar, gt_snrs);
     std::cout << ms.GetNumberOfComparingSnakes1()
               << " ground truth snakes loaded." << std::endl;
   }
 
+  StringSet candidate_filenames;
   for (double t = t_range[0]; t < t_range[2]; t += t_range[1]) {
     for (double c = c_range[0]; c < c_range[2]; c += c_range[1]) {
-      std::string filename = GetBestFilename(fmap, t, c);
+      double min_f = 1e8;
+      std::string filename = GetBestFilename(fmap, t, c, min_f);
       tc_filenames[std::make_pair(t, c)] = filename;
+
+      // if (t + c > 2.0)
+      //   candidate_filenames.insert(filename);
+
       if (!gt_path.empty()) {
+        // double gt_fvalue = ms.ComputeFValue(gt_snrs, t, c);
+        // if (gt_fvalue < min_f) {
+        //   std::cout << t << "\t" << c << "\t" << gt_fvalue << std::endl;
+        // }
+
         ms.LoadConvergedSnakes(filename);
         double vertex_error(100.0), hausdorff(100.0);
         ms.ComputeResultSnakesVertexErrorHausdorffDistance(vertex_error,
@@ -228,28 +257,14 @@ void ComputeBestSnakes(soax::Multisnake &ms,
       }
     }
   }
+
+  // std::ofstream candidate_file("candidates.txt");
+  // for (StringSet::const_iterator it = candidate_filenames.begin();
+  //      it != candidate_filenames.end(); ++it) {
+  //   candidate_file << *it << std::endl;
+  // }
 }
 
-// std::vector<double> ComputeFValueVector(soax::Multisnake &ms, int rnear, int rfar,
-//                                         double start, double end, double step) {
-//   const double c = 1.1;
-//   // const int rnear = 4;
-//   // const int rfar = 12;
-//   std::vector<double> v;
-//   for (double t = start; t < end; t += step) {
-//     soax::DataContainer snrs;
-//     ms.ComputeResultSnakesLocalSNRs(rnear, rfar, snrs);
-//     v.push_back(ms.ComputeFValue(snrs, t, c));
-//   }
-//   return v;
-// }
-
-// void PrintTFilenameMap(const TFilenameMap &tfm, std::ostream &os) {
-//   for (TFilenameMap::const_iterator it = tfm.begin();
-//        it != tfm.end(); ++it) {
-//     os << it->first << ": " << it->second << std::endl;
-//   }
-// }
 
 void PrintFMap(const FValuesMap &fmap) {
   for (FValuesMap::const_iterator it = fmap.begin();
@@ -292,14 +307,15 @@ void PrintTCFMap(const TCFMap &m) {
 void PrintTCFilenameMap(const TCFilenameMap &m, std::ostream &os) {
   for (TCFilenameMap::const_iterator it = m.begin();
        it != m.end(); ++it) {
-    os << "(" << it->first.first << ", " << it->first.second << ")"
-       << ": " << it->second << std::endl;
+    os << it->first.first << "\t" << it->first.second << "\t"
+       << it->second << std::endl;
   }
 }
 
-std::string GetBestFilename(const FValuesMap &m, double t, double c) {
+std::string GetBestFilename(const FValuesMap &m, double t, double c,
+                            double &min_f) {
   std::string filename;
-  double min_f = 1e8;
+  min_f = 1e8;
   for (FValuesMap::const_iterator it = m.begin();
        it != m.end(); ++it) {
     TCFMap::const_iterator f_it = it->second.find(std::make_pair(t, c));

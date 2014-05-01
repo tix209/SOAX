@@ -20,6 +20,7 @@
 #include <boost/program_options.hpp>
 #include <boost/filesystem.hpp>
 #include "multisnake.h"
+#include "utility.h"
 
 
 int main (int argc, char **argv) {
@@ -39,8 +40,8 @@ int main (int argc, char **argv) {
     if (fs::exists(snake_dir)) {
       soax::Multisnake multisnake;
       multisnake.LoadImage(image_path);
-      double snr = multisnake.ComputeImageSNR();
-      std::cout << "Image SNR: " << snr << std::endl;
+      // double snr = multisnake.ComputeImageSNR();
+      // std::cout << "Image SNR: " << snr << std::endl;
       multisnake.LoadGroundTruthSnakes(gt_snake_path);
       std::cout << multisnake.GetNumberOfComparingSnakes1()
                 << " ground truth snakes loaded." << std::endl;
@@ -62,35 +63,44 @@ int main (int argc, char **argv) {
       fs::directory_iterator end_it;
       // unsigned num_of_snake_sets = 0;
       for (fs::directory_iterator it(snake_dir); it != end_it; ++it) {
+        // std::cout << it->path() << std::endl;
         multisnake.LoadConvergedSnakes(it->path().string());
+        // multisnake.PrintSnakes(multisnake.converged_snakes());
         soax::DataContainer result_snrs;
         multisnake.ComputeResultSnakesLocalSNRs(
             radial_near, radial_far, result_snrs);
+        // std::cout << radial_near << ", " << radial_far << ", "
+        //           << result_snrs[0] << std::endl;
+        // std::cout << multisnake.GetNumberOfConvergedSnakes() << std::endl;
         result_snrs_vector.push_back(result_snrs);
         // num_of_snake_sets++;
       }
 
 
-      for (int i = 1; i <= 10; ++i) {
-        double threshold = 0.1 * i * snr;
-        // double threshold = 1.5;
-        for (int j = 1; j <= 20; ++j) {
-          double penalizer = j * 0.5;
+      for (int i = 0; i < 90; i += 1) {
+        // double threshold = 0.1 * i * snr;
+        double threshold = 1.0 + 0.1 * i;
+        for (int j = 0; j < 90; j += 1) {
+          double penalizer = 1.0 + j * 0.1;
           double gt_fvalue = multisnake.ComputeFValue(gt_snrs,
                                                       threshold,
                                                       penalizer);
           bool snakes_greater_fvalue = true;
           // unsigned number_of_violation = 0;
-          // std::cout << "t: " << i*0.1 << "\t" << "c: " << penalizer
+          // std::cout << "t: " << threshold << "\t" << "c: " << penalizer
           //           << "\tgt fvalue: " << gt_fvalue << std::endl;
 
           fs::directory_iterator end_it;
           unsigned index = 0;
           for (fs::directory_iterator it(snake_dir); it != end_it; ++it) {
+            // std::cout << it->path() << std::endl;
             double result_fvalue = multisnake.ComputeFValue(
                 result_snrs_vector[index], threshold, penalizer);
+            // std::cout << "t: " << threshold << "\t" << "c: " << penalizer
+            //           << "\tfvalue: " << result_fvalue << "\tsnrs: "
+            //           << soax::Mean(result_snrs_vector[index]) << std::endl;
 
-            if (result_fvalue < gt_fvalue + soax::kEpsilon) {
+            if (result_fvalue <= gt_fvalue) {
               snakes_greater_fvalue = false;
               break;
             }
@@ -98,8 +108,9 @@ int main (int argc, char **argv) {
           }
 
           if (snakes_greater_fvalue) {
-            std::cout << "t: " << i*0.1 << "\t";
-            std::cout << "c: " << penalizer << std::endl;
+            std::cout << "t: " << threshold << "\t";
+            std::cout << "c: " << penalizer << "\t"
+                      << gt_fvalue << std::endl;
           }
         }
       }

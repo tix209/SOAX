@@ -39,7 +39,7 @@ int main(int argc, char **argv) {
   for (int i = 0; i <= 10; i++) {
     double sigma = static_cast<double>(i);
     std::ostringstream buffer;
-    buffer << "sigma" << sigma << ".mha";
+    buffer << "sigma" << sigma << ".tif";
     std::string output_file_path = std::string(argv[3]) + buffer.str();
     multisnake.GenerateSyntheticImage(foreground, background, sigma,
                                       output_file_path);

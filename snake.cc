@@ -916,8 +916,8 @@ const PointType &Snake::GetTip(bool is_head) const {
     return this->GetTail();
 }
 
-bool Snake::ComputeLocalSNRAtIndex(unsigned index, int radial_near, int radial_far,
-                                   double &local_snr) const {
+bool Snake::ComputeLocalSNRAtIndex(unsigned index, int radial_near,
+                                   int radial_far, double &local_snr) const {
   double foreground = interpolator_->Evaluate(this->GetPoint(index));
   // double foreground = this->ComputeLocalForegroundMean(index, radial_near);
 
@@ -928,7 +928,14 @@ bool Snake::ComputeLocalSNRAtIndex(unsigned index, int radial_near, int radial_f
   // std::cout << "background mean: " << bg_mean << std::endl;
   // std::cout << "background std: " << bg_std << std::endl;
   if (local_bg_defined) {
-    local_snr = (foreground - bg_mean) / bg_std;
+    if (bg_std < kEpsilon) {
+      if (foreground > bg_mean)
+        local_snr = kPlusInfinity;
+      else
+        local_snr = 0.0;
+    } else {
+      local_snr = (foreground - bg_mean) / bg_std;
+    }
     // std::cout << "local snr: " << local_snr << std::endl;
   }
 

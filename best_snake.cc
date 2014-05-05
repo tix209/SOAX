@@ -47,9 +47,10 @@ void ComputeBestSnakes(soax::Multisnake &ms,
                        int rnear, int rfar,
                        const std::vector<double> &t_range,
                        const std::vector<double> &c_range,
-                       const std::string &gt_path,
+                       bool gt,
                        TCFilenameMap &tc_filenames,
-                       TCErrorMap &tc_errors);
+                       TCErrorMap &tc_errors,
+                       StringSet &candidate_filenames);
 void PrintFMap(const FValuesMap &fmap);
 void PrintTCFMap(const TCFMap &m);
 void PrintTCFilenameMap(const TCFilenameMap &m, std::ostream &os);
@@ -72,15 +73,17 @@ int main (int argc, char **argv) {
         ("snake,s", po::value<std::string>()->required(),
          "Directory of resultant snake files")
         ("output,o", po::value<std::string>()->required(),
-         "Path of output 'tc-snake' file");
+         "Path of output 'tc-snake' file")
+        ("candidates,a", po::value<std::string>()->required(),
+         "Path of output candidate filenames file");
 
     std::vector<double> t_range(3, 0.0), c_range(3, 0.0);
     t_range[0] = 1.0; // start
     t_range[1] = 0.1; // step
-    t_range[2] = 10.01; // end
+    t_range[2] = 3.01; // end
     c_range[0] = 1.0; // start
     c_range[1] = 0.1; // step
-    c_range[2] = 10.01; // end
+    c_range[2] = 3.01; // end
 
     po::options_description optional("Optional options");
     optional.add_options()
@@ -91,11 +94,11 @@ int main (int argc, char **argv) {
         ("t-range,t",
          po::value<std::vector<double> >(&t_range)->multitoken(),
          "Range of low SNR threshold (start step end)"
-         " Default: 1.0 0.1 10.01")
+         " Default: 1.0 0.1 3.01")
         ("c-range,c",
          po::value<std::vector<double> >(&c_range)->multitoken(),
          "Range of penalizing factor (start step end)"
-         " Default: 1.0 0.1 10.01")
+         " Default: 1.0 0.1 3.01")
         ("ground-truth,g", po::value<std::string>(),
          "Path of the ground truth snake")
         ("error,e", po::value<std::string>(),
@@ -148,13 +151,18 @@ int main (int argc, char **argv) {
 
         TCFilenameMap tc_filenames;
         TCErrorMap tc_errors;
-        std::string gt_path;
+        // std::string gt_path;
         if (vm.count("ground-truth")) {
-          gt_path = vm["ground-truth"].as<std::string>();
-          // std::cout << "ground-truth: " << gt_path << std::endl;
+          ms.LoadGroundTruthSnakes(vm["ground-truth"].as<std::string>());
+          std::cout << ms.GetNumberOfComparingSnakes1()
+                    << " ground truth snakes loaded." << std::endl;
         }
-        ComputeBestSnakes(ms, fmap, rnear, rfar, t_range, c_range, gt_path,
-                          tc_filenames, tc_errors);
+
+        StringSet candidate_filenames;
+
+        ComputeBestSnakes(ms, fmap, rnear, rfar, t_range, c_range,
+                          vm.count("ground-truth"), tc_filenames,
+                          tc_errors, candidate_filenames);
 
         // PrintFMap(fmap);
         std::ofstream tc_filenames_file(
@@ -162,9 +170,15 @@ int main (int argc, char **argv) {
         PrintTCFilenameMap(tc_filenames, tc_filenames_file);
 
         if (vm.count("error")) {
-          std::ofstream tc_error_file(
-              vm["error"].as<std::string>().c_str());
+          std::ofstream tc_error_file(vm["error"].as<std::string>().c_str());
           PrintTCErrorMap(tc_errors, tc_error_file);
+        }
+
+        std::ofstream candidate_file(
+            vm["candidates"].as<std::string>().c_str());
+        for (StringSet::const_iterator it = candidate_filenames.begin();
+             it != candidate_filenames.end(); ++it) {
+          candidate_file << *it << std::endl;
         }
       } else {
         std::cout << snake_dir << " does not exist." << std::endl;
@@ -221,33 +235,20 @@ void ComputeBestSnakes(soax::Multisnake &ms,
                        int rnear, int rfar,
                        const std::vector<double> &t_range,
                        const std::vector<double> &c_range,
-                       const std::string &gt_path,
+                       bool gt,
                        TCFilenameMap &tc_filenames,
-                       TCErrorMap &tc_errors) {
-  soax::DataContainer gt_snrs;
-  if (!gt_path.empty()) {
-    ms.LoadGroundTruthSnakes(gt_path);
-    ms.ComputeGroundTruthLocalSNRs(rnear, rfar, gt_snrs);
-    std::cout << ms.GetNumberOfComparingSnakes1()
-              << " ground truth snakes loaded." << std::endl;
-  }
-
-  StringSet candidate_filenames;
+                       TCErrorMap &tc_errors,
+                       StringSet &candidate_filenames) {
   for (double t = t_range[0]; t < t_range[2]; t += t_range[1]) {
     for (double c = c_range[0]; c < c_range[2]; c += c_range[1]) {
       double min_f = 1e8;
       std::string filename = GetBestFilename(fmap, t, c, min_f);
       tc_filenames[std::make_pair(t, c)] = filename;
 
-      // if (t + c > 2.0)
-      //   candidate_filenames.insert(filename);
+      if ((t + c > 3.0) && (t + c < 5.0))
+        candidate_filenames.insert(filename);
 
-      if (!gt_path.empty()) {
-        // double gt_fvalue = ms.ComputeFValue(gt_snrs, t, c);
-        // if (gt_fvalue < min_f) {
-        //   std::cout << t << "\t" << c << "\t" << gt_fvalue << std::endl;
-        // }
-
+      if (gt) {
         ms.LoadConvergedSnakes(filename);
         double vertex_error(100.0), hausdorff(100.0);
         ms.ComputeResultSnakesVertexErrorHausdorffDistance(vertex_error,
@@ -257,12 +258,6 @@ void ComputeBestSnakes(soax::Multisnake &ms,
       }
     }
   }
-
-  // std::ofstream candidate_file("candidates.txt");
-  // for (StringSet::const_iterator it = candidate_filenames.begin();
-  //      it != candidate_filenames.end(); ++it) {
-  //   candidate_file << *it << std::endl;
-  // }
 }
 
 

@@ -29,14 +29,7 @@ int main(int argc, char **argv) {
   const unsigned background = 200;
   const unsigned foreground = 20;
 
-  // double sigma = 10.0;
-  // unsigned foreground = 40;
-  // std::ostringstream buffer;
-  // buffer << "fg" << foreground << "-sigma" << sigma << ".mha";
-  // multisnake.GenerateSyntheticImage(foreground, background, sigma,
-  //                                   std::string(argv[3]) + buffer.str());
-  // const double fg_ratio = atof(argv[3]);
-  for (int i = 0; i <= 10; i++) {
+  for (int i = 0; i < 8; i++) {
     double sigma = static_cast<double>(i);
     std::ostringstream buffer;
     buffer << "sigma" << sigma << ".tif";

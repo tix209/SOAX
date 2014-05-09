@@ -28,7 +28,8 @@ unsigned short String2UShort(const std::string &s) {
   unsigned short value;
   if (converter >> value)
     return value;
-  std::cerr << "Converting " << s << " to unsigned short failed!" << std::endl;
+  std::cerr << "Converting " << s << " to unsigned short failed!"
+            << std::endl;
   return 0;
 }
 

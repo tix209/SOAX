@@ -153,7 +153,7 @@ class Multisnake {
   //                          const std::string &snake_path,
   //                          const std::string &filename) const;
 
-  void PrintGroundTruthLocalSNRValues(int radial_near, int radial_far);
+  void PrintGroundTruthLocalSNRValues(int radial_near, int radial_far) const;
 
   void ComputeRadialOrientation(const PointType &center,
                                 const std::string &filename) const;
@@ -177,9 +177,9 @@ class Multisnake {
   /*
    * Estimate image SNR using Otsu's method.
    */
-  double ComputeImageSNR(const std::string &binary_filename = "") const;
-  double ComputeImageSNR2(const std::string &filename = "") const;
-  double ComputeForegroundSNR() const;
+  // double ComputeImageSNR(const std::string &binary_filename = "") const;
+  // double ComputeImageSNR2(const std::string &filename = "") const;
+  // double ComputeForegroundSNR() const;
 
   // double ComputeGroundTruthFValue(double snr_threshold,
   //                                 double penalizer,
@@ -313,16 +313,16 @@ class Multisnake {
    * Compute a binary image of input image using Otsu's method and
    * return the applied threshold.
    */
-  int ComputeBinaryImage(ImageType::Pointer &img) const;
+  // int ComputeBinaryImage(ImageType::Pointer &img) const;
 
   /*
    * Compute the intensity statistics of input image using the binary
    * image produced by Otsu's method (see above method)
    */
-  void ComputeForegroundBackgroundStatistics(int threshold,
-                                             double &fg_mean,
-                                             double &bg_mean,
-                                             double &bg_std) const;
+  // void ComputeForegroundBackgroundStatistics(int threshold,
+  //                                            double &fg_mean,
+  //                                            double &bg_mean,
+  //                                            double &bg_std) const;
 
   ImageType::PixelType GetMaxImageIntensity() const;
 

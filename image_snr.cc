@@ -1,3 +1,7 @@
+/*
+ * Compute local image SNR using ground truth SOACs.
+ */
+
 #include <iostream>
 #include <cstdlib>
 #include <fstream>
@@ -6,17 +10,14 @@
 #include "multisnake.h"
 
 
-/*
- * Compute the image SNR using Otsu's binary segmentation.
- */
-
 std::string GetSuffix(const std::string &s) {
   return s.substr(s.size()-3);
 }
 
 int main(int argc, char **argv) {
-  if (argc < 2) {
-    std::cerr << "Usage: ./snr <image_path>" << std::endl;
+  if (argc < 5) {
+    std::cerr << "Usage: ./snr <image_dir> <snake_path> "
+        "<radial_near> <radial_far>" << std::endl;
     return EXIT_FAILURE;
   }
 
@@ -32,17 +33,24 @@ int main(int argc, char **argv) {
       //   double snr = multisnake.ComputeImageSNR();
       //   std::cout << it->path().filename() << " SNR: " << snr << std::endl;
       // }
+      int rnear = atoi(argv[3]);
+      int rfar = atoi(argv[4]);
       if (fs::is_regular_file(image_dir)) {
         if (GetSuffix(image_dir.string()) == "mha" ||
             GetSuffix(image_dir.string()) == "tif") {
           multisnake.LoadImage(image_dir.string());
-          double snr1 = multisnake.ComputeImageSNR("binary.mha");
-          std::cout << image_dir.filename() << " old SNR: "
-                    << snr1 << std::endl;
-          double snr2 = multisnake.ComputeImageSNR2("ternary.mha");
+          multisnake.LoadGroundTruthSnakes(argv[2]);
+          std::cout << multisnake.GetNumberOfComparingSnakes1()
+                    << " ground truth snakes loaded." << std::endl;
+
+          // double snr1 = multisnake.ComputeImageSNR("binary.mha");
+          // std::cout << image_dir.filename() << " old SNR: "
+          //           << snr1 << std::endl;
+          // double snr2 = multisnake.ComputeImageSNR2("ternary.mha");
           // if (snr < 4.5 && snr > 3.5)
-          std::cout << image_dir.filename() << " new SNR: "
-                    << snr2 << std::endl;
+          // std::cout << image_dir.filename() << " new SNR: "
+          //           << snr2 << std::endl;
+          multisnake.PrintGroundTruthLocalSNRValues(rnear, rfar);
         }
       } else { // directory
         typedef std::vector<fs::path> Paths;
@@ -55,9 +63,16 @@ int main(int argc, char **argv) {
           if (GetSuffix(it->string()) == "mha" ||
               GetSuffix(it->string()) == "tif") {
             multisnake.LoadImage(it->string());
-            double snr = multisnake.ComputeImageSNR2();
+            std::cout << it->string() << std::endl;
+            multisnake.LoadGroundTruthSnakes(argv[2]);
+            std::cout << multisnake.GetNumberOfComparingSnakes1()
+                      << " ground truth snakes loaded." << std::endl;
+
+            // double snr = multisnake.ComputeImageSNR2();
             // if (snr < 4.5 && snr > 3.5)
-            std::cout << it->filename() << " SNR: " << snr << std::endl;
+            // std::cout << it->filename() << " SNR: " << snr << std::endl;
+            multisnake.PrintGroundTruthLocalSNRValues(rnear, rfar);
+            std::cout << std::endl;
           }
         }
       }

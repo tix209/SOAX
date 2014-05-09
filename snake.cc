@@ -921,12 +921,17 @@ bool Snake::ComputeLocalSNRAtIndex(unsigned index, int radial_near,
   double foreground = interpolator_->Evaluate(this->GetPoint(index));
   // double foreground = this->ComputeLocalForegroundMean(index, radial_near);
 
-  // std::cout << "foreground: " << foreground << std::endl;
   double bg_mean(0.0), bg_std(0.0);
   bool local_bg_defined = this->ComputeLocalBackgroundMeanStd(
       index, radial_near, radial_far, bg_mean, bg_std);
-  // std::cout << "background mean: " << bg_mean << std::endl;
-  // std::cout << "background std: " << bg_std << std::endl;
+
+  // if (foreground < bg_mean) {
+  //   std::cout << this->GetPoint(index) << std::endl;
+  //   std::cout << "foreground: " << foreground << std::endl;
+  //   std::cout << "background mean: " << bg_mean << std::endl;
+  //   std::cout << "background std: " << bg_std << std::endl;
+  // }
+
   if (local_bg_defined) {
     if (bg_std < kEpsilon) {
       if (foreground > bg_mean)

@@ -161,10 +161,10 @@ class MainWindow : public QMainWindow {
   QMenu *view_;
   QMenu *process_;
   QMenu *analysis_;
-  QMenu *actin_cable_submenu_;
-  QMenu *contractile_ring_submenu_;
-  QMenu *fibrin_submenu_;
-  QMenu *droplet_submenu_;
+  // QMenu *actin_cable_submenu_;
+  // QMenu *contractile_ring_submenu_;
+  // QMenu *fibrin_submenu_;
+  // QMenu *droplet_submenu_;
   QMenu *tools_;
   QMenu *help_;
 

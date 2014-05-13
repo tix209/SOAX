@@ -368,14 +368,18 @@ void MainWindow::CreateMenus() {
   process_->addAction(group_snakes_);
 
   analysis_ = menuBar()->addMenu(tr("&Analysis"));
-  actin_cable_submenu_ = analysis_->addMenu(tr("Actin Cable"));
-  contractile_ring_submenu_ = analysis_->addMenu(tr("Contractile Ring"));
-  fibrin_submenu_ = analysis_->addMenu(tr("Fibrin Network"));
-  fibrin_submenu_->addAction(compute_spherical_orientation_);
-  droplet_submenu_ = analysis_->addMenu(tr("Actin Droplet"));
-  droplet_submenu_->addAction(compute_radial_orientation_);
-  droplet_submenu_->addAction(compute_point_density_);
-  droplet_submenu_->addAction(compute_curvature_);
+  // actin_cable_submenu_ = analysis_->addMenu(tr("Actin Cable"));
+  // contractile_ring_submenu_ = analysis_->addMenu(tr("Contractile Ring"));
+  // fibrin_submenu_ = analysis_->addMenu(tr("Fibrin Network"));
+  // fibrin_submenu_->addAction(compute_spherical_orientation_);
+  // droplet_submenu_ = analysis_->addMenu(tr("Actin Droplet"));
+  // droplet_submenu_->addAction(compute_radial_orientation_);
+  // droplet_submenu_->addAction(compute_point_density_);
+  // droplet_submenu_->addAction(compute_curvature_);
+  analysis_->addAction(compute_spherical_orientation_);
+  analysis_->addAction(compute_radial_orientation_);
+  analysis_->addAction(compute_point_density_);
+  analysis_->addAction(compute_curvature_);
   analysis_->addAction(show_analysis_options_);
 
   tools_ = menuBar()->addMenu(tr("&Tools"));

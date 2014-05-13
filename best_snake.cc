@@ -56,7 +56,8 @@ void PrintTCFMap(const TCFMap &m);
 void PrintTCFilenameMap(const TCFilenameMap &m, std::ostream &os);
 std::string GetBestFilename(const FValuesMap &m, double t, double c,
                             double &min_f);
-void PrintTCErrorMap(const TCErrorMap &m, std::ostream &os);
+void PrintTCErrorMap(const TCFilenameMap &filename_map,
+                     const TCErrorMap &error_map, std::ostream &os);
 
 
 int main (int argc, char **argv) {
@@ -73,9 +74,9 @@ int main (int argc, char **argv) {
         ("snake,s", po::value<std::string>()->required(),
          "Directory of resultant snake files")
         ("output,o", po::value<std::string>()->required(),
-         "Path of output 'tc-snake' file")
-        ("candidates,a", po::value<std::string>()->required(),
-         "Path of output candidate filenames file");
+        //  "Path of output 'tc-snake' file")
+        // ("candidates,a", po::value<std::string>()->required(),
+         "Path of output candidate file");
 
     std::vector<double> t_range(3, 0.0), c_range(3, 0.0);
     t_range[0] = 1.0; // start
@@ -87,22 +88,22 @@ int main (int argc, char **argv) {
 
     po::options_description optional("Optional options");
     optional.add_options()
-        ("rnear,n", po::value<int>()->default_value(3),
+        ("rnear,n", po::value<int>()->default_value(4),
          "Inner radius of local background annulus")
-        ("rfar,f", po::value<int>()->default_value(6),
+        ("rfar,f", po::value<int>()->default_value(8),
          "Outer radius of local background annulus")
         ("t-range,t",
          po::value<std::vector<double> >(&t_range)->multitoken(),
          "Range of low SNR threshold (start step end)"
-         " Default: 1.0 0.1 3.01")
+         " Default: 1.0 0.1 3.0")
         ("c-range,c",
          po::value<std::vector<double> >(&c_range)->multitoken(),
          "Range of penalizing factor (start step end)"
-         " Default: 1.0 0.1 3.01")
+         " Default: 1.0 0.1 3.0")
         ("ground-truth,g", po::value<std::string>(),
          "Path of the ground truth snake")
         ("error,e", po::value<std::string>(),
-         "Path of the output 'tc-error' file");
+         "Path of the output 'tc-candidate-error' file");
 
     po::options_description all("Allowed options");
     all.add(generic).add(required).add(optional);
@@ -125,7 +126,7 @@ int main (int argc, char **argv) {
     po::notify(vm);
 
     if (vm.count("ground-truth") && !vm.count("error")) {
-      std::cerr << "Path of output 'tc-error' file is needed"
+      std::cerr << "Path of output 'tc-candidate-error' file is needed"
           " when ground truth is provided." << std::endl;
       return EXIT_FAILURE;
     }
@@ -149,9 +150,6 @@ int main (int argc, char **argv) {
         ComputeFilenameFValuesMap(ms, snake_paths, rnear, rfar,
                                   t_range, c_range, fmap);
 
-        TCFilenameMap tc_filenames;
-        TCErrorMap tc_errors;
-        // std::string gt_path;
         if (vm.count("ground-truth")) {
           ms.LoadGroundTruthSnakes(vm["ground-truth"].as<std::string>());
           std::cout << ms.GetNumberOfComparingSnakes1()
@@ -159,27 +157,30 @@ int main (int argc, char **argv) {
         }
 
         StringSet candidate_filenames;
+        TCFilenameMap tc_filenames;
+        TCErrorMap tc_errors;
+        // std::string gt_path;
 
         ComputeBestSnakes(ms, fmap, rnear, rfar, t_range, c_range,
                           vm.count("ground-truth"), tc_filenames,
                           tc_errors, candidate_filenames);
 
         // PrintFMap(fmap);
-        std::ofstream tc_filenames_file(
-            vm["output"].as<std::string>().c_str());
-        PrintTCFilenameMap(tc_filenames, tc_filenames_file);
-
-        if (vm.count("error")) {
-          std::ofstream tc_error_file(vm["error"].as<std::string>().c_str());
-          PrintTCErrorMap(tc_errors, tc_error_file);
-        }
-
-        std::ofstream candidate_file(
-            vm["candidates"].as<std::string>().c_str());
+        std::ofstream candidate_file(vm["output"].as<std::string>().c_str());
         for (StringSet::const_iterator it = candidate_filenames.begin();
              it != candidate_filenames.end(); ++it) {
           candidate_file << *it << std::endl;
         }
+
+        // std::ofstream tc_filenames_file(
+        //     vm["output"].as<std::string>().c_str());
+        // PrintTCFilenameMap(tc_filenames, tc_filenames_file);
+
+        if (vm.count("error")) {
+          std::ofstream tc_error_file(vm["error"].as<std::string>().c_str());
+          PrintTCErrorMap(tc_filenames, tc_errors, tc_error_file);
+        }
+
       } else {
         std::cout << snake_dir << " does not exist." << std::endl;
       }
@@ -328,10 +329,22 @@ std::string GetBestFilename(const FValuesMap &m, double t, double c,
   return filename;
 }
 
-void PrintTCErrorMap(const TCErrorMap &m, std::ostream &os) {
-  for (TCErrorMap::const_iterator it = m.begin();
-       it != m.end(); ++it) {
+void PrintTCErrorMap(const TCFilenameMap &filename_map,
+                     const TCErrorMap &error_map, std::ostream &os) {
+  // for (TCErrorMap::const_iterator it = m.begin();
+  //      it != m.end(); ++it) {
+  //  bool error = !error_map.empty();
+  for (TCFilenameMap::const_iterator it = filename_map.begin();
+       it != filename_map.end(); ++it) {
+
     os << it->first.first << "\t" << it->first.second << "\t"
-       << it->second.first << "\t" << it->second.second << std::endl;
+       << it->second;
+    TCErrorMap::const_iterator eit = error_map.find(it->first);
+    if (eit != error_map.end()) {
+      os << "\t" << eit->second.first
+         << "\t" << eit->second.second;
+    }
+
+    os << std::endl;
   }
 }

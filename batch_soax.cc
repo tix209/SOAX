@@ -218,13 +218,15 @@ int main(int argc, char **argv) {
       } else if (!vm.count("ridge") && !vm.count("stretch")) {
         std::cout << "Fixed parameters." << std::endl;
         if (fs::is_regular_file(image_path)) {
-          std::cout << "Input is single image." << std::endl;
+          std::cout << "Input is a single image. Please use the GUI version."
+                    << std::endl;
         } else if (fs::is_directory(image_path)) {
           std::cout << "Input may contain multiple images." << std::endl;
 
           typedef std::vector<fs::path> Paths;
           Paths image_paths;
-          std::copy(fs::directory_iterator(image_path), fs::directory_iterator(),
+          std::copy(fs::directory_iterator(image_path),
+                    fs::directory_iterator(),
                     back_inserter(image_paths));
           std::sort(image_paths.begin(), image_paths.end());
           for (Paths::const_iterator image_it(image_paths.begin());

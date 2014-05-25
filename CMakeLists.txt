@@ -18,9 +18,11 @@ if(QT_FOUND)
 endif(QT_FOUND)
 
 ## Enable these options for Windows build
-set(Boost_USE_STATIC_LIBS        ON)
-set(Boost_USE_MULTITHREADED      ON)
-set(Boost_USE_STATIC_RUNTIME    OFF)
+if (WIN32)
+  set(Boost_USE_STATIC_LIBS        ON)
+  set(Boost_USE_MULTITHREADED      ON)
+  set(Boost_USE_STATIC_RUNTIME    OFF)
+endif()
 
 
 find_package(Boost COMPONENTS

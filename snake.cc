@@ -463,7 +463,8 @@ void Snake::UpdateTailTangent() {
 }
 
 
-/* Note that scaling the intensity is not necessary here */
+/* Note that scaling the intensity is not necessary here because they
+ * are cancelled out. */
 double Snake::ComputeLocalStretch(bool is_head, bool is_2d) {
   PointType &vertex = is_head ? vertices_.front() : vertices_.back();
   // double fg = this->ComputeVertexIntensity(vertex);

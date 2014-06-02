@@ -1660,10 +1660,12 @@ void Multisnake::GenerateSyntheticImage(unsigned foreground,
   FloatImageType::Pointer img = FloatImageType::New();
   img->SetRegions(image_->GetLargestPossibleRegion());
   img->Allocate();
-  if (sigma <= 0.0)
+  if (sigma < kEpsilon) {
+    // std::cout << "generating clean image..." << std::endl;
     img->FillBuffer(background);
-  else
+  } else {
     img->FillBuffer(0.0);
+  }
 
   // Assign centerline intensities
   if (foreground) {
@@ -1672,7 +1674,10 @@ void Multisnake::GenerateSyntheticImage(unsigned foreground,
       for (unsigned i = 0; i < (*it)->GetSize(); ++i) {
         FloatImageType::IndexType index;
         img->TransformPhysicalPointToIndex((*it)->GetPoint(i), index);
-        img->SetPixel(index, img->GetPixel(index) + foreground);
+        if (sigma < kEpsilon)
+          img->SetPixel(index, img->GetPixel(index) + foreground);
+        else
+          img->SetPixel(index, foreground);
       }
     }
 
@@ -1689,7 +1694,7 @@ void Multisnake::GenerateSyntheticImage(unsigned foreground,
       FloatImageType, FloatImageType> RescalerType;
     RescalerType::Pointer rescaler = RescalerType::New();
     rescaler->SetInput(gaussian->GetOutput());
-    if (sigma <= 0.0) {
+    if (sigma < kEpsilon) {
       rescaler->SetOutputMinimum(background);
       rescaler->SetOutputMaximum(foreground + background);
     } else {

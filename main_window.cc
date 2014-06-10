@@ -910,6 +910,8 @@ void MainWindow::DeformSnakes() {
 void MainWindow::DeformSnakesInAction() {
   bool is_2d = multisnake_->is_2d();
   viewer_->RemoveSnakes();
+  progress_bar_->setMaximum(multisnake_->GetNumberOfInitialSnakes());
+  unsigned ncompleted = 0;
   while (!multisnake_->initial_snakes().empty()) {
     Snake *s = multisnake_->PopLastInitialSnake();
     viewer_->SetupSnake(s, 0);
@@ -923,6 +925,7 @@ void MainWindow::DeformSnakesInAction() {
         viewer_->SetupSnake(s, 0);
         viewer_->ChangeSnakeColor(s, Viewer::Yellow());
         multisnake_->AddConvergedSnake(s);
+        ncompleted++;
       } else {
         multisnake_->AddInitialSnake(s);
       }
@@ -930,7 +933,9 @@ void MainWindow::DeformSnakesInAction() {
       multisnake_->AddSubsnakesToInitialSnakes(s);
       viewer_->RemoveSnake(s);
       delete s;
+      ncompleted++;
     }
+    progress_bar_->setValue(ncompleted);
     viewer_->Render();
     std::cout << "\rRemaining: " << std::setw(6)
               << multisnake_->GetNumberOfInitialSnakes() << std::flush;

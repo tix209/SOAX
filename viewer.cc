@@ -93,7 +93,7 @@ Viewer::Viewer():
   selected_snake_color_ = kCyan;
   snake_width_ = 3.0;
   comparing_snakes1_width_ = 8.0;
-  comparing_snakes2_width_ = 12.0;
+  comparing_snakes2_width_ = 14.0;
   snake_opacity_ = 1.0;
   comparing_snakes1_opacity_ = 0.5;
   comparing_snakes2_opacity_ = 0.3;

@@ -7,24 +7,24 @@ namespace soax {
 
 
 
-double Snake::intensity_scaling_ = 0.004;
+double Snake::intensity_scaling_ = 0.0;
 unsigned short Snake::foreground_ = 65535;
 unsigned short Snake::background_ = 0;
 double Snake::desired_spacing_ = 1.0;
-double Snake::minimum_length_ = 10.0;
+double Snake::minimum_length_ = 5.0;
 unsigned Snake::max_iterations_ = 10000;
-double Snake::change_threshold_ = 0.05;
+double Snake::change_threshold_ = 0.1;
 unsigned Snake::check_period_ = 100;
 unsigned Snake::iterations_per_press_ = 100;
 double Snake::external_factor_ = 1.0;
-double Snake::stretch_factor_ = 0.5;
+double Snake::stretch_factor_ = 0.2;
 int Snake::number_of_sectors_ = 8;
-int Snake::radial_near_ = 3;
-int Snake::radial_far_ = 6;
+int Snake::radial_near_ = 4;
+int Snake::radial_far_ = 8;
 unsigned Snake::delta_ = 4;
 double Snake::overlap_threshold_ = 1.0;
 double Snake::grouping_distance_threshold_ = 4.0;
-unsigned Snake::grouping_delta_ = 8.0;
+unsigned Snake::grouping_delta_ = 6.0;
 double Snake::direction_threshold_ = 2.1;
 bool Snake::damp_z_ = false;
 

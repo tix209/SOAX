@@ -46,12 +46,12 @@ int main (int argc, char **argv) {
          "Evaluation output file path")
         ;
 
-    int radial_near(4);
+    int radial_near(6);
     int radial_far(12);
     po::options_description optional("Optional options");
     optional.add_options()
         ("near,n", po::value<int>(&radial_near),
-         "Inner radius of annulus for local SNR estimation. (default: 4)")
+         "Inner radius of annulus for local SNR estimation. (default: 6)")
         ("far,f", po::value<int>(&radial_far),
          "Outer radius of annulus for local SNR estimation. (default: 12)")
         ;
@@ -86,9 +86,9 @@ int main (int argc, char **argv) {
       if (fs::exists(snakes_path)) {
         soax::Multisnake multisnake;
         multisnake.LoadImage(image_path);
-        double snr = multisnake.ComputeImageSNR2();
-        std::cout << "Image SNR: " << snr << std::endl;
-        double threshold = t * snr;
+        // double snr = multisnake.ComputeImageSNR2();
+        // std::cout << "Image SNR: " << snr << std::endl;
+        double threshold = t;
 
         std::ofstream outfile;
         outfile.open(output_path.c_str());
@@ -99,8 +99,6 @@ int main (int argc, char **argv) {
         }
         const unsigned width = 15;
         outfile << "Snakes directory\t" << snake_dir << "\n"
-                << "Otsu's image SNR\t" << snr << "\n"
-                << "Low SNR factor\t" << t << "\n"
                 << "Low SNR threshold\t" << threshold << "\n"
                 << "Penalizing factor\t" << c << "\n"
                 << "Radial near\t" << radial_near << "\n"

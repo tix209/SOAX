@@ -27,7 +27,7 @@ namespace soax {
 
 Multisnake::Multisnake() : image_(NULL), external_force_(NULL),
                            intensity_scaling_(0.0), sigma_(1.0),
-                           ridge_threshold_(0.005), foreground_(65535),
+                           ridge_threshold_(0.01), foreground_(65535),
                            background_(0), initialize_z_(false),
                            is_2d_(false) {
   interpolator_ = InterpolatorType::New();
@@ -387,8 +387,8 @@ void Multisnake::InitializeSnakes() {
   for (unsigned d = 0; d < num_directions; ++d) {
     this->LinkCandidates(candidate_image, d);
   }
-  // std::sort(initial_snakes_.begin(), initial_snakes_.end(), IsShorter);
-  std::sort(initial_snakes_.begin(), initial_snakes_.end(), IsDarker);
+  std::sort(initial_snakes_.begin(), initial_snakes_.end(), IsShorter);
+  // std::sort(initial_snakes_.begin(), initial_snakes_.end(), IsDarker);
   // this->PrintSnakes(initial_snakes_);
 }
 

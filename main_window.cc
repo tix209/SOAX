@@ -920,6 +920,7 @@ void MainWindow::DeformSnakesInAction() {
 
     if (s->viable()) {
       if (s->converged()) {
+        viewer_->SetupSnake(s, 0);
         viewer_->ChangeSnakeColor(s, Viewer::Yellow());
         multisnake_->AddConvergedSnake(s);
       } else {

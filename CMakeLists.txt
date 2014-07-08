@@ -150,7 +150,7 @@ target_link_libraries(snr
 
 target_link_libraries(batch_resample
   ${ITK_LIBRARIES}
-  # ${Boost_PROGRAM_OPTIONS_LIBRARY}
-  # ${Boost_FILESYSTEM_LIBRARY}
-  # ${Boost_SYSTEM_LIBRARY}
+  ${Boost_PROGRAM_OPTIONS_LIBRARY}
+  ${Boost_FILESYSTEM_LIBRARY}
+  ${Boost_SYSTEM_LIBRARY}
   )

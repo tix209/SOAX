@@ -140,7 +140,7 @@ int main(int argc, char **argv) {
 
               std::cout << "Segmentation completed (Evolution time: "
                         << time_elasped << "s)" << std::endl;
-              multisnake.junctions().Reset();
+              multisnake.Reset();
               stretch += stretch_range[1];
             }
             ridge_threshold += ridge_range[1];
@@ -204,7 +204,7 @@ int main(int argc, char **argv) {
 
                 std::cout << "Segmentation completed (Evolution time: "
                           << time_elasped << "s)" << std::endl;
-                multisnake.junctions().Reset();
+                multisnake.Reset();
                 stretch += stretch_range[1];
               }
               ridge_threshold += ridge_range[1];
@@ -272,7 +272,8 @@ int main(int argc, char **argv) {
 
             std::cout << "Segmentation completed (Evolution time: "
                       << time_elasped << "s)" << std::endl;
-            multisnake.junctions().Reset();
+            // multisnake.junctions().Reset();
+            multisnake.Reset();
           }
         } else {
           std::cout << image_path << " exists, but is neither a regular file nor a directory" << std::endl;

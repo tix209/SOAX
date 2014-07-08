@@ -82,6 +82,7 @@ add_executable(best_snake best_snake.cc ${common_srcs})
 add_executable(snr image_snr.cc ${common_srcs})
 add_executable(syn synthetic.cc ${common_srcs})
 add_executable(snapshots batch_snapshots.cc)
+add_executable(batch_resample batch_resample.cc)
 
 target_link_libraries(soax
   ${QT_LIBRARIES}
@@ -145,4 +146,11 @@ target_link_libraries(snr
   ${Boost_PROGRAM_OPTIONS_LIBRARY}
   ${Boost_FILESYSTEM_LIBRARY}
   ${Boost_SYSTEM_LIBRARY}
+  )
+
+target_link_libraries(batch_resample
+  ${ITK_LIBRARIES}
+  # ${Boost_PROGRAM_OPTIONS_LIBRARY}
+  # ${Boost_FILESYSTEM_LIBRARY}
+  # ${Boost_SYSTEM_LIBRARY}
   )

@@ -13,6 +13,8 @@
 #include "itkImage.h"
 #include "itkImageFileReader.h"
 #include "itkImageFileWriter.h"
+#include "itkBSplineInterpolateImageFunction.h"
+#include "itkResampleImageFilter.h"
 
 
 namespace fs = boost::filesystem;
@@ -33,12 +35,17 @@ int main (int argc, char **argv) {
     return -1;
   }
 
-  fs::path input_dir(argv[1]);
-  std::cout << input_dir << std::endl;
-  fs::path output_dir(argv[2]);
-  std::cout << output_dir << std::endl;
+  Path input_dir(argv[1]);
+  // std::cout << input_dir << std::endl;
+  Path output_dir(argv[2]);
+  // std::cout << output_dir << std::endl;
   double zspacing = atof(argv[3]);
-  std::cout << zspacing << std::endl;
+  // std::cout << zspacing << std::endl;
+
+  if (std::fabs(zspacing - 1) < 1e-6) {
+    std::cout << "Images are isotropic. Quit." << std::endl;
+    return 0;
+  }
 
   if (fs::is_directory(input_dir)) {
     ResampleImages(input_dir, output_dir, zspacing);
@@ -53,13 +60,16 @@ void ResampleImages(const Path &input_dir, const Path &output_dir,
                     double zspacing) {
   fs::directory_iterator end_it;
   for (fs::directory_iterator it(input_dir); it != end_it; ++it) {
-    std::string input_filaname = it->path().string();
-    if (EndsWith(input_filaname, std::string("tif"))) {
-      std::cout << input_filaname << std::endl;
-      std::string output_filename = input_filaname;
-      output_filename.insert(output_filename.find_last_of('.'), "-iso");
-      std::cout << output_filename << std::endl;
-      ResampleImage(input_filaname, output_filename, zspacing);
+    // Path input_filename = it->path().filename();
+    // if (EndsWith(input_filename, std::string("tif"))) {
+    if (it->path().extension().string() == std::string(".tif")) {
+      Path output_filename = output_dir;
+      output_filename += it->path().stem();
+      output_filename += "_iso.tif";
+      // std::string output_filename = output_dir.string() + input_filename;
+      // output_filename.insert(output_filename.find_last_of('.'), "-iso");
+      // std::cout << output_filename << std::endl;
+      ResampleImage(it->path().string(), output_filename.string(), zspacing);
     }
   }
 }
@@ -87,7 +97,49 @@ void ResampleImage(const std::string &input_filename,
     std::cerr << e << std::endl;
   }
 
-  ImageType::SizeType size = reader->GetOutput()->GetLargestPossibleRegion().GetSize();
-  std::cout << "Image size: " << size << std::endl;
+  typedef itk::BSplineInterpolateImageFunction<ImageType, double, double>
+      InterpolatorType;
+  InterpolatorType::Pointer interp = InterpolatorType::New();
+  interp->SetSplineOrder(3);
+  typedef itk::ResampleImageFilter<ImageType, ImageType> ResamplerType;
+  ResamplerType::Pointer resampler = ResamplerType::New();
+  resampler->SetInterpolator(interp);
+  resampler->SetOutputOrigin(reader->GetOutput()->GetOrigin());
+  resampler->SetOutputDirection(reader->GetOutput()->GetDirection());
 
+  ImageType::SpacingType input_spacing;
+  input_spacing.Fill(1.0);
+  input_spacing[2] = zspacing;
+  reader->GetOutput()->SetSpacing(input_spacing);
+
+  const ImageType::SizeType &input_size =
+      reader->GetOutput()->GetLargestPossibleRegion().GetSize();
+  ImageType::SpacingType output_spacing;
+  output_spacing.Fill(1.0);
+  ImageType::SizeType output_size;
+  const unsigned int kDimension = 3;
+  for (unsigned i = 0; i < kDimension; ++i) {
+    output_size[i] = static_cast<ImageType::SizeValueType>(
+        input_size[i] * input_spacing[i]);
+  }
+
+  resampler->SetOutputSpacing(output_spacing);
+  resampler->SetSize(output_size);
+  resampler->SetDefaultPixelValue(0.0);
+  resampler->SetInput(reader->GetOutput());
+
+  typedef itk::ImageFileWriter<ImageType> WriterType;
+  WriterType::Pointer writer = WriterType::New();
+  writer->SetFileName(output_filename);
+  writer->SetInput(resampler->GetOutput());
+
+  try {
+    writer->Update();
+  } catch( itk::ExceptionObject & exp ) {
+    std::cerr << "Exception caught when write an image!" << std::endl;
+    std::cerr << exp << std::endl;
+  }
+
+  std::cout << "Isotropic image is saved as " << output_filename
+            << "." << std::endl;
 }

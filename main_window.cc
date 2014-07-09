@@ -873,7 +873,10 @@ void MainWindow::DeformSnakes() {
   std::cout << "============================================" << std::endl;
 
   progress_bar_->setMaximum(multisnake_->GetNumberOfInitialSnakes());
-  multisnake_->DeformSnakes(progress_bar_);
+  connect(multisnake_, SIGNAL(ExtractionProgressed(int)),
+          progress_bar_, SLOT(setValue(int)));
+  // multisnake_->DeformSnakes(progress_bar_);
+  multisnake_->DeformSnakes();
   unsigned num_snakes = multisnake_->GetNumberOfConvergedSnakes();
   QString msg = "Number of converged snakes: " + QString::number(num_snakes);
   statusBar()->showMessage(msg, message_timeout_);

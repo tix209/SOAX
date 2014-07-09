@@ -1,6 +1,6 @@
 #include <fstream>
 #include <iomanip>
-#include <QProgressBar>
+// #include <QProgressBar>
 #include "multisnake.h"
 #include "itkImageFileReader.h"
 #include "itkImageFileWriter.h"
@@ -601,7 +601,8 @@ bool Multisnake::FindNextCandidate(
   return false;
 }
 
-void Multisnake::DeformSnakes(QProgressBar * progress_bar) {
+// void Multisnake::DeformSnakes(QProgressBar * progress_bar) {
+void Multisnake::DeformSnakes() {
   unsigned ncompleted = 0;
   std::cout << "Initial # snakes: " << initial_snakes_.size() << std::endl;
   this->ClearSnakeContainer(converged_snakes_);
@@ -624,9 +625,10 @@ void Multisnake::DeformSnakes(QProgressBar * progress_bar) {
     }
 
     ncompleted++;
-    if (progress_bar) {
-      progress_bar->setValue(ncompleted);
-    }
+    emit ExtractionProgressed(ncompleted);
+    // if (progress_bar) {
+    //   progress_bar->setValue(ncompleted);
+    // }
     std::cout << "\rRemaining: " << std::setw(6)
               << initial_snakes_.size() << std::flush;
   }

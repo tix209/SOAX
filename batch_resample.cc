@@ -4,24 +4,32 @@
  *
  * Usage: ./batch_resample <input_dir> <output_dir> <xy_z_ratio>
  *
+ * Copyright (C) 2014 Ting Xu, IDEA Lab, Lehigh University.
  */
 
 #include <iostream>
 #include "boost/program_options.hpp"
 #include "boost/filesystem.hpp"
+#include "itkImage.h"
+#include "itkImageFileReader.h"
+#include "itkImageFileWriter.h"
+
 
 namespace fs = boost::filesystem;
 typedef fs::path Path;
 
-void ResampleImages(const Path &input_dir, const Path &output_dir, double zspacing);
-void ResampleImage(const std::string &input_filename, const std::string &output_filename,
+void ResampleImages(const Path &input_dir, const Path &output_dir,
+                    double zspacing);
+void ResampleImage(const std::string &input_filename,
+                   const std::string &output_filename,
                    double zspacing);
 bool EndsWith(const std::string &s, const std::string &ending);
 
 
 int main (int argc, char **argv) {
   if (argc < 4) {
-    std::cerr << "Usage: ./batch_resample <input_dir> <output_dir> <xy_z_ratio>" << std::endl;
+    std::cerr << "Usage: ./batch_resample <input_dir> <output_dir>"
+        " <xy_z_ratio>" << std::endl;
     return -1;
   }
 
@@ -35,12 +43,14 @@ int main (int argc, char **argv) {
   if (fs::is_directory(input_dir)) {
     ResampleImages(input_dir, output_dir, zspacing);
   } else {
-    std::cout << "Input dir should be a directory instead of a file. Abort." << std::endl;
+    std::cout << "Input dir should be a directory instead of a file. Abort."
+              << std::endl;
   }
   return 0;
 }
 
-void ResampleImages(const Path &input_dir, const Path &output_dir, double zspacing) {
+void ResampleImages(const Path &input_dir, const Path &output_dir,
+                    double zspacing) {
   fs::directory_iterator end_it;
   for (fs::directory_iterator it(input_dir); it != end_it; ++it) {
     std::string input_filaname = it->path().string();
@@ -56,12 +66,28 @@ void ResampleImages(const Path &input_dir, const Path &output_dir, double zspaci
 
 bool EndsWith(const std::string &s, const std::string &ending) {
   if (s.length() >= ending.length()) {
-    return (0 == s.compare(s.length() - ending.length(), ending.length(), ending));
+    return (0 == s.compare(s.length() - ending.length(), ending.length(),
+                           ending));
   } else {
     return false;
   }
 }
 
-void ResampleImage(const std::string &input_filename, const std::string &output_filename,
+void ResampleImage(const std::string &input_filename,
+                   const std::string &output_filename,
                    double zspacing) {
+  typedef itk::Image<unsigned short, 3> ImageType;
+  typedef itk::ImageFileReader<ImageType> ReaderType;
+  ReaderType::Pointer reader = ReaderType::New();
+  reader->SetFileName(input_filename);
+  try {
+    reader->Update();
+  } catch(itk::ExceptionObject &e) {
+    std::cerr << "Exception caught when reading an image!" << std::endl;
+    std::cerr << e << std::endl;
+  }
+
+  ImageType::SizeType size = reader->GetOutput()->GetLargestPossibleRegion().GetSize();
+  std::cout << "Image size: " << size << std::endl;
+
 }

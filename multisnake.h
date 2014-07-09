@@ -1,6 +1,7 @@
 #ifndef SOAX_MULTISNAKE_H_
 #define SOAX_MULTISNAKE_H_
 
+#include <QObject>
 #include "global.h"
 #include "snake.h"
 #include "junctions.h"
@@ -15,7 +16,9 @@ class SolverBank;
 /*
  * Multiple open snake class.
  */
-class Multisnake {
+class Multisnake : public QObject {
+  Q_OBJECT
+
  public:
   typedef itk::Image<double, kDimension> FloatImageType;
 
@@ -116,7 +119,8 @@ class Multisnake {
     this->SaveJFilamentSnakes(converged_snakes_, filename);
   }
 
-  void DeformSnakes(QProgressBar * progress_bar = NULL);
+  // void DeformSnakes(QProgressBar * progress_bar = NULL);
+  void DeformSnakes();
   void CutSnakesAtTJunctions();
   void GroupSnakes();
 
@@ -220,6 +224,9 @@ class Multisnake {
                               const std::string &filename) const;
   void GenerateSyntheticRealImage(double ratio, double sigma,
                                   const std::string &filename) const;
+
+ signals:
+  void ExtractionProgressed(int value);
 
  private:
   typedef itk::Vector<bool, kDimension> BoolVectorType;

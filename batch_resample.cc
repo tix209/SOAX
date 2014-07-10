@@ -31,7 +31,7 @@ bool EndsWith(const std::string &s, const std::string &ending);
 int main (int argc, char **argv) {
   if (argc < 4) {
     std::cerr << "Usage: ./batch_resample <input_dir> <output_dir>"
-        " <xy_z_ratio>" << std::endl;
+        " <z_spacing>" << std::endl;
     return -1;
   }
 

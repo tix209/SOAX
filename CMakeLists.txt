@@ -75,14 +75,14 @@ qt4_wrap_cpp(mocs ${moc_gui_srcs})
 qt4_add_resources(rccs ${rcc_srcs})
 
 add_executable(soax soax.cc ${common_srcs} ${gui_srcs} ${mocs}
-  ${rccs} ${multisnake_moc} multisnake.cc)
+  ${rccs} ${multisnake_moc} multisnake.cc multisnake.h)
 
 add_executable(batch_soax batch_soax.cc ${common_srcs}
-  ${multisnake_moc} multisnake.cc)
+  ${multisnake_moc} multisnake.cc multisnake.h)
 # add_executable(eval_gt evaluate_gt.cc ${common_srcs})
 # add_executable(eval_f evaluate_f.cc ${common_srcs})
 add_executable(best_snake best_snake.cc ${common_srcs}
-  ${multisnake_moc} multisnake.cc)
+  ${multisnake_moc} multisnake.cc multisnake.h)
 
 # add_executable(snr image_snr.cc ${common_srcs})
 # add_executable(syn synthetic.cc ${common_srcs})

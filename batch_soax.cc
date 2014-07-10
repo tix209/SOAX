@@ -54,7 +54,7 @@ int main(int argc, char **argv) {
 
     if (vm.count("version")) {
       const std::string version_msg(
-          "SOAX Batch 3.5.3\n"
+          "SOAX Batch 3.5.4\n"
           "Copyright (C) 2014 Ting Xu, IDEA Lab, Lehigh University.");
       std::cout << version_msg << std::endl;
       return EXIT_SUCCESS;

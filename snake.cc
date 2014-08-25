@@ -548,7 +548,10 @@ double Snake::ComputeBackgroundMeanIntensity(bool is_head) const {
     }
   }
 
-  if (bgs.empty())  {
+  int number_of_samples = number_of_sectors_ * (radial_far_ - radial_near_);
+  unsigned threshold = static_cast<unsigned>(number_of_samples * 0.5);
+  // std::cout << threshold << std::endl;
+  if (bgs.size() < threshold)  {
     return -1.0; // return a negative value intentionally
   } else {
     return Mean(bgs);

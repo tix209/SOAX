@@ -788,21 +788,23 @@ void Snake::PrintSelf() const {
   std::cout << "length: " << length_ << std::endl;
   // std::cout << "size: " << this->GetSize() << std::endl;
   std::cout << "spacing: " << spacing_ << std::endl;
-  std::cout << "intensity: " << this->ComputeIntensity() << std::endl;
-  std::cout << "local snr: " << this->ComputeSNR() << std::endl;
+
+  // std::cout << "intensity: " << this->ComputeIntensity() << std::endl;
+  // std::cout << "local snr: " << this->ComputeSNR() << std::endl;
+
   // std::cout << "fixed head: " << fixed_head_ << std::endl;
   // std::cout << "fixed tail: " << fixed_tail_ << std::endl;
 
-  // const unsigned column_width = 15;
-  // std::cout << "#" << std::endl;
-  // for (unsigned j = 0; j != vertices_.size(); ++j) {
-  //   std::cout << j << "\t";
-  //   std::cout << std::setw(column_width) << this->GetX(j)
-  //             << std::setw(column_width) << this->GetY(j)
-  //             << std::setw(column_width) << this->GetZ(j)
-  //             << std::setw(column_width) << interpolator_->Evaluate(
-  //                 this->GetPoint(j)) << std::endl;
-  // }
+  const unsigned column_width = 15;
+  std::cout << "#" << std::endl;
+  for (unsigned j = 0; j != vertices_.size(); ++j) {
+    std::cout << j << "\t";
+    std::cout << std::setw(column_width) << this->GetX(j)
+              << std::setw(column_width) << this->GetY(j)
+              << std::setw(column_width) << this->GetZ(j)
+        // << std::setw(column_width) << interpolator_->Evaluate(this->GetPoint(j))
+              << std::endl;
+  }
 }
 
 void Snake::PrintVectorContainer(const VectorContainer &vc) {

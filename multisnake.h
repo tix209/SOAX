@@ -225,6 +225,9 @@ class Multisnake : public QObject {
   void GenerateSyntheticRealImage(double ratio, double sigma,
                                   const std::string &filename) const;
 
+  void GenerateSyntheticTamara(const char *filename) const;
+  void LoadCurves(const char *filename);
+
  signals:
   void ExtractionProgressed(int value);
 

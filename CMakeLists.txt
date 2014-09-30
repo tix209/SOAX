@@ -85,7 +85,8 @@ add_executable(best_snake best_snake.cc ${common_srcs}
   ${multisnake_moc} multisnake.cc multisnake.h)
 
 # add_executable(snr image_snr.cc ${common_srcs})
-# add_executable(syn synthetic.cc ${common_srcs})
+add_executable(syn2 synthetic_tamara.cc ${common_srcs}
+  ${multisnake_moc} multisnake.cc multisnake.h)
 # add_executable(snapshots batch_snapshots.cc)
 add_executable(batch_resample batch_resample.cc)
 
@@ -133,27 +134,7 @@ target_link_libraries(best_snake
 #   ${Boost_SYSTEM_LIBRARY}
 #   )
 
-# target_link_libraries(syn
-#   ${ITK_LIBRARIES}
-#   # ${Boost_PROGRAM_OPTIONS_LIBRARY}
-#   # ${Boost_FILESYSTEM_LIBRARY}
-#   # ${Boost_SYSTEM_LIBRARY}
-#   )
-
-# target_link_libraries(snapshots
-#   ${ITK_LIBRARIES}
-#   ${VTK_LIBRARIES}
-#   ${Boost_PROGRAM_OPTIONS_LIBRARY}
-#   ${Boost_FILESYSTEM_LIBRARY}
-#   ${Boost_SYSTEM_LIBRARY}
-#   )
-
-# target_link_libraries(snr
-#   ${ITK_LIBRARIES}
-#   ${Boost_PROGRAM_OPTIONS_LIBRARY}
-#   ${Boost_FILESYSTEM_LIBRARY}
-#   ${Boost_SYSTEM_LIBRARY}
-#   )
+target_link_libraries(syn2 ${ITK_LIBRARIES})
 
 target_link_libraries(batch_resample
   ${ITK_LIBRARIES}

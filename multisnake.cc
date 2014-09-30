@@ -789,6 +789,50 @@ unsigned Multisnake::GetNumberOfSnakesCloseToPoint(const PointType &p) {
   return num;
 }
 
+void Multisnake::LoadCurves(const char *filename) {
+  this->ClearSnakeContainer(comparing_snakes1_);
+  std::ifstream infile(filename);
+  if (!infile.is_open()) {
+    std::cerr << "LoadCurves: couldn't open file: " << filename << std::endl;
+    return;
+  }
+  std::string line;
+  unsigned new_curve_id = 0;
+  unsigned old_curve_id = 0;
+  PointContainer points;
+  unsigned point_id = 0;
+
+  while (std::getline(infile, line)) {
+    std::istringstream buffer(line);
+    double x, y, z;
+    buffer >> new_curve_id >> point_id >> x >> y >> z;
+    if (new_curve_id != old_curve_id) {
+      if (points.size() > 1) {
+        Snake *s = new Snake(points, true, false, image_, external_force_,
+                             interpolator_, vector_interpolator_, transform_);
+        comparing_snakes1_.push_back(s);
+        s->Resample();
+        points.clear();
+      }
+      old_curve_id = new_curve_id;
+    }
+    PointType p;
+    p[0] = x;
+    p[1] = y;
+    p[2] = z;
+    points.push_back(p);
+  }
+  infile.close();
+  if (points.size() > 1) {
+    Snake *s = new Snake(points, true, false, image_, external_force_,
+                         interpolator_, vector_interpolator_, transform_);
+    comparing_snakes1_.push_back(s);
+    s->Resample();
+    points.clear();
+  }
+}
+
+
 void Multisnake::LoadSnakes(const std::string &filename,
                             SnakeContainer &snakes) {
   this->ClearSnakeContainer(snakes);
@@ -1651,6 +1695,8 @@ void Multisnake::ComputeResultSnakesVertexErrorHausdorffDistance(
   hausdorff = max_error1 > max_error2 ? max_error1 : max_error2;
   // std::cout << "hausdorff: " << hausdorff << std::endl;
 }
+
+void Multisnake::GenerateSyntheticTamara(const char *filename) const {}
 
 void Multisnake::GenerateSyntheticImage(unsigned foreground,
                                         unsigned background,

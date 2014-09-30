@@ -30,7 +30,7 @@
 #include "vtkGL2PSExporter.h"
 #include "vtkEventQtSlotConnect.h"
 #include "vtkPointPicker.h"
-
+#include "vtkSmartVolumeMapper.h"
 #include "itkStatisticsImageFilter.h"
 #include "snake.h"
 
@@ -97,7 +97,7 @@ Viewer::Viewer():
   snake_opacity_ = 1.0;
   comparing_snakes1_opacity_ = 0.5;
   comparing_snakes2_opacity_ = 0.3;
-  junction_radius_ = 2.0;
+  junction_radius_ = 1.0;
   junction_color_ = kGreen;
   selected_junction_color_ = kBlue;
   sphere_color_ = kRed;
@@ -234,12 +234,18 @@ void Viewer::SetupMIPRendering(vtkImageData *data) {
   mip_volume_property->SetInterpolationTypeToLinear();
   volume_->SetProperty(mip_volume_property);
 
-  vtkSmartPointer<vtkVolumeRayCastMapper> mapper =
-      vtkSmartPointer<vtkVolumeRayCastMapper>::New();
+  // vtkSmartPointer<vtkVolumeRayCastMapper> mapper =
+  //     vtkSmartPointer<vtkVolumeRayCastMapper>::New();
+  vtkSmartPointer<vtkSmartVolumeMapper> mapper =
+      vtkSmartPointer<vtkSmartVolumeMapper>::New();
+  // mapper->SetBlendModeToComposite();
+  // mapper->SetRequestedRenderModeToRayCast();
+  // mapper->SetRequestedRenderMode(vtkSmartVolumeMapper::GPURenderMode);
+  mapper->SetBlendModeToMaximumIntensity();
   mapper->SetInputData(data);
-  vtkSmartPointer<vtkVolumeRayCastMIPFunction> mip_function =
-      vtkSmartPointer<vtkVolumeRayCastMIPFunction>::New();
-  mapper->SetVolumeRayCastFunction(mip_function);
+  // vtkSmartPointer<vtkVolumeRayCastMIPFunction> mip_function =
+  //     vtkSmartPointer<vtkVolumeRayCastMIPFunction>::New();
+  // mapper->SetVolumeRayCastFunction(mip_function);
   volume_->SetMapper(mapper);
 }
 

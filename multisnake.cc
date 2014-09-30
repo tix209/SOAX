@@ -789,7 +789,7 @@ unsigned Multisnake::GetNumberOfSnakesCloseToPoint(const PointType &p) {
   return num;
 }
 
-void Multisnake::LoadCurves(const char *filename) {
+void Multisnake::LoadCurves(const char *filename, double *offset) {
   this->ClearSnakeContainer(comparing_snakes1_);
   std::ifstream infile(filename);
   if (!infile.is_open()) {
@@ -817,9 +817,9 @@ void Multisnake::LoadCurves(const char *filename) {
       old_curve_id = new_curve_id;
     }
     PointType p;
-    p[0] = x;
-    p[1] = y;
-    p[2] = z;
+    p[0] = x + offset[0];
+    p[1] = y + offset[1];
+    p[2] = z + offset[2];
     points.push_back(p);
   }
   infile.close();
@@ -1696,7 +1696,74 @@ void Multisnake::ComputeResultSnakesVertexErrorHausdorffDistance(
   // std::cout << "hausdorff: " << hausdorff << std::endl;
 }
 
-void Multisnake::GenerateSyntheticTamara(const char *filename) const {}
+void Multisnake::GenerateSyntheticTamara(double foreground, double background,
+                                         const char *filename) const {
+  if (comparing_snakes1_.empty()) return;
+  FloatImageType::Pointer img = FloatImageType::New();
+  FloatImageType::IndexType start;
+  start.Fill(0);
+  FloatImageType::SizeType size;
+  size[0] = 80;
+  size[1] = 150;
+  size[2] = 80;
+  FloatImageType::RegionType region;
+  region.SetSize(size);
+  region.SetIndex(start);
+  img->SetRegions(region);
+  img->Allocate();
+  img->FillBuffer(0.0);
+
+  for (SnakeConstIterator it = comparing_snakes1_.begin();
+       it != comparing_snakes1_.end(); ++it) {
+    for (unsigned i = 0; i < (*it)->GetSize(); ++i) {
+      FloatImageType::IndexType index;
+      img->TransformPhysicalPointToIndex((*it)->GetPoint(i), index);
+      img->SetPixel(index, foreground);
+    }
+  }
+
+  double variance[3] = {3.0, 3.0, 12.0};
+  typedef itk::DiscreteGaussianImageFilter<FloatImageType,
+                                           FloatImageType> GaussianFilterType;
+  GaussianFilterType::Pointer gaussian = GaussianFilterType::New();
+  gaussian->SetInput(img);
+  gaussian->SetVariance(variance);
+
+  // rescale the intensity back to foreground
+  typedef itk::RescaleIntensityImageFilter<FloatImageType, FloatImageType> RescalerType;
+  RescalerType::Pointer rescaler = RescalerType::New();
+  rescaler->SetInput(gaussian->GetOutput());
+  rescaler->SetOutputMinimum(0.0);
+  rescaler->SetOutputMaximum(foreground);
+  rescaler->Update();
+  img = rescaler->GetOutput();
+
+  double sigma = 1.0;
+  typedef itk::ImageRegionIterator<FloatImageType> IteratorType;
+  IteratorType iter(img, img->GetLargestPossibleRegion());
+
+  typedef itk::Statistics::NormalVariateGenerator GeneratorType;
+  GeneratorType::Pointer generator = GeneratorType::New();
+  generator->Initialize(2003);
+
+  for (iter.GoToBegin(); !iter.IsAtEnd(); ++iter) {
+    iter.Value() += background + sigma * generator->GetVariate();
+  }
+
+  typedef itk::CastImageFilter<FloatImageType, ImageType> CasterType;
+  CasterType::Pointer caster = CasterType::New();
+  caster->SetInput(img);
+
+  typedef itk::ImageFileWriter<ImageType> WriterType;
+  WriterType::Pointer writer = WriterType::New();
+  writer->SetFileName(filename);
+  writer->SetInput(caster->GetOutput());
+  try {
+    writer->Update();
+  } catch(itk::ExceptionObject &e) {
+    std::cerr << "Exception caught!\n" << e << std::endl;
+  }
+}
 
 void Multisnake::GenerateSyntheticImage(unsigned foreground,
                                         unsigned background,

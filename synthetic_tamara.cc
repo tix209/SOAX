@@ -1,5 +1,5 @@
 /** For Tamara synthetic image generation. PSF = (1, 1, 2). Gaussian noise sigma = 1.0.
- *  The image size is 150x150x150, and the offset for the coordinates is +60.0.
+ *  The image size is 80x150x80.
  */
 
 #include <iostream>
@@ -12,9 +12,12 @@ int main(int argc, char **argv) {
   }
 
   soax::Multisnake ms;
-  ms.LoadCurves(argv[1]);
+  double coordinates_offset[3] = {40, 70, 40};
+  ms.LoadCurves(argv[1], coordinates_offset);
   std::cout << ms.GetNumberOfComparingSnakes1() << " curves loaded." << std::endl;
-  ms.PrintSnakes(ms.comparing_snakes1());
-  ms.GenerateSyntheticTamara(argv[2]);
+  // ms.PrintSnakes(ms.comparing_snakes1());
+  double foreground = 40;
+  double background = 230;
+  ms.GenerateSyntheticTamara(foreground, background, argv[2]);
   return 0;
 }

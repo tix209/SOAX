@@ -34,6 +34,8 @@ class Viewer : public QObject {
 
   void SetupImage(ImageType::Pointer image);
 
+  void SetupImageSequence(const std::vector<ImageType::Pointer> &images);
+
   double window() const {return window_;}
   void set_window(double window) {window_ = window;}
 
@@ -120,6 +122,7 @@ class Viewer : public QObject {
   void ToggleTrimBody(bool state);
   void ToggleDeleteJunction(bool state);
 
+  void UpdateFrame(int index);
  private slots:
   void SetupClippedSnakes(vtkObject *obj);
   void SelectSnakeForView();
@@ -145,12 +148,15 @@ class Viewer : public QObject {
 
   void SetupSlicePlanes(vtkImageData *data);
   void SetupMIPRendering(vtkImageData *data);
+  void SetupSingleImage(ImageType::Pointer image);
+  void SetupVolume(vtkImageData *data);
   void SetupOrientationMarker();
   void SetupUpperLeftCornerText(unsigned min_intensity,
                                 unsigned max_intensity);
   void SetupBoundingBox();
   void SetupCubeAxes(vtkImageData *image);
 
+  void SetupDispalyRange(ImageType::Pointer image);
   void UpdateJunctionRadius(ImageType::Pointer image);
 
   vtkActor * ActSnake(Snake *snake);
@@ -181,6 +187,7 @@ class Viewer : public QObject {
   vtkSmartPointer<vtkCamera> camera_;
   vtkImagePlaneWidget *slice_planes_[kDimension];
   vtkSmartPointer<vtkVolume> volume_;
+  std::vector<vtkSmartPointer<vtkVolume> > volume_sequence_;
   vtkSmartPointer<vtkOrientationMarkerWidget> orientation_marker_;
   vtkSmartPointer<vtkCornerAnnotation> corner_text_;
   vtkSmartPointer<vtkCubeAxesActor> cube_axes_;
@@ -196,6 +203,7 @@ class Viewer : public QObject {
   double mip_max_intensity_;
   double clip_span_;
   unsigned color_segment_step_;
+  int current_frame_;
 
   ActorSnakeMap actor_snakes_;
   SnakeActorMap snake_actors_;

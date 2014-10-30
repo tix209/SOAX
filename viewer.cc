@@ -101,6 +101,8 @@ Viewer::Viewer():
   junction_color_ = kGreen;
   selected_junction_color_ = kBlue;
   sphere_color_ = kRed;
+
+  current_frame_ = 0;
 }
 
 Viewer::~Viewer() {
@@ -169,6 +171,84 @@ void Viewer::SetupImage(ImageType::Pointer image) {
   this->SetupCubeAxes(connector->GetOutput());
 
   this->UpdateJunctionRadius(image);
+}
+
+void Viewer::SetupImageSequence(const std::vector<ImageType::Pointer> &images) {
+  this->SetupDispalyRange(images[images.size()/2]); // use the middle
+                                                    // frame
+  volume_sequence_.reserve(images.size());
+  for (int i = 0; i < images.size(); i++) {
+    this->SetupSingleImage(images[i]);
+  }
+  std::cout << volume_sequence_.size() << std::endl;
+  // this->SetupOrientationMarker();
+  // this->SetupBoundingBox();
+  // this->UpdateJunctionRadius(images[images.size()/2]);
+}
+
+void Viewer::SetupDispalyRange(ImageType::Pointer image) {
+  typedef itk::StatisticsImageFilter<ImageType> FilterType;
+  FilterType::Pointer filter = FilterType::New();
+  filter->SetInput(image);
+  filter->Update();
+  double min_intensity = filter->GetMinimum();
+  double max_intensity = filter->GetMaximum();
+  window_ = max_intensity - min_intensity;
+  level_ = min_intensity + window_ / 2;
+  mip_min_intensity_ = min_intensity +
+      0.05 * (max_intensity - min_intensity);
+  mip_max_intensity_ = max_intensity;
+  this->SetupUpperLeftCornerText(min_intensity, max_intensity);
+}
+
+void Viewer::SetupSingleImage(ImageType::Pointer image) {
+  typedef itk::ImageToVTKImageFilter<ImageType>  ConnectorType;
+  ConnectorType::Pointer connector = ConnectorType::New();
+  connector->SetInput(image);
+  connector->Update();
+  // this->SetupSlicePlanes(connector->GetOutput());
+  this->SetupVolume(connector->GetOutput());
+  // this->SetupCubeAxes(connector->GetOutput());
+}
+
+void Viewer::SetupVolume(vtkImageData *data) {
+  vtkSmartPointer<vtkPiecewiseFunction> opacity_function =
+      vtkSmartPointer<vtkPiecewiseFunction>::New();
+
+  opacity_function->AddPoint(mip_min_intensity_, 0.0);
+  opacity_function->AddPoint(mip_max_intensity_, 1.0);
+
+  vtkSmartPointer<vtkColorTransferFunction> color_function =
+      vtkSmartPointer<vtkColorTransferFunction>::New();
+  color_function->SetColorSpaceToRGB();
+  // color is all white
+  color_function->AddRGBPoint(0, 1, 1, 1);
+  color_function->AddRGBPoint(255, 1, 1, 1);
+
+  vtkSmartPointer<vtkVolumeProperty> mip_volume_property =
+      vtkSmartPointer<vtkVolumeProperty>::New();
+  mip_volume_property->SetScalarOpacity(opacity_function);
+  mip_volume_property->SetColor(color_function);
+  mip_volume_property->SetInterpolationTypeToLinear();
+
+  vtkSmartPointer<vtkVolume> volume = vtkSmartPointer<vtkVolume>::New();
+  volume->SetProperty(mip_volume_property);
+
+  vtkSmartPointer<vtkSmartVolumeMapper> mapper =
+      vtkSmartPointer<vtkSmartVolumeMapper>::New();
+  mapper->SetBlendModeToMaximumIntensity();
+  mapper->SetInputData(data);
+  volume->SetMapper(mapper);
+  volume_sequence_.push_back(volume);
+}
+
+void Viewer::UpdateFrame(int index) {
+  if (index == current_frame_) return;
+  std::cout << "Displaying frame #" << index << std::endl;
+  renderer_->RemoveViewProp(volume_sequence_[current_frame_]);
+  renderer_->AddViewProp(volume_sequence_[index]);
+  current_frame_ = index;
+  this->Render();
 }
 
 void Viewer::UpdateJunctionRadius(ImageType::Pointer image) {
@@ -251,10 +331,18 @@ void Viewer::SetupMIPRendering(vtkImageData *data) {
 
 void Viewer::ToggleMIPRendering(bool state) {
   if (state) {
-    renderer_->AddViewProp(volume_);
+    if (volume_sequence_.empty()) {
+      renderer_->AddViewProp(volume_);
+    } else {
+      renderer_->AddViewProp(volume_sequence_[current_frame_]);
+    }
     renderer_->ResetCamera();
   } else {
-    renderer_->RemoveViewProp(volume_);
+    if (volume_sequence_.empty()) {
+      renderer_->RemoveViewProp(volume_);
+    } else {
+      renderer_->RemoveViewProp(volume_sequence_[current_frame_]);
+    }
   }
   this->Render();
 }

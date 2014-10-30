@@ -6,7 +6,7 @@
 
 class QProgressBar;
 class QActionGroup;
-
+class QScrollBar;
 
 namespace soax {
 
@@ -31,6 +31,7 @@ class MainWindow : public QMainWindow {
 
  private slots:
   void OpenImage();
+  void OpenImageSequence();
   void SaveAsIsotropicImage();
   void LoadParameters();
   void SaveParameters();
@@ -92,6 +93,7 @@ class MainWindow : public QMainWindow {
 
   // Actions in File menu
   QAction *open_image_;
+  QAction *open_image_sequence_;
   QAction *save_as_isotropic_image_;
   QAction *load_parameters_;
   QAction *save_parameters_;
@@ -170,6 +172,7 @@ class MainWindow : public QMainWindow {
 
   QToolBar *toolbar_;
   QProgressBar *progress_bar_;
+  QScrollBar *scroll_bar_;
   int message_timeout_; // in milliseconds
 
   // Complete image file path and name

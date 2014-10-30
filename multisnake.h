@@ -32,6 +32,10 @@ class Multisnake : public QObject {
    */
   void LoadImage(const std::string &filename);
 
+  /** Load a single file of image sequence.
+   */
+  void LoadImageSequence(const std::string &filename, int nslices);
+
   std::string GetImageName(bool suffix = true) const;
 
   PointType GetImageCenter() const;
@@ -42,6 +46,9 @@ class Multisnake : public QObject {
   void SaveAsIsotropicImage(const std::string &filename, double z_spacing);
 
   ImageType::Pointer image() const {return image_;}
+  const std::vector<ImageType::Pointer> &image_sequence() const {
+    return image_sequence_;
+  }
   VectorImageType::Pointer external_force() const {return external_force_;}
 
   void LoadParameters(const std::string &filename);
@@ -50,6 +57,10 @@ class Multisnake : public QObject {
   void WriteParameters(std::ostream &os) const;
 
   double intensity_scaling() const  {return intensity_scaling_;}
+
+  /** Set the INTENSITY_SCALING_ to SCALE. SCALE = 0 means
+   * automatically scale the maximum intensity to 1.0.
+   */
   void set_intensity_scaling(double scale);
 
   double sigma() const {return sigma_;}
@@ -236,6 +247,9 @@ class Multisnake : public QObject {
   typedef itk::Vector<bool, kDimension> BoolVectorType;
   typedef itk::Image<BoolVectorType, kDimension> BoolVectorImageType;
 
+  ImageType::Pointer InterpolateImage(ImageType::Pointer img,
+                                      double z_spacing);
+
   /*
    * Initialize a new bool vector image used for snake initialization.
    */
@@ -354,6 +368,7 @@ class Multisnake : public QObject {
 
   std::string image_filename_;
   ImageType::Pointer image_;
+  std::vector<ImageType::Pointer> image_sequence_;
   VectorImageType::Pointer external_force_;
 
   InterpolatorType::Pointer interpolator_;

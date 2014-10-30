@@ -1,6 +1,5 @@
 #include <fstream>
 #include <iomanip>
-// #include <QProgressBar>
 #include "multisnake.h"
 #include "itkImageFileReader.h"
 #include "itkImageFileWriter.h"
@@ -20,6 +19,8 @@
 #include "itkNormalVariateGenerator.h"
 #include "itkMinimumMaximumImageCalculator.h"
 #include "itkInvertIntensityImageFilter.h"
+#include "itkExtractImageFilter.h"
+#include "itkRegionOfInterestImageFilter.h"
 #include "solver_bank.h"
 #include "utility.h"
 
@@ -41,6 +42,7 @@ Multisnake::~Multisnake() {
   this->ClearSnakeContainer(converged_snakes_);
   this->ClearSnakeContainer(comparing_snakes1_);
   this->ClearSnakeContainer(comparing_snakes2_);
+  image_sequence_.clear();
   delete solver_bank_;
 }
 
@@ -103,6 +105,55 @@ void Multisnake::LoadImage(const std::string &filename) {
   this->set_intensity_scaling(intensity_scaling_);
 }
 
+void Multisnake::LoadImageSequence(const std::string &filename, int nslices) {
+  // read the entire image
+  typedef itk::ImageFileReader<ImageType> ReaderType;
+  // typedef itk::ExtractImageFilter<ImageType, ImageType>
+  //     ExtractorType;
+  typedef itk::RegionOfInterestImageFilter<ImageType, ImageType>
+  ExtractorType;
+  ReaderType::Pointer reader = ReaderType::New();
+
+  reader->SetFileName(filename);
+  reader->Update();
+  ImageType::SizeType input_size =
+      reader->GetOutput()->GetLargestPossibleRegion().GetSize();
+  ImageType::SizeType frame_size;
+  frame_size[0] = input_size[0];
+  frame_size[1] = input_size[1];
+  frame_size[2] = nslices;
+  // divide into frames and put the interpolated image into container
+  ImageType::IndexType frame_index =
+      reader->GetOutput()->GetLargestPossibleRegion().GetIndex();
+
+
+  ImageType::PointType origin;
+  origin.Fill(0.0);
+  for (int i = 0; i < input_size[2]; i += nslices) {
+    frame_index[2] = i;
+    ImageType::RegionType frame_region;
+    frame_region.SetSize(frame_size);
+    frame_region.SetIndex(frame_index);
+    ExtractorType::Pointer extractor = ExtractorType::New();
+    // extractor->SetDirectionCollapseToSubmatrix();
+    extractor->SetInput(reader->GetOutput());
+    // extractor->SetExtractionRegion(frame_region);
+    extractor->SetRegionOfInterest(frame_region);
+    extractor->Update();
+    extractor->GetOutput()->SetOrigin(origin);
+    image_sequence_.push_back(extractor->GetOutput());
+  }
+
+  for (int i = 0; i < image_sequence_.size(); i++){
+    std::cout << image_sequence_[i]->GetOrigin() << std::endl;
+    std::cout << image_sequence_[i]->GetLargestPossibleRegion().GetIndex()
+              << std::endl << std::endl;
+  }
+
+  // for each frame, interpolate the image to be isotropic
+  image_filename_ = filename;
+}
+
 std::string Multisnake::GetImageName(bool suffix) const {
   unsigned last_slash_pos = image_filename_.find_last_of("/\\");
   if (!suffix) {
@@ -124,6 +175,43 @@ PointType Multisnake::GetImageCenter() const {
   }
   return center;
 }
+
+ImageType::Pointer Multisnake::InterpolateImage(ImageType::Pointer img,
+                                                double z_spacing) {
+  typedef itk::BSplineInterpolateImageFunction<ImageType, double, double>
+      InterpolatorType;
+  InterpolatorType::Pointer interp = InterpolatorType::New();
+  interp->SetSplineOrder(3);
+  typedef itk::ResampleImageFilter<ImageType, ImageType> ResamplerType;
+  ResamplerType::Pointer resampler = ResamplerType::New();
+  resampler->SetInterpolator(interp);
+  resampler->SetOutputOrigin(img->GetOrigin());
+  resampler->SetOutputDirection(img->GetDirection());
+
+  // const ImageType::SpacingType &input_spacing = img->GetSpacing();
+  ImageType::SpacingType input_spacing;
+  input_spacing.Fill(1.0);
+  input_spacing[2] = z_spacing;
+  img->SetSpacing(input_spacing);
+
+  const ImageType::SizeType &input_size =
+      img->GetLargestPossibleRegion().GetSize();
+  ImageType::SpacingType output_spacing;
+  output_spacing.Fill(1.0);
+  ImageType::SizeType output_size;
+  for (unsigned i = 0; i < kDimension; ++i) {
+    output_size[i] = static_cast<ImageType::SizeValueType>(
+        input_size[i] * input_spacing[i]);
+  }
+
+  resampler->SetOutputSpacing(output_spacing);
+  resampler->SetSize(output_size);
+  resampler->SetDefaultPixelValue(0.0);
+  resampler->SetInput(img);
+  resampler->Update();
+  return resampler->GetOutput();
+}
+
 
 void Multisnake::SaveAsIsotropicImage(const std::string &filename,
                                       double z_spacing) {

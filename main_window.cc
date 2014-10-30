@@ -17,9 +17,12 @@ MainWindow::MainWindow() : message_timeout_(0) {
   parameters_dialog_ = new ParametersDialog(this);
   view_options_dialog_ = new ViewOptionsDialog(this);
   analysis_options_dialog_ = new AnalysisOptionsDialog(this);
+  scroll_bar_ = new QScrollBar(Qt::Horizontal, this);
+  scroll_bar_->setFocusPolicy(Qt::StrongFocus);
 
-  QHBoxLayout* layout = new QHBoxLayout;
+  QVBoxLayout* layout = new QVBoxLayout;
   layout->addWidget(viewer_->qvtk());
+  layout->addWidget(scroll_bar_);
   central_widget_->setLayout(layout);
   setCentralWidget(central_widget_);
   setWindowIcon(QIcon(":/icon/letter-x.png"));
@@ -54,6 +57,10 @@ void MainWindow::CreateFileMenuActions() {
   open_image_->setIcon(QIcon(":/icon/Open.png"));
   connect(open_image_, SIGNAL(triggered()),
           this, SLOT(OpenImage()));
+
+  open_image_sequence_ = new QAction(tr("Open Image Sequence"), this);
+  connect(open_image_sequence_, SIGNAL(triggered()),
+          this, SLOT(OpenImageSequence()));
 
   save_as_isotropic_image_ = new QAction(tr("Save as Isotropic Image"),
                                          this);
@@ -323,6 +330,7 @@ void MainWindow::CreateHelpMenuActions() {
 void MainWindow::CreateMenus() {
   file_ = menuBar()->addMenu(tr("&File"));
   file_->addAction(open_image_);
+  file_->addAction(open_image_sequence_);
   file_->addAction(save_as_isotropic_image_);
   file_->addAction(load_parameters_);
   file_->addAction(save_parameters_);
@@ -545,6 +553,63 @@ void MainWindow::OpenImage() {
   save_snapshot_->setEnabled(true);
 }
 
+void MainWindow::OpenImageSequence() {
+  QString dir = this->GetLastDirectory(image_filename_);
+  QString filename = QFileDialog::getOpenFileName(
+      this, tr("Open Image Sequence"), dir,
+      tr("Image Files (*.tif *.tiff *.mhd *.mha)"));
+  if (filename.isEmpty()) return;
+
+  // Get number of slices per frame (1: 2D sequence; >1: 3D sequence)
+  bool ok;
+  double nslices = QInputDialog::getInt(
+      this, tr("Set Slices"), tr("# slices per frame"),
+      1, 1, std::numeric_limits<int>::max(), 1, &ok);
+  if (!ok) return;
+
+  image_filename_ = filename.toStdString();
+  this->setWindowTitle(filename.prepend("SOAX - "));
+
+  multisnake_->LoadImageSequence(image_filename_, nslices);
+  scroll_bar_->setMinimum(0);
+  scroll_bar_->setMaximum(multisnake_->image_sequence().size()-1);
+  connect(scroll_bar_, SIGNAL(valueChanged(int)), viewer_, SLOT(UpdateFrame(int)));
+  viewer_->SetupImageSequence(multisnake_->image_sequence());
+  // viewer_->UpdateFrame(0);
+  // toggle_planes_->setChecked(true);
+  toggle_mip_->setChecked(true);
+  // toggle_orientation_marker_->setChecked(true);
+  // toggle_corner_text_->setChecked(true);
+  // toggle_bounding_box_->setChecked(false);
+  // toggle_cube_axes_->setChecked(false);
+  // statusBar()->showMessage(tr("Image Sequence loaded."), message_timeout_);
+
+  // view_options_dialog_->SetWindow(viewer_->window());
+  // view_options_dialog_->SetLevel(viewer_->level());
+  // view_options_dialog_->SetMinIntensity(viewer_->mip_min_intensity());
+  // view_options_dialog_->SetMaxIntensity(viewer_->mip_max_intensity());
+  // view_options_dialog_->SetClipSpan(viewer_->clip_span());
+  // view_options_dialog_->SetColorSegmentStep(viewer_->color_segment_step());
+  // open_image_->setEnabled(false);
+  // save_as_isotropic_image_->setEnabled(false);
+  // load_snakes_->setEnabled(true);
+  // load_jfilament_snakes_->setEnabled(true);
+  // compare_snakes_->setEnabled(true);
+  // close_session_->setEnabled(true);
+  // toggle_planes_->setEnabled(true);
+  // toggle_mip_->setEnabled(true);
+  // toggle_orientation_marker_->setEnabled(true);
+  // toggle_corner_text_->setEnabled(true);
+  // toggle_bounding_box_->setEnabled(true);
+  // toggle_cube_axes_->setEnabled(true);
+  // show_view_options_->setEnabled(true);
+  // initialize_snakes_->setEnabled(true);
+  // show_parameters_->setEnabled(true);
+  // load_viewpoint_->setEnabled(true);
+  // save_viewpoint_->setEnabled(true);
+  // save_snapshot_->setEnabled(true);
+}
+
 void MainWindow::SaveAsIsotropicImage() {
   bool ok;
   double z_spacing = QInputDialog::getDouble(
@@ -662,7 +727,7 @@ void MainWindow::LoadJFilamentSnakes() {
   multisnake_->LoadGroundTruthSnakes(snake_filename_);
   unsigned num_snakes = multisnake_->GetNumberOfComparingSnakes1();
   QString msg = "Number of JFilament snakes loaded: " +
-      QString::number(num_snakes);
+                QString::number(num_snakes);
   statusBar()->showMessage(msg, message_timeout_);
   viewer_->RemoveSnakes();
   viewer_->SetupSnakes(multisnake_->converged_snakes());
@@ -717,7 +782,7 @@ void MainWindow::CompareSnakes() {
   multisnake_->LoadComparingSnakes1(snake_filename_);
   unsigned num_snakes = multisnake_->GetNumberOfComparingSnakes1();
   QString msg = "Number of comparing snakes loaded: " +
-      QString::number(num_snakes);
+                QString::number(num_snakes);
   statusBar()->showMessage(msg, message_timeout_);
   viewer_->RemoveSnakes();
   viewer_->SetupSnakes(multisnake_->converged_snakes());
@@ -752,7 +817,7 @@ void MainWindow::CompareAnotherSnakes() {
   multisnake_->LoadComparingSnakes2(snake_filename_);
   unsigned num_snakes = multisnake_->GetNumberOfComparingSnakes2();
   QString msg = "Number of other comparing snakes loaded: " +
-      QString::number(num_snakes);
+                QString::number(num_snakes);
   statusBar()->showMessage(msg, message_timeout_);
   viewer_->RemoveSnakes();
   viewer_->SetupSnakes(multisnake_->converged_snakes());
@@ -843,7 +908,7 @@ void MainWindow::InitializeSnakes() {
 
   multisnake_->InitializeSnakes();
   QString msg = QString::number(multisnake_->GetNumberOfInitialSnakes()) +
-      " snakes initialized.";
+                " snakes initialized.";
   statusBar()->showMessage(msg, message_timeout_);
 
   viewer_->RemoveSnakes();

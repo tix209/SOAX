@@ -126,9 +126,9 @@ void Multisnake::LoadImageSequence(const std::string &filename, int nslices) {
   ImageType::IndexType frame_index =
       reader->GetOutput()->GetLargestPossibleRegion().GetIndex();
 
-
   ImageType::PointType origin;
   origin.Fill(0.0);
+
   for (int i = 0; i < input_size[2]; i += nslices) {
     frame_index[2] = i;
     ImageType::RegionType frame_region;
@@ -142,12 +142,6 @@ void Multisnake::LoadImageSequence(const std::string &filename, int nslices) {
     extractor->Update();
     extractor->GetOutput()->SetOrigin(origin);
     image_sequence_.push_back(extractor->GetOutput());
-  }
-
-  for (int i = 0; i < image_sequence_.size(); i++){
-    std::cout << image_sequence_[i]->GetOrigin() << std::endl;
-    std::cout << image_sequence_[i]->GetLargestPossibleRegion().GetIndex()
-              << std::endl << std::endl;
   }
 
   // for each frame, interpolate the image to be isotropic

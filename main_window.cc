@@ -574,8 +574,9 @@ void MainWindow::OpenImageSequence() {
   scroll_bar_->setMinimum(0);
   scroll_bar_->setMaximum(multisnake_->image_sequence().size()-1);
   connect(scroll_bar_, SIGNAL(valueChanged(int)), viewer_, SLOT(UpdateFrame(int)));
+  connect(scroll_bar_, SIGNAL(valueChanged(int)), this, SLOT(ShowFrameNumber(int)));
   viewer_->SetupImageSequence(multisnake_->image_sequence());
-  // viewer_->UpdateFrame(0);
+  this->ShowFrameNumber(0);
   // toggle_planes_->setChecked(true);
   toggle_mip_->setChecked(true);
   // toggle_orientation_marker_->setChecked(true);
@@ -608,6 +609,11 @@ void MainWindow::OpenImageSequence() {
   // load_viewpoint_->setEnabled(true);
   // save_viewpoint_->setEnabled(true);
   // save_snapshot_->setEnabled(true);
+}
+
+void MainWindow::ShowFrameNumber(int frame_number) {
+  QString msg = QString("Displaying frame # ") + QString::number(frame_number+1);
+  statusBar()->showMessage(msg, message_timeout_);
 }
 
 void MainWindow::SaveAsIsotropicImage() {

@@ -68,6 +68,8 @@ class MainWindow : public QMainWindow {
 
   void AboutSOAX();
 
+  void ShowFrameNumber(int frame_number);
+
  private:
   void CreateActions();
   void CreateFileMenuActions();

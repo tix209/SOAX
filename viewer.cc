@@ -180,7 +180,7 @@ void Viewer::SetupImageSequence(const std::vector<ImageType::Pointer> &images) {
   for (int i = 0; i < images.size(); i++) {
     this->SetupSingleImage(images[i]);
   }
-  std::cout << volume_sequence_.size() << std::endl;
+  // std::cout << volume_sequence_.size() << std::endl;
   // this->SetupOrientationMarker();
   // this->SetupBoundingBox();
   // this->UpdateJunctionRadius(images[images.size()/2]);
@@ -244,7 +244,7 @@ void Viewer::SetupVolume(vtkImageData *data) {
 
 void Viewer::UpdateFrame(int index) {
   if (index == current_frame_) return;
-  std::cout << "Displaying frame #" << index << std::endl;
+  // std::cout << "Displaying frame #" << index << std::endl;
   renderer_->RemoveViewProp(volume_sequence_[current_frame_]);
   renderer_->AddViewProp(volume_sequence_[index]);
   current_frame_ = index;

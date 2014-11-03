@@ -62,10 +62,13 @@ void MainWindow::CreateFileMenuActions() {
   connect(open_image_sequence_, SIGNAL(triggered()),
           this, SLOT(OpenImageSequence()));
 
-  save_as_isotropic_image_ = new QAction(tr("Save as Isotropic Image"),
-                                         this);
+  save_as_isotropic_image_ = new QAction(tr("Save as Isotropic Image"), this);
   connect(save_as_isotropic_image_, SIGNAL(triggered()),
           this, SLOT(SaveAsIsotropicImage()));
+
+  save_as_isotropic_sequence_ = new QAction(tr("Save as Isotropic Sequence"), this);
+  connect(save_as_isotropic_sequence_, SIGNAL(triggered()),
+          this, SLOT(SaveAsIsotropicSequence()));
 
   load_parameters_ = new QAction(tr("Load Pa&rameters"), this);
   load_parameters_->setShortcut(Qt::CTRL + Qt::Key_R);
@@ -332,6 +335,7 @@ void MainWindow::CreateMenus() {
   file_->addAction(open_image_);
   file_->addAction(open_image_sequence_);
   file_->addAction(save_as_isotropic_image_);
+  file_->addAction(save_as_isotropic_sequence_);
   file_->addAction(load_parameters_);
   file_->addAction(save_parameters_);
   file_->addAction(load_snakes_);
@@ -445,6 +449,7 @@ void MainWindow::CreateStatusBar() {
 
 void MainWindow::ResetActions() {
   save_as_isotropic_image_->setEnabled(false);
+  save_as_isotropic_sequence_->setEnabled(false);
   load_snakes_->setEnabled(false);
   save_snakes_->setEnabled(false);
   load_jfilament_snakes_->setEnabled(false);
@@ -493,7 +498,7 @@ void MainWindow::ResetActions() {
 }
 
 QString MainWindow::GetLastDirectory(const std::string &filename) const {
-  QString dir = "..";
+  QString dir = "../../data";
   if (!filename.empty()) { // extract the last directory
     std::string::size_type pos = filename.find_last_of("/\\");
     dir = QString(filename.substr(0, pos).c_str());
@@ -575,15 +580,16 @@ void MainWindow::OpenImageSequence() {
   scroll_bar_->setMaximum(multisnake_->image_sequence().size()-1);
   connect(scroll_bar_, SIGNAL(valueChanged(int)), viewer_, SLOT(UpdateFrame(int)));
   connect(scroll_bar_, SIGNAL(valueChanged(int)), this, SLOT(ShowFrameNumber(int)));
+  connect(scroll_bar_, SIGNAL(valueChanged(int)), this, SLOT(CheckMIP(int)));
   viewer_->SetupImageSequence(multisnake_->image_sequence());
-  this->ShowFrameNumber(0);
-  // toggle_planes_->setChecked(true);
+  // this->ShowFrameNumber(0);
+  toggle_planes_->setChecked(true);
   toggle_mip_->setChecked(true);
-  // toggle_orientation_marker_->setChecked(true);
-  // toggle_corner_text_->setChecked(true);
-  // toggle_bounding_box_->setChecked(false);
-  // toggle_cube_axes_->setChecked(false);
-  // statusBar()->showMessage(tr("Image Sequence loaded."), message_timeout_);
+  toggle_orientation_marker_->setChecked(true);
+  toggle_corner_text_->setChecked(true);
+  toggle_bounding_box_->setChecked(true);
+  toggle_cube_axes_->setChecked(false);
+  statusBar()->showMessage(tr("Image Sequence loaded."), message_timeout_);
 
   // view_options_dialog_->SetWindow(viewer_->window());
   // view_options_dialog_->SetLevel(viewer_->level());
@@ -591,18 +597,18 @@ void MainWindow::OpenImageSequence() {
   // view_options_dialog_->SetMaxIntensity(viewer_->mip_max_intensity());
   // view_options_dialog_->SetClipSpan(viewer_->clip_span());
   // view_options_dialog_->SetColorSegmentStep(viewer_->color_segment_step());
-  // open_image_->setEnabled(false);
-  // save_as_isotropic_image_->setEnabled(false);
+  open_image_sequence_->setEnabled(false);
+  save_as_isotropic_sequence_->setEnabled(true);
   // load_snakes_->setEnabled(true);
   // load_jfilament_snakes_->setEnabled(true);
   // compare_snakes_->setEnabled(true);
-  // close_session_->setEnabled(true);
-  // toggle_planes_->setEnabled(true);
-  // toggle_mip_->setEnabled(true);
-  // toggle_orientation_marker_->setEnabled(true);
-  // toggle_corner_text_->setEnabled(true);
-  // toggle_bounding_box_->setEnabled(true);
-  // toggle_cube_axes_->setEnabled(true);
+  close_session_->setEnabled(true);
+  toggle_planes_->setEnabled(true);
+  toggle_mip_->setEnabled(true);
+  toggle_orientation_marker_->setEnabled(true);
+  toggle_corner_text_->setEnabled(true);
+  toggle_bounding_box_->setEnabled(true);
+  toggle_cube_axes_->setEnabled(true);
   // show_view_options_->setEnabled(true);
   // initialize_snakes_->setEnabled(true);
   // show_parameters_->setEnabled(true);
@@ -614,6 +620,10 @@ void MainWindow::OpenImageSequence() {
 void MainWindow::ShowFrameNumber(int frame_number) {
   QString msg = QString("Displaying frame # ") + QString::number(frame_number+1);
   statusBar()->showMessage(msg, message_timeout_);
+}
+
+void MainWindow::CheckMIP(int frame_number) {
+  toggle_mip_->setChecked(true);
 }
 
 void MainWindow::SaveAsIsotropicImage() {
@@ -635,6 +645,29 @@ void MainWindow::SaveAsIsotropicImage() {
                              message_timeout_);
   } else {
     statusBar()->showMessage(tr("Image is already isotropic! Abort."),
+                             message_timeout_);
+  }
+}
+
+void MainWindow::SaveAsIsotropicSequence() {
+  bool ok;
+  double z_spacing = QInputDialog::getDouble(
+      this, tr("Set Z spacing"), tr("Z Spacing (relative to X/Y)"),
+      1.0, 0.1, 10, 4, &ok);
+  if (!ok) return;
+
+  if (std::fabs(z_spacing - 1) > kEpsilon) {
+    QString dir = this->GetLastDirectory(image_filename_);
+    QString filename = QFileDialog::getSaveFileName(
+        this, tr("Save as Isotropic Sequence"), dir);
+    if (filename.isEmpty()) return;
+    image_filename_ = filename.toStdString();
+
+    multisnake_->SaveAsIsotropicSequence(image_filename_, z_spacing);
+    statusBar()->showMessage(tr("Sequence has been resampled and saved."),
+                             message_timeout_);
+  } else {
+    statusBar()->showMessage(tr("Sequence is already isotropic! Abort."),
                              message_timeout_);
   }
 }
@@ -858,6 +891,7 @@ void MainWindow::CloseSession() {
   multisnake_->Reset();
   this->ResetActions();
   open_image_->setEnabled(true);
+  open_image_sequence_->setEnabled(true);
   setWindowTitle("SOAX");
 }
 

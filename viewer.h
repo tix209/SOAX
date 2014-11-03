@@ -148,13 +148,13 @@ class Viewer : public QObject {
 
   void SetupSlicePlanes(vtkImageData *data);
   void SetupMIPRendering(vtkImageData *data);
-  void SetupSingleImage(ImageType::Pointer image);
-  void SetupVolume(vtkImageData *data);
+  // void SetupSingleImage(ImageType::Pointer image);
+  void SetupVolume(vtkSmartPointer<vtkImageData> data);
   void SetupOrientationMarker();
   void SetupUpperLeftCornerText(unsigned min_intensity,
                                 unsigned max_intensity);
-  void SetupBoundingBox();
-  void SetupCubeAxes(vtkImageData *image);
+  void SetupBoundingBox(vtkSmartPointer<vtkVolume> volume);
+  void SetupCubeAxes(vtkSmartPointer<vtkImageData> image);
 
   void SetupDispalyRange(ImageType::Pointer image);
   void UpdateJunctionRadius(ImageType::Pointer image);
@@ -181,12 +181,16 @@ class Viewer : public QObject {
   void ResetExtendTip();
   void ResetTrimBody();
 
+  void ConvertImageSequence(const std::vector<ImageType::Pointer> &images);
+  void UpdateSlicePlanes(int index);
+
 
   QVTKWidget *qvtk_;
   vtkSmartPointer<vtkRenderer> renderer_;
   vtkSmartPointer<vtkCamera> camera_;
   vtkImagePlaneWidget *slice_planes_[kDimension];
   vtkSmartPointer<vtkVolume> volume_;
+  std::vector<vtkSmartPointer<vtkImageData> > image_sequence_;
   std::vector<vtkSmartPointer<vtkVolume> > volume_sequence_;
   vtkSmartPointer<vtkOrientationMarkerWidget> orientation_marker_;
   vtkSmartPointer<vtkCornerAnnotation> corner_text_;

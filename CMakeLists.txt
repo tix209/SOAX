@@ -77,18 +77,18 @@ qt4_add_resources(rccs ${rcc_srcs})
 add_executable(soax soax.cc ${common_srcs} ${gui_srcs} ${mocs}
   ${rccs} ${multisnake_moc} multisnake.cc multisnake.h)
 
-add_executable(batch_soax batch_soax.cc ${common_srcs}
-  ${multisnake_moc} multisnake.cc multisnake.h)
-# add_executable(eval_gt evaluate_gt.cc ${common_srcs})
-# add_executable(eval_f evaluate_f.cc ${common_srcs})
-add_executable(best_snake best_snake.cc ${common_srcs}
-  ${multisnake_moc} multisnake.cc multisnake.h)
+# add_executable(batch_soax batch_soax.cc ${common_srcs}
+#   ${multisnake_moc} multisnake.cc multisnake.h)
+# # add_executable(eval_gt evaluate_gt.cc ${common_srcs})
+# # add_executable(eval_f evaluate_f.cc ${common_srcs})
+# add_executable(best_snake best_snake.cc ${common_srcs}
+#   ${multisnake_moc} multisnake.cc multisnake.h)
 
-# add_executable(snr image_snr.cc ${common_srcs})
-add_executable(syn2 synthetic_tamara.cc ${common_srcs}
-  ${multisnake_moc} multisnake.cc multisnake.h)
-# add_executable(snapshots batch_snapshots.cc)
-add_executable(batch_resample batch_resample.cc)
+# # add_executable(snr image_snr.cc ${common_srcs})
+# add_executable(syn2 synthetic_tamara.cc ${common_srcs}
+#   ${multisnake_moc} multisnake.cc multisnake.h)
+# # add_executable(snapshots batch_snapshots.cc)
+# add_executable(batch_resample batch_resample.cc)
 
 target_link_libraries(soax
   ${QT_LIBRARIES}
@@ -97,13 +97,13 @@ target_link_libraries(soax
   ${Boost_PROGRAM_OPTIONS_LIBRARY}
   )
 
-target_link_libraries(batch_soax
-  ${QT_LIBRARIES}
-  ${ITK_LIBRARIES}
-  ${Boost_PROGRAM_OPTIONS_LIBRARY}
-  ${Boost_FILESYSTEM_LIBRARY}
-  ${Boost_SYSTEM_LIBRARY}
-  )
+# target_link_libraries(batch_soax
+#   ${QT_LIBRARIES}
+#   ${ITK_LIBRARIES}
+#   ${Boost_PROGRAM_OPTIONS_LIBRARY}
+#   ${Boost_FILESYSTEM_LIBRARY}
+#   ${Boost_SYSTEM_LIBRARY}
+#   )
 
 # target_link_libraries(eval_gt
 #   ${ITK_LIBRARIES}
@@ -119,13 +119,13 @@ target_link_libraries(batch_soax
 #   ${Boost_SYSTEM_LIBRARY}
 #   )
 
-target_link_libraries(best_snake
-  ${QT_LIBRARIES}
-  ${ITK_LIBRARIES}
-  ${Boost_PROGRAM_OPTIONS_LIBRARY}
-  ${Boost_FILESYSTEM_LIBRARY}
-  ${Boost_SYSTEM_LIBRARY}
-  )
+# target_link_libraries(best_snake
+#   ${QT_LIBRARIES}
+#   ${ITK_LIBRARIES}
+#   ${Boost_PROGRAM_OPTIONS_LIBRARY}
+#   ${Boost_FILESYSTEM_LIBRARY}
+#   ${Boost_SYSTEM_LIBRARY}
+#   )
 
 # target_link_libraries(bestt
 #   ${ITK_LIBRARIES}
@@ -134,11 +134,11 @@ target_link_libraries(best_snake
 #   ${Boost_SYSTEM_LIBRARY}
 #   )
 
-target_link_libraries(syn2 ${ITK_LIBRARIES})
+# target_link_libraries(syn2 ${ITK_LIBRARIES})
 
-target_link_libraries(batch_resample
-  ${ITK_LIBRARIES}
-  ${Boost_PROGRAM_OPTIONS_LIBRARY}
-  ${Boost_FILESYSTEM_LIBRARY}
-  ${Boost_SYSTEM_LIBRARY}
-  )
+# target_link_libraries(batch_resample
+#   ${ITK_LIBRARIES}
+#   ${Boost_PROGRAM_OPTIONS_LIBRARY}
+#   ${Boost_FILESYSTEM_LIBRARY}
+#   ${Boost_SYSTEM_LIBRARY}
+#   )

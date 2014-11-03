@@ -134,6 +134,11 @@ void Viewer::Reset() {
   this->ResetTrimTip();
   this->ResetExtendTip();
   this->ResetTrimBody();
+  volume_sequence_.clear();
+  // for (int i = 0; i < image_sequence_.size(); i++) {
+  //   image_sequence_[i]->Delete();
+  // }
+  image_sequence_.clear();
   // trimmed_actor_ = NULL;
   // trimmed_snake_ = NULL;
   // trim_tip_index_ = kBigNumber;
@@ -167,23 +172,29 @@ void Viewer::SetupImage(ImageType::Pointer image) {
   this->SetupMIPRendering(connector->GetOutput());
   this->SetupOrientationMarker();
   this->SetupUpperLeftCornerText(min_intensity, max_intensity);
-  this->SetupBoundingBox();
+  this->SetupBoundingBox(volume_);
   this->SetupCubeAxes(connector->GetOutput());
 
   this->UpdateJunctionRadius(image);
 }
 
 void Viewer::SetupImageSequence(const std::vector<ImageType::Pointer> &images) {
+  assert(image_sequence_.empty());
   this->SetupDispalyRange(images[images.size()/2]); // use the middle
                                                     // frame
-  volume_sequence_.reserve(images.size());
+  this->ConvertImageSequence(images);
   for (int i = 0; i < images.size(); i++) {
-    this->SetupSingleImage(images[i]);
+    // image_sequence_.push_back(this->ConvertImage(images[i]));
+    this->SetupVolume(image_sequence_[i]);
+    // this->SetupSingleImage(images[i]);
   }
+  this->SetupSlicePlanes(image_sequence_.front());
+
   // std::cout << volume_sequence_.size() << std::endl;
-  // this->SetupOrientationMarker();
-  // this->SetupBoundingBox();
-  // this->UpdateJunctionRadius(images[images.size()/2]);
+  this->SetupOrientationMarker();
+  this->SetupBoundingBox(volume_sequence_.front());
+  this->SetupCubeAxes(image_sequence_.front());
+  this->UpdateJunctionRadius(images[images.size()/2]);
 }
 
 void Viewer::SetupDispalyRange(ImageType::Pointer image) {
@@ -201,17 +212,30 @@ void Viewer::SetupDispalyRange(ImageType::Pointer image) {
   this->SetupUpperLeftCornerText(min_intensity, max_intensity);
 }
 
-void Viewer::SetupSingleImage(ImageType::Pointer image) {
+// void Viewer::SetupSingleImage(ImageType::Pointer image) {
+//   typedef itk::ImageToVTKImageFilter<ImageType>  ConnectorType;
+//   ConnectorType::Pointer connector = ConnectorType::New();
+//   connector->SetInput(image);
+//   connector->Update();
+//   // this->SetupSlicePlanes(connector->GetOutput());
+//   this->SetupVolume(connector->GetOutput());
+//   // this->SetupCubeAxes(connector->GetOutput());
+// }
+
+void Viewer::ConvertImageSequence(const std::vector<ImageType::Pointer> &images) {
+  volume_sequence_.reserve(images.size());
   typedef itk::ImageToVTKImageFilter<ImageType>  ConnectorType;
-  ConnectorType::Pointer connector = ConnectorType::New();
-  connector->SetInput(image);
-  connector->Update();
-  // this->SetupSlicePlanes(connector->GetOutput());
-  this->SetupVolume(connector->GetOutput());
-  // this->SetupCubeAxes(connector->GetOutput());
+  for (int i = 0; i < images.size(); i++) {
+    ConnectorType::Pointer connector = ConnectorType::New();
+    connector->SetInput(images[i]);
+    connector->Update();
+    vtkSmartPointer<vtkImageData> vtk_image = vtkSmartPointer<vtkImageData>::New();
+    vtk_image->DeepCopy(connector->GetOutput());
+    image_sequence_.push_back(vtk_image);
+  }
 }
 
-void Viewer::SetupVolume(vtkImageData *data) {
+void Viewer::SetupVolume(vtkSmartPointer<vtkImageData> data) {
   vtkSmartPointer<vtkPiecewiseFunction> opacity_function =
       vtkSmartPointer<vtkPiecewiseFunction>::New();
 
@@ -247,8 +271,15 @@ void Viewer::UpdateFrame(int index) {
   // std::cout << "Displaying frame #" << index << std::endl;
   renderer_->RemoveViewProp(volume_sequence_[current_frame_]);
   renderer_->AddViewProp(volume_sequence_[index]);
+
+  this->UpdateSlicePlanes(index);
+
   current_frame_ = index;
   this->Render();
+}
+
+void Viewer::UpdateSlicePlanes(int index) {
+  this->SetupSlicePlanes(image_sequence_[index]);
 }
 
 void Viewer::UpdateJunctionRadius(ImageType::Pointer image) {
@@ -416,13 +447,13 @@ void Viewer::ToggleCornerText(bool state) {
   this->Render();
 }
 
-void Viewer::SetupBoundingBox() {
+void Viewer::SetupBoundingBox(vtkSmartPointer<vtkVolume> volume) {
   vtkSmartPointer<vtkOutlineSource> outline =
       vtkSmartPointer<vtkOutlineSource>::New();
   vtkSmartPointer<vtkPolyDataMapper> outline_mapper =
       vtkSmartPointer<vtkPolyDataMapper>::New();
   outline_mapper->SetInputConnection(outline->GetOutputPort());
-  outline->SetBounds(volume_->GetBounds());
+  outline->SetBounds(volume->GetBounds());
   bounding_box_->PickableOff();
   bounding_box_->DragableOff();
   bounding_box_->SetMapper(outline_mapper);
@@ -440,7 +471,7 @@ void Viewer::ToggleBoundingBox(bool state) {
   this->Render();
 }
 
-void Viewer::SetupCubeAxes(vtkImageData *image) {
+void Viewer::SetupCubeAxes(vtkSmartPointer<vtkImageData> image) {
   cube_axes_->SetBounds(image->GetBounds());
   cube_axes_->SetCamera(camera_);
   // cube_axes_->SetFlyModeToStaticTriad();
@@ -458,8 +489,7 @@ void Viewer::SetupCubeAxes(vtkImageData *image) {
   // cube_axes_->GetTitleTextProperty(0)->SetFontSize(40);
   // std::cout << cube_axes_->GetTitleTextProperty(0)->GetFontSize() << std::endl;
   // std::cout << cube_axes_->GetXAxisLabelVisibility() << std::endl;
-  vtkSmartPointer<vtkProperty> axes_property =
-      vtkSmartPointer<vtkProperty>::New();
+  vtkSmartPointer<vtkProperty> axes_property = vtkSmartPointer<vtkProperty>::New();
   axes_property->SetLineWidth(2.0);
   axes_property->SetColor(kRed);
   cube_axes_->SetXAxesLinesProperty(axes_property);

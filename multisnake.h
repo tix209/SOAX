@@ -44,6 +44,7 @@ class Multisnake : public QObject {
    * Resample and save as an isotropic 16-bit image.
    */
   void SaveAsIsotropicImage(const std::string &filename, double z_spacing);
+  void SaveAsIsotropicSequence(const std::string &filename, double z_spacing);
 
   ImageType::Pointer image() const {return image_;}
   const std::vector<ImageType::Pointer> &image_sequence() const {

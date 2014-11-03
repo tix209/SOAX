@@ -19,8 +19,8 @@
 #include "itkNormalVariateGenerator.h"
 #include "itkMinimumMaximumImageCalculator.h"
 #include "itkInvertIntensityImageFilter.h"
-#include "itkExtractImageFilter.h"
 #include "itkRegionOfInterestImageFilter.h"
+#include "itkPasteImageFilter.h"
 #include "solver_bank.h"
 #include "utility.h"
 
@@ -51,6 +51,7 @@ void Multisnake::Reset() {
   this->ClearSnakeContainer(converged_snakes_);
   this->ClearSnakeContainer(comparing_snakes1_);
   this->ClearSnakeContainer(comparing_snakes2_);
+  image_sequence_.clear();
   junctions_.Reset();
   image_filename_ = "";
   image_ = NULL;
@@ -106,12 +107,9 @@ void Multisnake::LoadImage(const std::string &filename) {
 }
 
 void Multisnake::LoadImageSequence(const std::string &filename, int nslices) {
-  // read the entire image
   typedef itk::ImageFileReader<ImageType> ReaderType;
-  // typedef itk::ExtractImageFilter<ImageType, ImageType>
-  //     ExtractorType;
   typedef itk::RegionOfInterestImageFilter<ImageType, ImageType>
-  ExtractorType;
+      ExtractorType;
   ReaderType::Pointer reader = ReaderType::New();
 
   reader->SetFileName(filename);
@@ -122,7 +120,6 @@ void Multisnake::LoadImageSequence(const std::string &filename, int nslices) {
   frame_size[0] = input_size[0];
   frame_size[1] = input_size[1];
   frame_size[2] = nslices;
-  // divide into frames and put the interpolated image into container
   ImageType::IndexType frame_index =
       reader->GetOutput()->GetLargestPossibleRegion().GetIndex();
 
@@ -135,16 +132,12 @@ void Multisnake::LoadImageSequence(const std::string &filename, int nslices) {
     frame_region.SetSize(frame_size);
     frame_region.SetIndex(frame_index);
     ExtractorType::Pointer extractor = ExtractorType::New();
-    // extractor->SetDirectionCollapseToSubmatrix();
     extractor->SetInput(reader->GetOutput());
-    // extractor->SetExtractionRegion(frame_region);
     extractor->SetRegionOfInterest(frame_region);
     extractor->Update();
     extractor->GetOutput()->SetOrigin(origin);
     image_sequence_.push_back(extractor->GetOutput());
   }
-
-  // for each frame, interpolate the image to be isotropic
   image_filename_ = filename;
 }
 
@@ -249,6 +242,50 @@ void Multisnake::SaveAsIsotropicImage(const std::string &filename,
     writer->Update();
   } catch( itk::ExceptionObject & exp ) {
     std::cerr << "Exception caught when write an image!" << std::endl;
+    std::cerr << exp << std::endl;
+  }
+}
+
+void Multisnake::SaveAsIsotropicSequence(const std::string &filename, double z_spacing) {
+  for (int i = 0; i < image_sequence_.size(); i++) {
+    std::cout << "Interpolating frame #" << i+1 << " ..." << std::endl;
+    image_sequence_[i] = this->InterpolateImage(image_sequence_[i], z_spacing);
+  }
+  ImageType::Pointer result = ImageType::New();
+  ImageType::IndexType start;
+  start.Fill(0);
+  ImageType::SizeType size = image_sequence_.back()->GetLargestPossibleRegion().GetSize();
+  size[2] *= image_sequence_.size();
+
+  ImageType::RegionType region;
+  region.SetSize(size);
+  region.SetIndex(start);
+  result->SetRegions(region);
+  result->Allocate();
+
+  typedef itk::PasteImageFilter<ImageType, ImageType> PasterType;
+  PasterType::Pointer paster = PasterType::New();
+
+  for (int i = 0; i < image_sequence_.size(); i++) {
+    paster->SetDestinationImage(result);
+    paster->SetSourceImage(image_sequence_[i]);
+    paster->SetSourceRegion(image_sequence_[i]->GetLargestPossibleRegion());
+    ImageType::IndexType dest_index = start;
+    dest_index[2] = i * image_sequence_[i]->GetLargestPossibleRegion().GetSize()[2];
+    paster->SetDestinationIndex(dest_index);
+    paster->Update();
+    result = paster->GetOutput();
+  }
+  typedef itk::ImageFileWriter<ImageType> WriterType;
+  WriterType::Pointer writer = WriterType::New();
+  writer->SetFileName(filename);
+  result->SetRegions(region);
+  writer->SetInput(result);
+
+  try {
+    writer->Update();
+  } catch( itk::ExceptionObject & exp ) {
+    std::cerr << "Exception caught when write an sequence!" << std::endl;
     std::cerr << exp << std::endl;
   }
 }
@@ -554,7 +591,7 @@ void Multisnake::GenerateCandidates(
       iter.Value()[direction] = ridge_value[(direction+1) % d];
     } else {
       iter.Value()[direction] = ridge_value[(direction+1) % d] &&
-                                ridge_value[(direction+2) % d];
+          ridge_value[(direction+2) % d];
     }
   }
 }

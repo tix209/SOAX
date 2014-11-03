@@ -33,6 +33,7 @@ class MainWindow : public QMainWindow {
   void OpenImage();
   void OpenImageSequence();
   void SaveAsIsotropicImage();
+  void SaveAsIsotropicSequence();
   void LoadParameters();
   void SaveParameters();
   void LoadSnakes();
@@ -69,6 +70,7 @@ class MainWindow : public QMainWindow {
   void AboutSOAX();
 
   void ShowFrameNumber(int frame_number);
+  void CheckMIP(int frame_number);
 
  private:
   void CreateActions();
@@ -97,6 +99,7 @@ class MainWindow : public QMainWindow {
   QAction *open_image_;
   QAction *open_image_sequence_;
   QAction *save_as_isotropic_image_;
+  QAction *save_as_isotropic_sequence_;
   QAction *load_parameters_;
   QAction *save_parameters_;
   QAction *load_snakes_;

@@ -42,16 +42,23 @@ Multisnake::~Multisnake() {
   this->ClearSnakeContainer(converged_snakes_);
   this->ClearSnakeContainer(comparing_snakes1_);
   this->ClearSnakeContainer(comparing_snakes2_);
+  this->ClearSnakeContainerSequence(converged_snakes_sequence_);
   image_sequence_.clear();
+  converged_snakes_sequence_.clear();
+  junctions_sequence_.clear();
   delete solver_bank_;
 }
 
 void Multisnake::Reset() {
   this->ClearSnakeContainer(initial_snakes_);
-  this->ClearSnakeContainer(converged_snakes_);
+  // this->ClearSnakeContainer(converged_snakes_);
+  converged_snakes_.clear();
   this->ClearSnakeContainer(comparing_snakes1_);
   this->ClearSnakeContainer(comparing_snakes2_);
+  this->ClearSnakeContainerSequence(converged_snakes_sequence_);
   image_sequence_.clear();
+  converged_snakes_sequence_.clear();
+
   junctions_.Reset();
   image_filename_ = "";
   image_ = NULL;
@@ -140,6 +147,7 @@ void Multisnake::LoadImageSequence(const std::string &filename, int nslices) {
   }
   image_filename_ = filename;
   this->SetImage(0);
+  interpolator_->SetInputImage(image_);
   this->set_intensity_scaling(intensity_scaling_);
 }
 
@@ -735,8 +743,9 @@ bool Multisnake::FindNextCandidate(
 // void Multisnake::DeformSnakes(QProgressBar * progress_bar) {
 void Multisnake::DeformSnakes() {
   unsigned ncompleted = 0;
-  std::cout << "Initial # snakes: " << initial_snakes_.size() << std::endl;
-  this->ClearSnakeContainer(converged_snakes_);
+  std::cout << "# initial snakes: " << initial_snakes_.size() << std::endl;
+  // this->ClearSnakeContainer(converged_snakes_);
+  converged_snakes_.clear();
 
   // std::ofstream outfile("initial-intensities.txt");
   while (!initial_snakes_.empty()) {
@@ -757,14 +766,35 @@ void Multisnake::DeformSnakes() {
 
     ncompleted++;
     emit ExtractionProgressed(ncompleted);
-    // if (progress_bar) {
-    //   progress_bar->setValue(ncompleted);
-    // }
     std::cout << "\rRemaining: " << std::setw(6)
               << initial_snakes_.size() << std::flush;
   }
-  std::cout << "\nConverged # snakes: " << converged_snakes_.size()
-            << std::endl;
+}
+
+void Multisnake::DeformSnakesForSequence() {
+  std::cout << "============ Parameters for Sequence ============" << std::endl;
+  this->WriteParameters(std::cout);
+  std::cout << "=================================================" << std::endl;
+
+  converged_snakes_sequence_.reserve(image_sequence_.size());
+
+  for (int i = 0; i < image_sequence_.size(); i++) {
+    std::cout << "Frame #" << i << std::endl;
+
+    this->SetImage(i);
+    if (i) {
+      this->ComputeImageGradientForSequence(i);
+      this->InitializeSnakes();
+    }
+    this->DeformSnakes();
+    this->CutSnakesAtTJunctions();
+    this->GroupSnakes();
+    std::cout << "\n# Converged snakes: " << converged_snakes_.size() << std::endl;
+    converged_snakes_sequence_.push_back(converged_snakes_);
+    junctions_sequence_.push_back(junctions_.junction_points());
+    junctions_.Reset();
+    emit ExtractionCompleteForFrame(i+1);
+  }
 }
 
 void Multisnake::CutSnakesAtTJunctions() {
@@ -794,6 +824,13 @@ void Multisnake::ClearSnakeContainer(SnakeContainer &snakes) {
     delete *it;
   }
   snakes.clear();
+}
+
+void Multisnake::ClearSnakeContainerSequence(std::vector<SnakeContainer>
+                                             &snakes_sequence) {
+  for (int i = 0; i < snakes_sequence.size(); i++) {
+    this->ClearSnakeContainer(snakes_sequence[i]);
+  }
 }
 
 void Multisnake::GroupSnakes() {
@@ -1122,6 +1159,47 @@ void Multisnake::SaveSnakes(const SnakeContainer &snakes,
   }
 
   junctions_.PrintJunctionPoints(filename);
+  outfile.close();
+}
+
+void Multisnake::SaveSnakesSequence(const std::string &filename) const {
+  std::ofstream outfile;
+  outfile.open(filename.c_str());
+  if (!outfile.is_open()) {
+    std::cerr << "SaveSnakesSequence: Couldn't open file: " << outfile << std::endl;
+    return;
+  }
+
+  const unsigned column_width = 16;
+  outfile << "image\t" << image_filename_ << std::endl;
+  this->WriteParameters(outfile);
+
+  if (converged_snakes_sequence_.empty()) {
+    std::cout << "No snakes to save!" << std::endl;
+    return;
+  }
+
+  for (int i = 0; i < converged_snakes_sequence_.size(); i++) {
+    outfile << "$" << i << std::endl;
+    unsigned snake_index = 0;
+    for (SnakeConstIterator it = converged_snakes_sequence_[i].begin();
+         it != converged_snakes_sequence_[i].end(); ++it) {
+      outfile << "#" << (*it)->open() << std::endl;
+      for (unsigned j = 0; j != (*it)->GetSize(); ++j) {
+        double intensity = interpolator_->Evaluate((*it)->GetPoint(j));
+        outfile << snake_index << std::setw(12) << j
+                << std::setw(column_width) << (*it)->GetX(j)
+                << std::setw(column_width) << (*it)->GetY(j)
+                << std::setw(column_width) << (*it)->GetZ(j)
+                << std::setw(20) << intensity << std::endl;
+      }
+      snake_index++;
+    }
+    for (PointContainer::const_iterator it = junctions_sequence_[i].begin();
+         it != junctions_sequence_[i].end(); ++it) {
+      outfile << *it << std::endl;
+    }
+  }
   outfile.close();
 }
 

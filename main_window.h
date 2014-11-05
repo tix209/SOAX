@@ -37,7 +37,9 @@ class MainWindow : public QMainWindow {
   void LoadParameters();
   void SaveParameters();
   void LoadSnakes();
+  void LoadSnakesSequence();
   void SaveSnakes();
+  void SaveSnakesSequence();
   void CompareSnakes();
   void CompareAnotherSnakes();
   void LoadJFilamentSnakes();
@@ -54,6 +56,7 @@ class MainWindow : public QMainWindow {
   void DeformSnakes();
   void DeformSnakesInAction();
   void DeformOneSnake();
+  void DeformSnakesForSequence();
   void CutSnakes();
   void GroupSnakes();
 
@@ -104,7 +107,9 @@ class MainWindow : public QMainWindow {
   QAction *load_parameters_;
   QAction *save_parameters_;
   QAction *load_snakes_;
+  QAction *load_snakes_sequence_;
   QAction *save_snakes_;
+  QAction *save_snakes_sequence_;
   QAction *load_jfilament_snakes_;
   QAction *save_jfilament_snakes_;
   QAction *compare_snakes_;
@@ -143,6 +148,7 @@ class MainWindow : public QMainWindow {
   QAction *deform_snakes_;
   QAction *deform_snakes_in_action_;
   QAction *deform_one_snake_;
+  QAction *deform_snakes_for_sequence_;
   QAction *cut_snakes_;
   QAction *group_snakes_;
 

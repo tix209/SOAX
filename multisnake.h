@@ -94,6 +94,8 @@ class Multisnake : public QObject {
    */
   void InvertImageIntensity();
 
+  int GetNumberOfFrames() const {return image_sequence_.size();}
+
   /*
    * Compute image gradient field for both snake initialization and
    * evolution. If reset is true, the external_force_ is recomputed.
@@ -102,7 +104,6 @@ class Multisnake : public QObject {
   void ComputeImageGradientForSequence(int index);
 
   void InitializeSnakes();
-  void InitializeSnakesForSequence(int index);
 
   unsigned GetNumberOfInitialSnakes() const {
     return initial_snakes_.size();
@@ -127,6 +128,9 @@ class Multisnake : public QObject {
   const SnakeContainer &comparing_snakes2() const {
     return comparing_snakes2_;
   }
+  const std::vector<SnakeContainer> &converged_snakes_sequence() const {
+    return converged_snakes_sequence_;
+  }
 
   void SaveConvergedSnakesAsJFilamentFormat(
       const std::string &filename) const {
@@ -135,6 +139,7 @@ class Multisnake : public QObject {
 
   // void DeformSnakes(QProgressBar * progress_bar = NULL);
   void DeformSnakes();
+  void DeformSnakesForSequence();
   void CutSnakesAtTJunctions();
   void GroupSnakes();
 
@@ -163,7 +168,7 @@ class Multisnake : public QObject {
 
   void SaveSnakes(const SnakeContainer &snakes,
                   const std::string &filename) const;
-
+  void SaveSnakesSequence(const std::string &filename) const;
   // void EvaluateByVertexErrorHausdorffDistance(
   //     const std::string &snake_path, const std::string &filename) const;
   // void EvaluateByFFunction(double threshold, double penalizer,
@@ -245,6 +250,7 @@ class Multisnake : public QObject {
 
  signals:
   void ExtractionProgressed(int value);
+  void ExtractionCompleteForFrame(int frame_index);
 
  private:
   typedef itk::Vector<bool, kDimension> BoolVectorType;
@@ -302,6 +308,8 @@ class Multisnake : public QObject {
 
   void CutSnakes(SnakeContainer &seg);
   void ClearSnakeContainer(SnakeContainer &snakes);
+  void ClearSnakeContainerSequence(std::vector<SnakeContainer> &snakes_sequence);
+
 
   void LinkSegments(SnakeContainer &seg);
   void LinkFromSegment(Snake *s, SnakeContainer &seg,
@@ -383,6 +391,8 @@ class Multisnake : public QObject {
 
   SnakeContainer initial_snakes_;
   SnakeContainer converged_snakes_;
+  std::vector<SnakeContainer> converged_snakes_sequence_;
+  std::vector<PointContainer> junctions_sequence_;
   SnakeContainer comparing_snakes1_;
   SnakeContainer comparing_snakes2_;
 

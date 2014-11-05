@@ -84,10 +84,16 @@ void MainWindow::CreateFileMenuActions() {
   load_snakes_->setShortcut(Qt::CTRL + Qt::Key_L);
   connect(load_snakes_, SIGNAL(triggered()), this, SLOT(LoadSnakes()));
 
+  load_snakes_sequence_ = new QAction(tr("Load Snakes Sequence"), this);
+  connect(load_snakes_sequence_, SIGNAL(triggered()), this, SLOT(LoadSnakesSequence()));
+
   save_snakes_ = new QAction(tr("Save Snakes"), this);
   save_snakes_->setShortcut(QKeySequence::Save);
   save_snakes_->setIcon(QIcon(":/icon/Save.png"));
   connect(save_snakes_, SIGNAL(triggered()), this, SLOT(SaveSnakes()));
+
+  save_snakes_sequence_ = new QAction(tr("Save Snakes Sequence"), this);
+  connect(save_snakes_sequence_, SIGNAL(triggered()), this, SLOT(SaveSnakesSequence()));
 
   load_jfilament_snakes_ = new QAction(tr("Load JFilament Snakes"), this);
   connect(load_jfilament_snakes_, SIGNAL(triggered()),
@@ -275,6 +281,10 @@ void MainWindow::CreateProcessMenuActions() {
   connect(deform_one_snake_, SIGNAL(triggered()),
           this, SLOT(DeformOneSnake()));
 
+  deform_snakes_for_sequence_ = new QAction(tr("Deform Snakes for Sequence"), this);
+  connect(deform_snakes_for_sequence_, SIGNAL(triggered()),
+          this, SLOT(DeformSnakesForSequence()));
+
   cut_snakes_ = new QAction(tr("Cut Snakes at Junctions"), this);
   cut_snakes_->setIcon(QIcon(":/icon/Cut.png"));
   connect(cut_snakes_, SIGNAL(triggered()), this, SLOT(CutSnakes()));
@@ -344,7 +354,9 @@ void MainWindow::CreateMenus() {
   file_->addAction(load_parameters_);
   file_->addAction(save_parameters_);
   file_->addAction(load_snakes_);
+  file_->addAction(load_snakes_sequence_);
   file_->addAction(save_snakes_);
+  file_->addAction(save_snakes_sequence_);
   file_->addAction(load_jfilament_snakes_);
   file_->addAction(save_jfilament_snakes_);
   file_->addAction(compare_snakes_);
@@ -382,6 +394,7 @@ void MainWindow::CreateMenus() {
   process_->addAction(deform_snakes_);
   process_->addAction(deform_snakes_in_action_);
   process_->addAction(deform_one_snake_);
+  process_->addAction(deform_snakes_for_sequence_);
   process_->addAction(cut_snakes_);
   process_->addAction(group_snakes_);
 
@@ -457,7 +470,9 @@ void MainWindow::ResetActions() {
   save_as_isotropic_image_->setEnabled(false);
   save_as_isotropic_sequence_->setEnabled(false);
   load_snakes_->setEnabled(false);
+  load_snakes_sequence_->setEnabled(false);
   save_snakes_->setEnabled(false);
+  save_snakes_sequence_->setEnabled(false);
   load_jfilament_snakes_->setEnabled(false);
   save_jfilament_snakes_->setEnabled(false);
   compare_snakes_->setEnabled(false);
@@ -489,6 +504,7 @@ void MainWindow::ResetActions() {
   deform_snakes_->setEnabled(false);
   deform_snakes_in_action_->setEnabled(false);
   deform_one_snake_->setEnabled(false);
+  deform_snakes_for_sequence_->setEnabled(false);
   cut_snakes_->setEnabled(false);
   group_snakes_->setEnabled(false);
 
@@ -606,7 +622,7 @@ void MainWindow::OpenImageSequence() {
   view_options_dialog_->SetColorSegmentStep(viewer_->color_segment_step());
   open_image_sequence_->setEnabled(false);
   save_as_isotropic_sequence_->setEnabled(true);
-  // load_snakes_->setEnabled(true);
+  load_snakes_sequence_->setEnabled(true);
   // load_jfilament_snakes_->setEnabled(true);
   // compare_snakes_->setEnabled(true);
   close_session_->setEnabled(true);
@@ -749,6 +765,11 @@ void MainWindow::LoadSnakes() {
   show_analysis_options_->setEnabled(true);
 }
 
+void MainWindow::LoadSnakesSequence() {
+  std::cout << "loading seq" << std::endl;
+}
+
+
 void MainWindow::SaveSnakes() {
   QString dir = this->GetLastDirectory(snake_filename_);
   QString filename = QFileDialog::getSaveFileName(
@@ -761,6 +782,18 @@ void MainWindow::SaveSnakes() {
   // multisnake_->SaveSnakes(multisnake_->comparing_snakes1(),
   //                         snake_filename_);
   statusBar()->showMessage(tr("Snakes are saved."), message_timeout_);
+}
+
+void MainWindow::SaveSnakesSequence() {
+  std::cout << "Saving snake sequence ..." << std::endl;
+  QString dir = this->GetLastDirectory(snake_filename_);
+  QString filename = QFileDialog::getSaveFileName(
+      this, tr("Save Snakes Sequence"), dir, tr("Text Files (*.txt)"));
+  if (filename.isEmpty()) return;
+  snake_filename_ = filename.toStdString();
+
+  multisnake_->SaveSnakesSequence(snake_filename_);
+  statusBar()->showMessage(tr("Snake sequence is saved."), message_timeout_);
 }
 
 void MainWindow::LoadJFilamentSnakes() {
@@ -992,13 +1025,14 @@ void MainWindow::InitializeSnakesForSequence() {
   viewer_->Render();
   toggle_snakes_->setEnabled(true);
   toggle_clip_->setEnabled(true);
+  deform_snakes_for_sequence_->setEnabled(true);
 }
 
 
 void MainWindow::DeformSnakes() {
-  std::cout << "============ Current Parameters ============" << std::endl;
+  std::cout << "============ Parameters ============" << std::endl;
   multisnake_->WriteParameters(std::cout);
-  std::cout << "============================================" << std::endl;
+  std::cout << "====================================" << std::endl;
 
   progress_bar_->setMaximum(multisnake_->GetNumberOfInitialSnakes());
   connect(multisnake_, SIGNAL(ExtractionProgressed(int)),
@@ -1120,6 +1154,45 @@ void MainWindow::DeformOneSnake() {
   } else {
     std::cerr << "No edited snake!" << std::endl;
   }
+}
+
+void MainWindow::DeformSnakesForSequence() {
+
+  progress_bar_->setMaximum(multisnake_->GetNumberOfFrames());
+  connect(multisnake_, SIGNAL(ExtractionCompleteForFrame(int)),
+          progress_bar_, SLOT(setValue(int)));
+  multisnake_->DeformSnakesForSequence();
+
+  connect(scroll_bar_, SIGNAL(valueChanged(int)), viewer_, SLOT(UpdateSnakes(int)));
+  connect(scroll_bar_, SIGNAL(valueChanged(int)), viewer_, SLOT(UpdateJunctions(int)));
+  viewer_->RemoveSnakes();
+  viewer_->SetupSnakesSequence(multisnake_->converged_snakes_sequence());
+  toggle_snakes_->setChecked(true);
+  viewer_->Render();
+
+  initialize_snakes_for_sequence_->setEnabled(false);
+  save_snakes_sequence_->setEnabled(true);
+  // deform_snakes_->setEnabled(false);
+  // save_snakes_->setEnabled(true);
+  // save_jfilament_snakes_->setEnabled(true);
+  // compare_snakes_->setEnabled(true);
+  // toggle_snakes_->setEnabled(true);
+  // toggle_clip_->setEnabled(true);
+  // toggle_color_azimuthal_->setEnabled(true);
+  // toggle_color_polar_->setEnabled(true);
+
+  // toggle_delete_snake_->setEnabled(true);
+  // toggle_trim_tip_->setEnabled(true);
+  // toggle_extend_tip_->setEnabled(true);
+  // toggle_trim_body_->setEnabled(true);
+  // edit_snake_->setEnabled(true);
+
+  // cut_snakes_->setEnabled(true);
+  // compute_spherical_orientation_->setEnabled(true);
+  // compute_radial_orientation_->setEnabled(true);
+  // compute_point_density_->setEnabled(true);
+  // compute_curvature_->setEnabled(true);
+  // show_analysis_options_->setEnabled(true);
 }
 
 void MainWindow::CutSnakes() {

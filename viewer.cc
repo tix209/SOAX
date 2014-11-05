@@ -278,6 +278,14 @@ void Viewer::UpdateFrame(int index) {
   this->Render();
 }
 
+void Viewer::UpdateSnakes(int index) {
+  std::cout << "Showing snakes for frame #" << index << std::endl;
+}
+
+void Viewer::UpdateJunctions(int index) {
+  std::cout << "Showing junctions for frame #" << index << std::endl;
+}
+
 void Viewer::UpdateSlicePlanes(int index) {
   this->SetupSlicePlanes(image_sequence_[index]);
 }
@@ -505,6 +513,11 @@ void Viewer::ToggleCubeAxes(bool state) {
   else
     renderer_->RemoveActor(cube_axes_);
   this->Render();
+}
+
+void Viewer::SetupSnakesSequence(const std::vector<SnakeContainer> &snakes_sequence,
+                                 unsigned category) {
+
 }
 
 void Viewer::SetupSnakes(const SnakeContainer &snakes, unsigned category) {

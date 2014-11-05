@@ -108,6 +108,8 @@ Viewer::Viewer():
 Viewer::~Viewer() {
   selected_junctions_.clear();
   selected_snakes_.clear();
+  snakes_sequence_.clear();
+  junctions_sequence_.clear();
   this->RemoveJunctions();
   this->RemoveSnakes();
   this->RemoveColorSegments();
@@ -278,13 +280,16 @@ void Viewer::UpdateFrame(int index) {
   this->Render();
 }
 
-void Viewer::UpdateSnakes(int index) {
-  std::cout << "Showing snakes for frame #" << index << std::endl;
+void Viewer::UpdateSnakesJunctions(int index) {
+  this->RemoveSnakes();
+  this->SetupSnakes(snakes_sequence_[index]);
+  this->RemoveJunctions();
+  this->SetupJunctions(junctions_sequence_[index]);
+  this->Render();
 }
 
-void Viewer::UpdateJunctions(int index) {
-  std::cout << "Showing junctions for frame #" << index << std::endl;
-}
+// void Viewer::UpdateJunctions(int index) {
+// }
 
 void Viewer::UpdateSlicePlanes(int index) {
   this->SetupSlicePlanes(image_sequence_[index]);
@@ -515,10 +520,10 @@ void Viewer::ToggleCubeAxes(bool state) {
   this->Render();
 }
 
-void Viewer::SetupSnakesSequence(const std::vector<SnakeContainer> &snakes_sequence,
-                                 unsigned category) {
+// void Viewer::SetupSnakesSequence(const std::vector<SnakeContainer> &snakes_sequence,
+//                                  unsigned category) {
 
-}
+// }
 
 void Viewer::SetupSnakes(const SnakeContainer &snakes, unsigned category) {
   if (snakes.empty()) return;

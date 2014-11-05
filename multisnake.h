@@ -132,6 +132,10 @@ class Multisnake : public QObject {
     return converged_snakes_sequence_;
   }
 
+  const std::vector<PointContainer> &junctions_sequence() const {
+    return junctions_sequence_;
+  }
+
   void SaveConvergedSnakesAsJFilamentFormat(
       const std::string &filename) const {
     this->SaveJFilamentSnakes(converged_snakes_, filename);

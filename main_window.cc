@@ -777,12 +777,19 @@ void MainWindow::LoadSnakesSequence() {
   QString msg = "Snakes sequence loaded.";
   statusBar()->showMessage(msg, message_timeout_);
 
-  connect(scroll_bar_, SIGNAL(valueChanged(int)), viewer_, SLOT(UpdateSnakes(int)));
-  connect(scroll_bar_, SIGNAL(valueChanged(int)), viewer_, SLOT(UpdateJunctions(int)));
-  viewer_->RemoveSnakes();
-  viewer_->SetupSnakesSequence(multisnake_->converged_snakes_sequence());
+  connect(scroll_bar_, SIGNAL(valueChanged(int)),
+          viewer_, SLOT(UpdateSnakesJunctions(int)));
+  // connect(scroll_bar_, SIGNAL(valueChanged(int)), viewer_, SLOT(UpdateJunctions(int)));
+  // viewer_->RemoveSnakes();
+  viewer_->set_snakes_sequence(multisnake_->converged_snakes_sequence());
+  viewer_->set_junctions_sequence(multisnake_->junctions_sequence());
+  viewer_->UpdateSnakesJunctions(0);
+  // viewer_->UpdateJunctions(0);
+  // scroll_bar_->setValue(0);
+  // viewer_->SetupSnakes(multisnake_->converged_snakes_sequence());
   toggle_snakes_->setChecked(true);
-  viewer_->Render();
+  toggle_junctions_->setChecked(true);
+  // viewer_->Render();
   // viewer_->RemoveJunctions();
   // viewer_->RemoveSnakes();
   // viewer_->SetupSnakes(multisnake_->converged_snakes());
@@ -793,7 +800,6 @@ void MainWindow::LoadSnakesSequence() {
   // viewer_->SetupUpperRightCornerText();
   // toggle_corner_text_->setChecked(true);
   // viewer_->SetupJunctions(multisnake_->GetJunctions());
-  // toggle_junctions_->setChecked(true);
   // viewer_->Render();
 
   save_snakes_sequence_->setEnabled(true);
@@ -1215,10 +1221,10 @@ void MainWindow::DeformSnakesForSequence() {
 
   connect(scroll_bar_, SIGNAL(valueChanged(int)), viewer_, SLOT(UpdateSnakes(int)));
   connect(scroll_bar_, SIGNAL(valueChanged(int)), viewer_, SLOT(UpdateJunctions(int)));
-  viewer_->RemoveSnakes();
-  viewer_->SetupSnakesSequence(multisnake_->converged_snakes_sequence());
-  toggle_snakes_->setChecked(true);
-  viewer_->Render();
+  // viewer_->RemoveSnakes();
+  // viewer_->SetupSnakesSequence(multisnake_->converged_snakes_sequence());
+  // toggle_snakes_->setChecked(true);
+  // viewer_->Render();
 
   initialize_snakes_for_sequence_->setEnabled(false);
   save_snakes_sequence_->setEnabled(true);

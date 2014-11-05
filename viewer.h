@@ -61,8 +61,8 @@ class Viewer : public QObject {
   void UpdateMIPIntensityRange(double min, double max);
 
   void SetupSnakes(const SnakeContainer &snakes, unsigned category = 0);
-  void SetupSnakesSequence(const std::vector<SnakeContainer> &snakes_sequence,
-                           unsigned category = 0);
+  // void SetupSnakesSequence(const std::vector<SnakeContainer> &snakes_sequence,
+  //                          unsigned category = 0);
 
   void SetupSnake(Snake *snake, unsigned category);
   void ChangeSnakeColor(Snake *s, double *color);
@@ -97,6 +97,14 @@ class Viewer : public QObject {
   void TrimBody();
   void RemoveSelectedJunctions(Junctions &junctions);
 
+  void set_snakes_sequence(const std::vector<SnakeContainer> &snakes_sequence) {
+    snakes_sequence_ = snakes_sequence;
+  }
+
+  void set_junctions_sequence(const std::vector<PointContainer> &junctions_sequence) {
+    junctions_sequence_ = junctions_sequence;
+  }
+
   static double *Gray() {return kGray;}
   static double *Red() {return kRed;}
   static double *Magenta() {return kMagenta;}
@@ -126,8 +134,8 @@ class Viewer : public QObject {
   void ToggleDeleteJunction(bool state);
 
   void UpdateFrame(int index);
-  void UpdateSnakes(int index);
-  void UpdateJunctions(int index);
+  void UpdateSnakesJunctions(int index);
+  // void UpdateJunctions(int index);
 
  private slots:
   void SetupClippedSnakes(vtkObject *obj);
@@ -220,6 +228,9 @@ class Viewer : public QObject {
   ActorPointMap actor_junctions_;
   SnakeSet selected_snakes_;
   ActorPointMap selected_junctions_;
+
+  std::vector<SnakeContainer> snakes_sequence_;
+  std::vector<PointContainer> junctions_sequence_;
 
   vtkActor *on_snake_sphere1_;
   vtkActor *on_snake_sphere2_;

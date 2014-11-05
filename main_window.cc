@@ -254,6 +254,11 @@ void MainWindow::CreateProcessMenuActions() {
   connect(initialize_snakes_, SIGNAL(triggered()),
           this, SLOT(InitializeSnakes()));
 
+  initialize_snakes_for_sequence_ = new QAction(tr("Initialize Snakes for Sequence"),
+                                                this);
+  connect(initialize_snakes_for_sequence_, SIGNAL(triggered()),
+          this, SLOT(InitializeSnakesForSequence()));
+
   deform_snakes_ = new QAction(tr("Deform Snakes"), this);
   deform_snakes_->setIcon(QIcon(":/icon/Play.png"));
   deform_snakes_->setShortcut(Qt::CTRL + Qt::Key_D);
@@ -373,6 +378,7 @@ void MainWindow::CreateMenus() {
 
   process_ = menuBar()->addMenu(tr("&Process"));
   process_->addAction(initialize_snakes_);
+  process_->addAction(initialize_snakes_for_sequence_);
   process_->addAction(deform_snakes_);
   process_->addAction(deform_snakes_in_action_);
   process_->addAction(deform_one_snake_);
@@ -479,6 +485,7 @@ void MainWindow::ResetActions() {
   show_view_options_->setEnabled(false);
 
   initialize_snakes_->setEnabled(false);
+  initialize_snakes_for_sequence_->setEnabled(false);
   deform_snakes_->setEnabled(false);
   deform_snakes_in_action_->setEnabled(false);
   deform_one_snake_->setEnabled(false);
@@ -591,12 +598,12 @@ void MainWindow::OpenImageSequence() {
   toggle_cube_axes_->setChecked(false);
   statusBar()->showMessage(tr("Image Sequence loaded."), message_timeout_);
 
-  // view_options_dialog_->SetWindow(viewer_->window());
-  // view_options_dialog_->SetLevel(viewer_->level());
-  // view_options_dialog_->SetMinIntensity(viewer_->mip_min_intensity());
-  // view_options_dialog_->SetMaxIntensity(viewer_->mip_max_intensity());
-  // view_options_dialog_->SetClipSpan(viewer_->clip_span());
-  // view_options_dialog_->SetColorSegmentStep(viewer_->color_segment_step());
+  view_options_dialog_->SetWindow(viewer_->window());
+  view_options_dialog_->SetLevel(viewer_->level());
+  view_options_dialog_->SetMinIntensity(viewer_->mip_min_intensity());
+  view_options_dialog_->SetMaxIntensity(viewer_->mip_max_intensity());
+  view_options_dialog_->SetClipSpan(viewer_->clip_span());
+  view_options_dialog_->SetColorSegmentStep(viewer_->color_segment_step());
   open_image_sequence_->setEnabled(false);
   save_as_isotropic_sequence_->setEnabled(true);
   // load_snakes_->setEnabled(true);
@@ -609,12 +616,12 @@ void MainWindow::OpenImageSequence() {
   toggle_corner_text_->setEnabled(true);
   toggle_bounding_box_->setEnabled(true);
   toggle_cube_axes_->setEnabled(true);
-  // show_view_options_->setEnabled(true);
-  // initialize_snakes_->setEnabled(true);
-  // show_parameters_->setEnabled(true);
-  // load_viewpoint_->setEnabled(true);
-  // save_viewpoint_->setEnabled(true);
-  // save_snapshot_->setEnabled(true);
+  show_view_options_->setEnabled(true);
+  initialize_snakes_for_sequence_->setEnabled(true);
+  show_parameters_->setEnabled(true);
+  load_viewpoint_->setEnabled(true);
+  save_viewpoint_->setEnabled(true);
+  save_snapshot_->setEnabled(true);
 }
 
 void MainWindow::ShowFrameNumber(int frame_number) {
@@ -971,6 +978,22 @@ void MainWindow::InitializeSnakes() {
   // toggle_delete_junction_->setEnabled(true);
   // edit_snake_->setEnabled(true);
 }
+
+void MainWindow::InitializeSnakesForSequence() {
+  multisnake_->ComputeImageGradientForSequence(0);
+  multisnake_->InitializeSnakes();
+  QString msg = QString::number(multisnake_->GetNumberOfInitialSnakes()) +
+                " snakes initialized.";
+  statusBar()->showMessage(msg, message_timeout_);
+  viewer_->RemoveSnakes();
+  viewer_->SetupSnakes(multisnake_->initial_snakes());
+  // viewer_->SetupSnakesAsOneActor(multisnake_->initial_snakes());
+  toggle_snakes_->setChecked(true);
+  viewer_->Render();
+  toggle_snakes_->setEnabled(true);
+  toggle_clip_->setEnabled(true);
+}
+
 
 void MainWindow::DeformSnakes() {
   std::cout << "============ Current Parameters ============" << std::endl;

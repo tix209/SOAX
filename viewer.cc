@@ -457,7 +457,7 @@ void Viewer::SetupBoundingBox(vtkSmartPointer<vtkVolume> volume) {
   bounding_box_->PickableOff();
   bounding_box_->DragableOff();
   bounding_box_->SetMapper(outline_mapper);
-  bounding_box_->GetProperty()->SetLineWidth(2.0);
+  bounding_box_->GetProperty()->SetLineWidth(1.0);
   bounding_box_->GetProperty()->SetColor(kRed);
   bounding_box_->GetProperty()->SetAmbient(1.0);
   bounding_box_->GetProperty()->SetDiffuse(0.0);

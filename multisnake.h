@@ -99,8 +99,10 @@ class Multisnake : public QObject {
    * evolution. If reset is true, the external_force_ is recomputed.
    */
   void ComputeImageGradient(bool reset = true);
+  void ComputeImageGradientForSequence(int index);
 
   void InitializeSnakes();
+  void InitializeSnakesForSequence(int index);
 
   unsigned GetNumberOfInitialSnakes() const {
     return initial_snakes_.size();
@@ -247,6 +249,8 @@ class Multisnake : public QObject {
  private:
   typedef itk::Vector<bool, kDimension> BoolVectorType;
   typedef itk::Image<BoolVectorType, kDimension> BoolVectorImageType;
+
+  void SetImage(int index);
 
   ImageType::Pointer InterpolateImage(ImageType::Pointer img,
                                       double z_spacing);

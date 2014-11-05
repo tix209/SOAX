@@ -139,6 +139,13 @@ void Multisnake::LoadImageSequence(const std::string &filename, int nslices) {
     image_sequence_.push_back(extractor->GetOutput());
   }
   image_filename_ = filename;
+  this->SetImage(0);
+  this->set_intensity_scaling(intensity_scaling_);
+}
+
+void Multisnake::SetImage(int index) {
+  if (image_sequence_.empty()) return;
+  image_ = image_sequence_[index];
 }
 
 std::string Multisnake::GetImageName(bool suffix) const {
@@ -440,15 +447,15 @@ void Multisnake::ComputeImageGradient(bool reset) {
   external_force_ = NULL;
 
   typedef itk::Image<double, kDimension> InternalImageType;
-  typedef itk::ShiftScaleImageFilter<ImageType,
-                                     InternalImageType> ScalerType;
+  typedef itk::ShiftScaleImageFilter<ImageType, InternalImageType> ScalerType;
   ScalerType::Pointer scaler = ScalerType::New();
   scaler->SetInput(image_);
   scaler->SetScale(intensity_scaling_);
   scaler->SetShift(0.0);
   scaler->Update();
 
-  if (is_2d_ || sigma_ < 0.01) { // no smoothing
+  if (is_2d_ || sigma_ < 0.01) { // no smoothing, needs to be fixed
+                                 // for 2d image
     typedef itk::GradientImageFilter<InternalImageType> FilterType;
     FilterType::Pointer filter = FilterType::New();
     // filter->SetInput(image_);
@@ -466,8 +473,8 @@ void Multisnake::ComputeImageGradient(bool reset) {
     external_force_ = caster->GetOutput();
     external_force_->DisconnectPipeline();
   } else {
-    typedef itk::GradientRecursiveGaussianImageFilter<
-      InternalImageType, VectorImageType> FilterType;
+    typedef itk::GradientRecursiveGaussianImageFilter<InternalImageType,
+                                                      VectorImageType> FilterType;
     FilterType::Pointer filter = FilterType::New();
     filter->SetSigma(sigma_);
     // filter->SetInput(image_);
@@ -482,6 +489,11 @@ void Multisnake::ComputeImageGradient(bool reset) {
     external_force_->DisconnectPipeline();
   }
   vector_interpolator_->SetInputImage(external_force_);
+}
+
+void Multisnake::ComputeImageGradientForSequence(int index) {
+  this->SetImage(index);
+  this->ComputeImageGradient();
 }
 
 void Multisnake::InitializeSnakes() {

@@ -50,6 +50,7 @@ class MainWindow : public QMainWindow {
   void ShowViewOptions();
 
   void InitializeSnakes();
+  void InitializeSnakesForSequence();
   void DeformSnakes();
   void DeformSnakesInAction();
   void DeformOneSnake();
@@ -138,6 +139,7 @@ class MainWindow : public QMainWindow {
 
   // Actions in Process menu
   QAction *initialize_snakes_;
+  QAction *initialize_snakes_for_sequence_;
   QAction *deform_snakes_;
   QAction *deform_snakes_in_action_;
   QAction *deform_one_snake_;

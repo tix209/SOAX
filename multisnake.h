@@ -164,6 +164,8 @@ class Multisnake : public QObject {
     this->LoadSnakes(filename, comparing_snakes2_);
   }
 
+  void LoadSnakesSequence(const std::string &filename);
+
   void PrintSnakes(const SnakeContainer &snakes) const;
 
   void SaveSnakes(const SnakeContainer &snakes,

@@ -1028,10 +1028,6 @@ void Multisnake::LoadSnakes(const std::string &filename,
         s->Resample();
       }
       is_open = (line[1] != '0');
-      std::istringstream stream(line);
-      std::string dummy;
-      double x0, y0, z0, x1, y1, z1;
-      stream >> dummy >> x0 >> y0 >> z0 >> x1 >> y1 >> z1;
       points.clear();
     } else if (line[0] == '[') {
       this->LoadPoint(line, junction_points);
@@ -1056,6 +1052,75 @@ void Multisnake::LoadSnakes(const std::string &filename,
   }
   junctions_.set_junction_points(junction_points);
 }
+
+void Multisnake::LoadSnakesSequence(const std::string &filename) {
+  std::ifstream infile(filename.c_str());
+  if (!infile.is_open()) {
+    std::cerr << "LoadSnakesSequence: couldn't open file: " << filename << std::endl;
+    return;
+  }
+  SnakeContainer snakes;
+
+  std::string line, name, value;
+  PointContainer points;
+  bool is_open = true;
+  PointContainer junction_points;
+  int frames_done = 0;
+
+  while (std::getline(infile, line)) {
+    if (isalpha(line[0])) {
+      std::stringstream converter;
+      converter << line;
+      converter >> name >> value;
+      this->AssignParameters(name, value);
+    } else if (line[0] == '$') {
+      if (frames_done) {
+        if (points.size() > 1) {
+          Snake *s = new Snake(points, is_open, false, image_, external_force_,
+                               interpolator_, vector_interpolator_, transform_);
+          snakes.push_back(s);
+          s->Resample();
+          points.clear();
+        }
+        converged_snakes_sequence_.push_back(snakes);
+        snakes.clear();
+        junctions_sequence_.push_back(junction_points);
+        junction_points.clear();
+      }
+      frames_done++;
+    } else if (line[0] == '#') {
+      if (points.size() > 1) {
+        Snake *s = new Snake(points, is_open, false, image_, external_force_,
+                             interpolator_, vector_interpolator_, transform_);
+        snakes.push_back(s);
+        s->Resample();
+      }
+      is_open = (line[1] != '0');
+      points.clear();
+    } else if (line[0] == '[') {
+      this->LoadPoint(line, junction_points);
+    } else {
+      std::istringstream stream(line);
+      double snake_index, point_index, x, y, z;
+      stream >> snake_index >> point_index >> x >> y >> z;
+      PointType  snake_point;
+      snake_point[0] = x;
+      snake_point[1] = y;
+      snake_point[2] = z;
+      points.push_back(snake_point);
+    }
+  }
+  infile.close();
+  // // test code
+  // for (int i = 0; i < converged_snakes_sequence_.size(); i++) {
+  //   std::cout << "\nFrame #" << i << std::endl;
+  //   this->PrintSnakes(converged_snakes_sequence_[i]);
+  //   for (int j = 0; j < junctions_sequence_[i].size(); j++) {
+  //     std::cout << junctions_sequence_[i][j] << "\t";
+  //   }
+  // }
+}
+
 
 void Multisnake::LoadJFilamentSnakes(const std::string &filename,
                                      SnakeContainer &snakes) {
@@ -1200,6 +1265,7 @@ void Multisnake::SaveSnakesSequence(const std::string &filename) const {
       outfile << *it << std::endl;
     }
   }
+  outfile << '$' << std::endl; // mark the end of sequence
   outfile.close();
 }
 

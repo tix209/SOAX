@@ -766,7 +766,57 @@ void MainWindow::LoadSnakes() {
 }
 
 void MainWindow::LoadSnakesSequence() {
-  std::cout << "loading seq" << std::endl;
+  QString dir = this->GetLastDirectory(snake_filename_);
+  QString filename = QFileDialog::getOpenFileName(
+      this, tr("Load Snakes Sequence"), dir, tr("Text Files (*.txt)"));
+  if (filename.isEmpty()) return;
+  snake_filename_ = filename.toStdString();
+
+  multisnake_->LoadSnakesSequence(snake_filename_);
+  // unsigned num_snakes = multisnake_->GetNumberOfConvergedSnakes();
+  QString msg = "Snakes sequence loaded.";
+  statusBar()->showMessage(msg, message_timeout_);
+
+  connect(scroll_bar_, SIGNAL(valueChanged(int)), viewer_, SLOT(UpdateSnakes(int)));
+  connect(scroll_bar_, SIGNAL(valueChanged(int)), viewer_, SLOT(UpdateJunctions(int)));
+  viewer_->RemoveSnakes();
+  viewer_->SetupSnakesSequence(multisnake_->converged_snakes_sequence());
+  toggle_snakes_->setChecked(true);
+  viewer_->Render();
+  // viewer_->RemoveJunctions();
+  // viewer_->RemoveSnakes();
+  // viewer_->SetupSnakes(multisnake_->converged_snakes());
+  // viewer_->SetupSnakes(multisnake_->comparing_snakes1(), 1);
+  // viewer_->SetupSnakes(multisnake_->comparing_snakes2(), 2);
+  // toggle_snakes_->setChecked(true);
+  // viewer_->set_snake_filename(snake_filename_);
+  // viewer_->SetupUpperRightCornerText();
+  // toggle_corner_text_->setChecked(true);
+  // viewer_->SetupJunctions(multisnake_->GetJunctions());
+  // toggle_junctions_->setChecked(true);
+  // viewer_->Render();
+
+  save_snakes_sequence_->setEnabled(true);
+  // save_jfilament_snakes_->setEnabled(true);
+  // compare_snakes_->setEnabled(true);
+  // toggle_delete_snake_->setEnabled(true);
+  // toggle_trim_tip_->setEnabled(true);
+  // toggle_extend_tip_->setEnabled(true);
+  // toggle_trim_body_->setEnabled(true);
+  // toggle_delete_junction_->setEnabled(true);
+  // edit_snake_->setEnabled(true);
+  // initialize_snakes_->setEnabled(false);
+  // deform_one_snake_->setEnabled(false);
+  // toggle_snakes_->setEnabled(true);
+  // toggle_junctions_->setEnabled(true);
+  // toggle_clip_->setEnabled(true);
+  // toggle_color_azimuthal_->setEnabled(true);
+  // toggle_color_polar_->setEnabled(true);
+  // compute_spherical_orientation_->setEnabled(true);
+  // compute_radial_orientation_->setEnabled(true);
+  // compute_point_density_->setEnabled(true);
+  // compute_curvature_->setEnabled(true);
+  // show_analysis_options_->setEnabled(true);
 }
 
 

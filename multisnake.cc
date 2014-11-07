@@ -39,7 +39,8 @@ Multisnake::Multisnake() : image_(NULL), external_force_(NULL),
 
 Multisnake::~Multisnake() {
   this->ClearSnakeContainer(initial_snakes_);
-  this->ClearSnakeContainer(converged_snakes_);
+  // this->ClearSnakeContainer(converged_snakes_);
+  converged_snakes_.clear();
   this->ClearSnakeContainer(comparing_snakes1_);
   this->ClearSnakeContainer(comparing_snakes2_);
   this->ClearSnakeContainerSequence(converged_snakes_sequence_);
@@ -154,6 +155,8 @@ void Multisnake::LoadImageSequence(const std::string &filename, int nslices) {
 void Multisnake::SetImage(int index) {
   if (image_sequence_.empty()) return;
   image_ = image_sequence_[index];
+  this->set_intensity_scaling(0.0);
+  interpolator_->SetInputImage(image_);
 }
 
 std::string Multisnake::GetImageName(bool suffix) const {
@@ -526,8 +529,8 @@ void Multisnake::InitializeSnakes() {
   for (unsigned d = 0; d < num_directions; ++d) {
     this->LinkCandidates(candidate_image, d);
   }
-  std::sort(initial_snakes_.begin(), initial_snakes_.end(), IsShorter);
-  // std::sort(initial_snakes_.begin(), initial_snakes_.end(), IsDarker);
+  // std::sort(initial_snakes_.begin(), initial_snakes_.end(), IsShorter);
+  std::sort(initial_snakes_.begin(), initial_snakes_.end(), IsDarker);
   // this->PrintSnakes(initial_snakes_);
 }
 
@@ -746,7 +749,7 @@ void Multisnake::DeformSnakes() {
   std::cout << "# initial snakes: " << initial_snakes_.size() << std::endl;
   // this->ClearSnakeContainer(converged_snakes_);
   converged_snakes_.clear();
-
+  assert(converged_snakes_.empty());
   // std::ofstream outfile("initial-intensities.txt");
   while (!initial_snakes_.empty()) {
     Snake *snake = initial_snakes_.back();
@@ -769,6 +772,7 @@ void Multisnake::DeformSnakes() {
     std::cout << "\rRemaining: " << std::setw(6)
               << initial_snakes_.size() << std::flush;
   }
+  std::cout << "\n# Converged snakes: " << converged_snakes_.size() << std::endl;
 }
 
 void Multisnake::DeformSnakesForSequence() {
@@ -779,9 +783,10 @@ void Multisnake::DeformSnakesForSequence() {
   converged_snakes_sequence_.reserve(image_sequence_.size());
 
   for (int i = 0; i < image_sequence_.size(); i++) {
-    std::cout << "Frame #" << i << std::endl;
-
     this->SetImage(i);
+    std::cout << "Frame #" << i << "\tintensity-scaling: " << intensity_scaling_
+              << std::endl;
+
     if (i) {
       this->ComputeImageGradientForSequence(i);
       this->InitializeSnakes();
@@ -789,7 +794,7 @@ void Multisnake::DeformSnakesForSequence() {
     this->DeformSnakes();
     this->CutSnakesAtTJunctions();
     this->GroupSnakes();
-    std::cout << "\n# Converged snakes: " << converged_snakes_.size() << std::endl;
+
     converged_snakes_sequence_.push_back(converged_snakes_);
     junctions_sequence_.push_back(junctions_.junction_points());
     junctions_.Reset();

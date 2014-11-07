@@ -521,7 +521,7 @@ void MainWindow::ResetActions() {
 }
 
 QString MainWindow::GetLastDirectory(const std::string &filename) const {
-  QString dir = "../../data";
+  QString dir = "..";
   if (!filename.empty()) { // extract the last directory
     std::string::size_type pos = filename.find_last_of("/\\");
     dir = QString(filename.substr(0, pos).c_str());
@@ -603,7 +603,8 @@ void MainWindow::OpenImageSequence() {
   scroll_bar_->setMaximum(multisnake_->image_sequence().size()-1);
   connect(scroll_bar_, SIGNAL(valueChanged(int)), viewer_, SLOT(UpdateFrame(int)));
   connect(scroll_bar_, SIGNAL(valueChanged(int)), this, SLOT(ShowFrameNumber(int)));
-  connect(scroll_bar_, SIGNAL(valueChanged(int)), this, SLOT(CheckMIP(int)));
+  connect(scroll_bar_, SIGNAL(valueChanged(int)),
+          viewer_, SLOT(UpdateLeftCornerText(int)));
   viewer_->SetupImageSequence(multisnake_->image_sequence());
   // this->ShowFrameNumber(0);
   toggle_planes_->setChecked(true);
@@ -645,9 +646,6 @@ void MainWindow::ShowFrameNumber(int frame_number) {
   statusBar()->showMessage(msg, message_timeout_);
 }
 
-void MainWindow::CheckMIP(int frame_number) {
-  toggle_mip_->setChecked(true);
-}
 
 void MainWindow::SaveAsIsotropicImage() {
   bool ok;
@@ -776,33 +774,12 @@ void MainWindow::LoadSnakesSequence() {
   // unsigned num_snakes = multisnake_->GetNumberOfConvergedSnakes();
   QString msg = "Snakes sequence loaded.";
   statusBar()->showMessage(msg, message_timeout_);
-
-  connect(scroll_bar_, SIGNAL(valueChanged(int)),
-          viewer_, SLOT(UpdateSnakesJunctions(int)));
-  // connect(scroll_bar_, SIGNAL(valueChanged(int)), viewer_, SLOT(UpdateJunctions(int)));
-  // viewer_->RemoveSnakes();
-  viewer_->set_snakes_sequence(multisnake_->converged_snakes_sequence());
-  viewer_->set_junctions_sequence(multisnake_->junctions_sequence());
-  viewer_->UpdateSnakesJunctions(0);
-  // viewer_->UpdateJunctions(0);
-  // scroll_bar_->setValue(0);
-  // viewer_->SetupSnakes(multisnake_->converged_snakes_sequence());
-  toggle_snakes_->setChecked(true);
-  toggle_junctions_->setChecked(true);
-  // viewer_->Render();
-  // viewer_->RemoveJunctions();
-  // viewer_->RemoveSnakes();
-  // viewer_->SetupSnakes(multisnake_->converged_snakes());
-  // viewer_->SetupSnakes(multisnake_->comparing_snakes1(), 1);
-  // viewer_->SetupSnakes(multisnake_->comparing_snakes2(), 2);
-  // toggle_snakes_->setChecked(true);
-  // viewer_->set_snake_filename(snake_filename_);
-  // viewer_->SetupUpperRightCornerText();
-  // toggle_corner_text_->setChecked(true);
-  // viewer_->SetupJunctions(multisnake_->GetJunctions());
-  // viewer_->Render();
+  this->ViewSnakesSequence();
 
   save_snakes_sequence_->setEnabled(true);
+  viewer_->set_snake_filename(snake_filename_);
+  viewer_->SetupUpperRightCornerText();
+  toggle_corner_text_->setChecked(true);
   // save_jfilament_snakes_->setEnabled(true);
   // compare_snakes_->setEnabled(true);
   // toggle_delete_snake_->setEnabled(true);
@@ -985,6 +962,13 @@ void MainWindow::CloseSession() {
   viewer_->Reset();
   viewer_->Render();
   multisnake_->Reset();
+  disconnect(scroll_bar_, SIGNAL(valueChanged(int)),
+             viewer_, SLOT(UpdateSnakesJunctions(int)));
+  disconnect(scroll_bar_, SIGNAL(valueChanged(int)), viewer_, SLOT(UpdateFrame(int)));
+  disconnect(scroll_bar_, SIGNAL(valueChanged(int)), this, SLOT(ShowFrameNumber(int)));
+  disconnect(scroll_bar_, SIGNAL(valueChanged(int)),
+             viewer_, SLOT(UpdateLeftCornerText(int)));
+
   this->ResetActions();
   open_image_->setEnabled(true);
   open_image_sequence_->setEnabled(true);
@@ -1213,19 +1197,11 @@ void MainWindow::DeformOneSnake() {
 }
 
 void MainWindow::DeformSnakesForSequence() {
-
   progress_bar_->setMaximum(multisnake_->GetNumberOfFrames());
   connect(multisnake_, SIGNAL(ExtractionCompleteForFrame(int)),
           progress_bar_, SLOT(setValue(int)));
   multisnake_->DeformSnakesForSequence();
-
-  connect(scroll_bar_, SIGNAL(valueChanged(int)), viewer_, SLOT(UpdateSnakes(int)));
-  connect(scroll_bar_, SIGNAL(valueChanged(int)), viewer_, SLOT(UpdateJunctions(int)));
-  // viewer_->RemoveSnakes();
-  // viewer_->SetupSnakesSequence(multisnake_->converged_snakes_sequence());
-  // toggle_snakes_->setChecked(true);
-  // viewer_->Render();
-
+  this->ViewSnakesSequence();
   initialize_snakes_for_sequence_->setEnabled(false);
   save_snakes_sequence_->setEnabled(true);
   // deform_snakes_->setEnabled(false);
@@ -1249,6 +1225,20 @@ void MainWindow::DeformSnakesForSequence() {
   // compute_point_density_->setEnabled(true);
   // compute_curvature_->setEnabled(true);
   // show_analysis_options_->setEnabled(true);
+}
+
+void MainWindow::ViewSnakesSequence() {
+  connect(scroll_bar_, SIGNAL(valueChanged(int)),
+          viewer_, SLOT(UpdateSnakesJunctions(int)));
+  viewer_->set_snakes_sequence(multisnake_->converged_snakes_sequence());
+  viewer_->set_junctions_sequence(multisnake_->junctions_sequence());
+  toggle_snakes_->setChecked(true);
+  toggle_junctions_->setChecked(true);
+  viewer_->UpdateSnakesJunctions(0);
+  toggle_snakes_->setEnabled(true);
+  toggle_junctions_->setEnabled(true);
+  toggle_delete_junction_->setEnabled(true);
+  toggle_clip_->setEnabled(true);
 }
 
 void MainWindow::CutSnakes() {

@@ -103,6 +103,9 @@ Viewer::Viewer():
   sphere_color_ = kRed;
 
   current_frame_ = 0;
+  volume_shown_ = false;
+  snakes_shown_ = false;
+  junctions_shown_ = false;
 }
 
 Viewer::~Viewer() {
@@ -141,6 +144,8 @@ void Viewer::Reset() {
   //   image_sequence_[i]->Delete();
   // }
   image_sequence_.clear();
+  snakes_sequence_.clear();
+  junctions_sequence_.clear();
   // trimmed_actor_ = NULL;
   // trimmed_snake_ = NULL;
   // trim_tip_index_ = kBigNumber;
@@ -182,47 +187,41 @@ void Viewer::SetupImage(ImageType::Pointer image) {
 
 void Viewer::SetupImageSequence(const std::vector<ImageType::Pointer> &images) {
   assert(image_sequence_.empty());
-  this->SetupDispalyRange(images[images.size()/2]); // use the middle
-                                                    // frame
-  this->ConvertImageSequence(images);
-  for (int i = 0; i < images.size(); i++) {
-    // image_sequence_.push_back(this->ConvertImage(images[i]));
-    this->SetupVolume(image_sequence_[i]);
-    // this->SetupSingleImage(images[i]);
-  }
-  this->SetupSlicePlanes(image_sequence_.front());
 
-  // std::cout << volume_sequence_.size() << std::endl;
+  this->ComputeSequenceIntensityRange(images);
+  this->ConvertImageSequence(images);
+  mip_min_intensity_ = sequence_min_intensity_.back() +
+      0.05 * (sequence_max_intensity_.back() - sequence_min_intensity_.back());
+  mip_max_intensity_ = sequence_max_intensity_.back();
+
+  for (int i = 0; i < images.size(); i++) {
+    this->SetupVolumeSequence(image_sequence_[i], i);
+  }
+  window_ = sequence_max_intensity_.back() - sequence_min_intensity_.back();
+  level_ = sequence_min_intensity_.back() + window_ / 2;
+
+  // this->SetupSlicePlanes(image_sequence_[0]);
+  this->UpdateSlicePlanes(0);
+  this->SetupUpperLeftCornerText(sequence_min_intensity_[0], sequence_max_intensity_[0]);
   this->SetupOrientationMarker();
   this->SetupBoundingBox(volume_sequence_.front());
   this->SetupCubeAxes(image_sequence_.front());
   this->UpdateJunctionRadius(images[images.size()/2]);
 }
 
-void Viewer::SetupDispalyRange(ImageType::Pointer image) {
+void Viewer::ComputeSequenceIntensityRange(
+    const std::vector<ImageType::Pointer> &images) {
   typedef itk::StatisticsImageFilter<ImageType> FilterType;
   FilterType::Pointer filter = FilterType::New();
-  filter->SetInput(image);
-  filter->Update();
-  double min_intensity = filter->GetMinimum();
-  double max_intensity = filter->GetMaximum();
-  window_ = max_intensity - min_intensity;
-  level_ = min_intensity + window_ / 2;
-  mip_min_intensity_ = min_intensity +
-      0.05 * (max_intensity - min_intensity);
-  mip_max_intensity_ = max_intensity;
-  this->SetupUpperLeftCornerText(min_intensity, max_intensity);
+  sequence_min_intensity_.reserve(images.size());
+  sequence_max_intensity_.reserve(images.size());
+  for (int i = 0; i < images.size(); i++) {
+    filter->SetInput(images[i]);
+    filter->Update();
+    sequence_min_intensity_.push_back(filter->GetMinimum());
+    sequence_max_intensity_.push_back(filter->GetMaximum());
+  }
 }
-
-// void Viewer::SetupSingleImage(ImageType::Pointer image) {
-//   typedef itk::ImageToVTKImageFilter<ImageType>  ConnectorType;
-//   ConnectorType::Pointer connector = ConnectorType::New();
-//   connector->SetInput(image);
-//   connector->Update();
-//   // this->SetupSlicePlanes(connector->GetOutput());
-//   this->SetupVolume(connector->GetOutput());
-//   // this->SetupCubeAxes(connector->GetOutput());
-// }
 
 void Viewer::ConvertImageSequence(const std::vector<ImageType::Pointer> &images) {
   volume_sequence_.reserve(images.size());
@@ -237,7 +236,7 @@ void Viewer::ConvertImageSequence(const std::vector<ImageType::Pointer> &images)
   }
 }
 
-void Viewer::SetupVolume(vtkSmartPointer<vtkImageData> data) {
+void Viewer::SetupVolumeSequence(vtkSmartPointer<vtkImageData> data, int index) {
   vtkSmartPointer<vtkPiecewiseFunction> opacity_function =
       vtkSmartPointer<vtkPiecewiseFunction>::New();
 
@@ -270,10 +269,10 @@ void Viewer::SetupVolume(vtkSmartPointer<vtkImageData> data) {
 
 void Viewer::UpdateFrame(int index) {
   if (index == current_frame_) return;
-  // std::cout << "Displaying frame #" << index << std::endl;
-  renderer_->RemoveViewProp(volume_sequence_[current_frame_]);
-  renderer_->AddViewProp(volume_sequence_[index]);
-
+  if (volume_shown_) {
+    renderer_->RemoveViewProp(volume_sequence_[current_frame_]);
+    renderer_->AddViewProp(volume_sequence_[index]);
+  }
   this->UpdateSlicePlanes(index);
 
   current_frame_ = index;
@@ -281,10 +280,14 @@ void Viewer::UpdateFrame(int index) {
 }
 
 void Viewer::UpdateSnakesJunctions(int index) {
-  this->RemoveSnakes();
-  this->SetupSnakes(snakes_sequence_[index]);
-  this->RemoveJunctions();
-  this->SetupJunctions(junctions_sequence_[index]);
+  if (snakes_shown_) {
+    this->RemoveSnakes();
+    this->SetupSnakes(snakes_sequence_[index]);
+  }
+  if (junctions_shown_) {
+    this->RemoveJunctions();
+    this->SetupJunctions(junctions_sequence_[index]);
+  }
   this->Render();
 }
 
@@ -292,7 +295,17 @@ void Viewer::UpdateSnakesJunctions(int index) {
 // }
 
 void Viewer::UpdateSlicePlanes(int index) {
+  double slice_pos[3];
+  for (int i = 0; i < kDimension; i++) {
+    slice_pos[i] = slice_planes_[i]->GetSlicePosition();
+    // slice_planes_[i]->SetInputData(image_sequence_[i]);
+    // slice_planes_[i]->SetWindowLevel(window_, level_);
+    // slice_planes_[i]->UpdatePlacement();
+  }
   this->SetupSlicePlanes(image_sequence_[index]);
+  for (int i = 0; i < kDimension; i++) {
+    slice_planes_[i]->SetSlicePosition(slice_pos[i]);
+  }
 }
 
 void Viewer::UpdateJunctionRadius(ImageType::Pointer image) {
@@ -374,6 +387,7 @@ void Viewer::SetupMIPRendering(vtkImageData *data) {
 }
 
 void Viewer::ToggleMIPRendering(bool state) {
+  volume_shown_ = state;
   if (state) {
     if (volume_sequence_.empty()) {
       renderer_->AddViewProp(volume_);
@@ -439,6 +453,11 @@ void Viewer::SetupUpperLeftCornerText(unsigned min_intensity,
   buffer << "Intensity: [" << min_intensity << ", "
          << max_intensity << "]";
   corner_text_->SetText(2, buffer.str().c_str());
+}
+
+void Viewer::UpdateLeftCornerText(int index) {
+  this->SetupUpperLeftCornerText(sequence_min_intensity_[index],
+                                 sequence_max_intensity_[index]);
 }
 
 void Viewer::SetupUpperRightCornerText() {
@@ -655,6 +674,7 @@ void Viewer::ChangeSnakeColor(Snake *s, double *color) {
 }
 
 void Viewer::ToggleSnakes(bool state) {
+  snakes_shown_ = state;
   if (state) {
     for (ActorSnakeMap::iterator it = actor_snakes_.begin();
          it != actor_snakes_.end(); ++it) {
@@ -718,6 +738,7 @@ void Viewer::SetupSphere(const PointType &point, vtkActor *sphere,
 }
 
 void Viewer::ToggleJunctions(bool state) {
+  junctions_shown_ = state;
   if (state) {
     for (ActorPointMap::const_iterator it = actor_junctions_.begin();
          it != actor_junctions_.end(); ++it) {

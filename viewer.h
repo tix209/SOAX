@@ -135,7 +135,7 @@ class Viewer : public QObject {
 
   void UpdateFrame(int index);
   void UpdateSnakesJunctions(int index);
-  // void UpdateJunctions(int index);
+  void UpdateLeftCornerText(int index);
 
  private slots:
   void SetupClippedSnakes(vtkObject *obj);
@@ -163,7 +163,7 @@ class Viewer : public QObject {
   void SetupSlicePlanes(vtkImageData *data);
   void SetupMIPRendering(vtkImageData *data);
   // void SetupSingleImage(ImageType::Pointer image);
-  void SetupVolume(vtkSmartPointer<vtkImageData> data);
+  void SetupVolumeSequence(vtkSmartPointer<vtkImageData> data, int index);
   void SetupOrientationMarker();
   void SetupUpperLeftCornerText(unsigned min_intensity,
                                 unsigned max_intensity);
@@ -198,6 +198,8 @@ class Viewer : public QObject {
   void ConvertImageSequence(const std::vector<ImageType::Pointer> &images);
   void UpdateSlicePlanes(int index);
 
+  void ComputeSequenceIntensityRange(const std::vector<ImageType::Pointer> &images);
+
 
   QVTKWidget *qvtk_;
   vtkSmartPointer<vtkRenderer> renderer_;
@@ -222,6 +224,8 @@ class Viewer : public QObject {
   double clip_span_;
   unsigned color_segment_step_;
   int current_frame_;
+  std::vector<unsigned> sequence_min_intensity_;
+  std::vector<unsigned> sequence_max_intensity_;
 
   ActorSnakeMap actor_snakes_;
   SnakeActorMap snake_actors_;
@@ -266,6 +270,9 @@ class Viewer : public QObject {
   std::string comparing_snake_filename1_;
   std::string comparing_snake_filename2_;
 
+  bool volume_shown_;
+  bool snakes_shown_;
+  bool junctions_shown_;
 
   static double kWhite[3];
   static double kGray[3];

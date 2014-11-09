@@ -106,6 +106,8 @@ Viewer::Viewer():
   volume_shown_ = false;
   snakes_shown_ = false;
   junctions_shown_ = false;
+
+  corresponding_snake_ = NULL;
 }
 
 Viewer::~Viewer() {
@@ -113,6 +115,7 @@ Viewer::~Viewer() {
   selected_snakes_.clear();
   snakes_sequence_.clear();
   junctions_sequence_.clear();
+  correspondence_.clear();
   this->RemoveJunctions();
   this->RemoveSnakes();
   this->RemoveColorSegments();
@@ -290,9 +293,6 @@ void Viewer::UpdateSnakesJunctions(int index) {
   }
   this->Render();
 }
-
-// void Viewer::UpdateJunctions(int index) {
-// }
 
 void Viewer::UpdateSlicePlanes(int index) {
   double slice_pos[3];
@@ -994,6 +994,7 @@ void Viewer::SelectSnakeForView() {
       actor->GetProperty()->SetColor(selected_snake_color_);
       selected_snake_ = it->second;
       it->second->PrintSelf();
+      this->UpdateCorrespondingSnake();
     }
   }
 }
@@ -1010,6 +1011,104 @@ void Viewer::DeselectSnakeForView() {
       selected_snake_ = NULL;
     }
   }
+}
+
+void Viewer::HighlightCorrespondingSnake(int index) {
+  if (corresponding_snake_) {
+    SnakeActorMap::const_iterator it = snake_actors_.find(corresponding_snake_);
+    if (it != snake_actors_.end()) {
+      std::cout << "find it!" << std::endl;
+      it->second->GetProperty()->SetColor(selected_snake_color_);
+      corresponding_snake_->PrintSelf();
+      selected_snake_ = corresponding_snake_;
+      this->UpdateCorrespondingSnake();
+      this->Render();
+    }
+  }
+}
+
+void Viewer::UpdateCorrespondingSnake() {
+  CorrespondenceMap::const_iterator it = correspondence_.find(selected_snake_);
+  if (it != correspondence_.end()) {
+    corresponding_snake_ = it->second;
+  } else {
+    corresponding_snake_ = NULL;
+  }
+}
+
+void Viewer::SolveCorrespondence() {
+  assert(snakes_sequence_.empty());
+  this->GetAllSnakes();
+  int n = all_snakes_.size();
+  FloatMatrix similarity;
+  similarity.resize(n, std::vector<double>(n, 0.0));
+  this->ComputeSimilarityMatrix(similarity);
+  // fill in the Hungarian
+
+  IntMatrix assignment;
+  assignment.resize(n, std::vector<int>(n, 0));
+  assignment[0][5] = 1;
+  this->UpdateCorrespondenceMap(assignment);
+}
+
+void Viewer::UpdateCorrespondenceMap(const IntMatrix &assignment) {
+  for (int i = 0; i < assignment.size(); i++) {
+    for (int j = 0; j < assignment[i].size(); j++) {
+      if (assignment[i][j]) {
+        std::cout << i << '\t' << j << std::endl;
+        correspondence_[all_snakes_[i]] = all_snakes_[j];
+        break;
+      }
+    }
+  }
+}
+
+void Viewer::GetAllSnakes() {
+  assert(snakes_sequence_.empty());
+  snakes_number_partial_sum_.reserve(snakes_sequence_.size()+1);
+  snakes_number_partial_sum_.push_back(0);
+  for (int i = 0; i < snakes_sequence_.size(); i++) {
+    for (int j = 0; j < snakes_sequence_[i].size(); j++) {
+      all_snakes_.push_back(snakes_sequence_[i][j]);
+    }
+    snakes_number_partial_sum_.push_back(snakes_sequence_[i].size());
+  }
+}
+
+void Viewer::ComputeSimilarityMatrix(FloatMatrix &sim) {
+  assert(!all_snakes_.empty());
+  FloatMatrix dist(sim);
+  // Compute the curve distance first.
+  for (int i = 0; i < dist.size(); i++) {
+    for (int j = 0; j < dist[i].size(); j++) {
+      if (!this->InSameFrame(i, j)) {
+        dist[i][j] = this->ComputeDistance(all_snakes_[i], all_snakes_[j]);
+      }
+    }
+  }
+  double max_dist = this->GetMaximum(dist);
+  for (int i = 0; i < sim.size(); i++) {
+    for (int j = 0; j < sim[i].size(); j++) {
+      if (this->InSameFrame(i, j)) {
+        sim[i][j] = 0.0;
+      } else {
+        sim[i][j] = std::exp(-dist[i][j]/max_dist);
+      }
+    }
+  }
+}
+
+bool Viewer::InSameFrame(int i, int j) {
+  if (i == j) return true;
+  return false;
+}
+
+double Viewer::ComputeDistance(Snake *si, Snake *sj) {
+  return 0.0;
+}
+
+double Viewer::GetMaximum(const FloatMatrix &matrix) {
+  return 0.0;
 }
 
 void Viewer::ToggleDeleteSnake(bool state) {

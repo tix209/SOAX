@@ -27,6 +27,9 @@ class Viewer : public QObject {
   Q_OBJECT
 
  public:
+  typedef std::vector< std::vector<int> > IntMatrix;
+  typedef std::vector< std::vector<double> > FloatMatrix;
+
   Viewer();
   ~Viewer();
   void Reset();
@@ -105,6 +108,9 @@ class Viewer : public QObject {
     junctions_sequence_ = junctions_sequence;
   }
 
+  void SolveCorrespondence();
+
+
   static double *Gray() {return kGray;}
   static double *Red() {return kRed;}
   static double *Magenta() {return kMagenta;}
@@ -136,6 +142,7 @@ class Viewer : public QObject {
   void UpdateFrame(int index);
   void UpdateSnakesJunctions(int index);
   void UpdateLeftCornerText(int index);
+  void HighlightCorrespondingSnake(int index);
 
  private slots:
   void SetupClippedSnakes(vtkObject *obj);
@@ -159,6 +166,7 @@ class Viewer : public QObject {
   typedef std::map<Snake *, vtkActor *> SnakeActorMap;
   typedef std::map<vtkActor *, PointType> ActorPointMap;
   typedef std::vector<vtkActor *> ActorContainer;
+  typedef std::map<Snake*, Snake*> CorrespondenceMap;
 
   void SetupSlicePlanes(vtkImageData *data);
   void SetupMIPRendering(vtkImageData *data);
@@ -200,6 +208,21 @@ class Viewer : public QObject {
 
   void ComputeSequenceIntensityRange(const std::vector<ImageType::Pointer> &images);
 
+  /** Update the CORRESPONDING_SNAKE_ based on the current
+   * SELECTED_SNAKE_, using the information of ASSIGNMENT_MATRIX_.
+   */
+  void UpdateCorrespondingSnake();
+
+  /** Initialize the ALL_SNAKES_ and SNAKES_NUMBER_PARTIAL_SUM_.
+   */
+  void GetAllSnakes();
+
+  void ComputeSimilarityMatrix(FloatMatrix &sim);
+  void UpdateCorrespondenceMap(const IntMatrix &assignment);
+
+  bool InSameFrame(int i, int j);
+  double ComputeDistance(Snake *si, Snake *sj);
+  double GetMaximum(const FloatMatrix &matrix);
 
   QVTKWidget *qvtk_;
   vtkSmartPointer<vtkRenderer> renderer_;
@@ -235,12 +258,18 @@ class Viewer : public QObject {
 
   std::vector<SnakeContainer> snakes_sequence_;
   std::vector<PointContainer> junctions_sequence_;
+  SnakeContainer all_snakes_;
+  // IntMatrix assignment_matrix_;
+  std::vector<int> snakes_number_partial_sum_;
+  // FloatMatrix similarity_matrix_;
+  CorrespondenceMap correspondence_;
 
   vtkActor *on_snake_sphere1_;
   vtkActor *on_snake_sphere2_;
   vtkActor *off_snake_sphere_;
   vtkActor *trimmed_actor_;
   Snake *selected_snake_;
+  Snake *corresponding_snake_;
   Snake *trimmed_snake_;
   unsigned trim_tip_index_;
   unsigned trim_body_index1_;

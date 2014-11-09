@@ -59,6 +59,7 @@ class MainWindow : public QMainWindow {
   void DeformSnakesForSequence();
   void CutSnakes();
   void GroupSnakes();
+  void FindCorrespondence();
 
   void ComputeSphericalOrientation();
   void ComputeRadialOrientation();
@@ -152,6 +153,7 @@ class MainWindow : public QMainWindow {
   QAction *deform_snakes_for_sequence_;
   QAction *cut_snakes_;
   QAction *group_snakes_;
+  QAction *find_correspondence_;
 
   // Actions in Analysis menu
   QAction *compute_spherical_orientation_;

@@ -543,15 +543,17 @@ double Snake::ComputeBackgroundMeanIntensity(bool is_head) const {
       this->ComputeSamplePoint(sample_point, vertex, radial, normal, d, s);
       if (this->IsInsideImage(sample_point)) {
         double intensity = interpolator_->Evaluate(sample_point);
-        bgs.push_back(intensity);
+        if (intensity > background_)
+          bgs.push_back(intensity);
       }
     }
   }
 
-  int number_of_samples = number_of_sectors_ * (radial_far_ - radial_near_);
-  unsigned threshold = static_cast<unsigned>(number_of_samples * 0.5);
-  // std::cout << threshold << std::endl;
-  if (bgs.size() < threshold)  {
+  // int number_of_samples = number_of_sectors_ * (radial_far_ - radial_near_);
+  // unsigned threshold = static_cast<unsigned>(number_of_samples * 0.5);
+
+  // if (bgs.size() < threshold)  {
+  if (bgs.empty()) {
     return -1.0; // return a negative value intentionally
   } else {
     return Mean(bgs);

@@ -292,6 +292,9 @@ void MainWindow::CreateProcessMenuActions() {
   group_snakes_ = new QAction(tr("Group Snakes"), this);
   group_snakes_->setIcon(QIcon(":/icon/Favorites.png"));
   connect(group_snakes_, SIGNAL(triggered()), this, SLOT(GroupSnakes()));
+
+  find_correspondence_ = new QAction(tr("Find Correspondence for Sequence"), this);
+  connect(find_correspondence_, SIGNAL(triggered()), this, SLOT(FindCorrespondence()));
 }
 
 void MainWindow::CreateAnalysisMenuActions() {
@@ -397,16 +400,9 @@ void MainWindow::CreateMenus() {
   process_->addAction(deform_snakes_for_sequence_);
   process_->addAction(cut_snakes_);
   process_->addAction(group_snakes_);
+  process_->addAction(find_correspondence_);
 
   analysis_ = menuBar()->addMenu(tr("&Analysis"));
-  // actin_cable_submenu_ = analysis_->addMenu(tr("Actin Cable"));
-  // contractile_ring_submenu_ = analysis_->addMenu(tr("Contractile Ring"));
-  // fibrin_submenu_ = analysis_->addMenu(tr("Fibrin Network"));
-  // fibrin_submenu_->addAction(compute_spherical_orientation_);
-  // droplet_submenu_ = analysis_->addMenu(tr("Actin Droplet"));
-  // droplet_submenu_->addAction(compute_radial_orientation_);
-  // droplet_submenu_->addAction(compute_point_density_);
-  // droplet_submenu_->addAction(compute_curvature_);
   analysis_->addAction(compute_spherical_orientation_);
   analysis_->addAction(compute_radial_orientation_);
   analysis_->addAction(compute_point_density_);
@@ -507,6 +503,7 @@ void MainWindow::ResetActions() {
   deform_snakes_for_sequence_->setEnabled(false);
   cut_snakes_->setEnabled(false);
   group_snakes_->setEnabled(false);
+  find_correspondence_->setEnabled(false);
 
   compute_spherical_orientation_->setEnabled(false);
   compute_radial_orientation_->setEnabled(false);
@@ -780,6 +777,7 @@ void MainWindow::LoadSnakesSequence() {
   viewer_->set_snake_filename(snake_filename_);
   viewer_->SetupUpperRightCornerText();
   toggle_corner_text_->setChecked(true);
+  find_correspondence_->setEnabled(true);
   // save_jfilament_snakes_->setEnabled(true);
   // compare_snakes_->setEnabled(true);
   // toggle_delete_snake_->setEnabled(true);
@@ -962,12 +960,19 @@ void MainWindow::CloseSession() {
   viewer_->Reset();
   viewer_->Render();
   multisnake_->Reset();
-  disconnect(scroll_bar_, SIGNAL(valueChanged(int)),
-             viewer_, SLOT(UpdateSnakesJunctions(int)));
+  disconnect(multisnake_, SIGNAL(ExtractionCompleteForFrame(int)),
+             progress_bar_, SLOT(setValue(int)));
+  disconnect(multisnake_, SIGNAL(ExtractionCompleteForFrame(int)),
+             progress_bar_, SLOT(setValue(int)));
+
   disconnect(scroll_bar_, SIGNAL(valueChanged(int)), viewer_, SLOT(UpdateFrame(int)));
   disconnect(scroll_bar_, SIGNAL(valueChanged(int)), this, SLOT(ShowFrameNumber(int)));
   disconnect(scroll_bar_, SIGNAL(valueChanged(int)),
              viewer_, SLOT(UpdateLeftCornerText(int)));
+  disconnect(scroll_bar_, SIGNAL(valueChanged(int)),
+             viewer_, SLOT(UpdateSnakesJunctions(int)));
+  disconnect(scroll_bar_, SIGNAL(valueChanged(int)),
+             viewer_, SLOT(HighlightCorrespondingSnake(int)));
 
   this->ResetActions();
   open_image_->setEnabled(true);
@@ -1204,6 +1209,7 @@ void MainWindow::DeformSnakesForSequence() {
   this->ViewSnakesSequence();
   initialize_snakes_for_sequence_->setEnabled(false);
   save_snakes_sequence_->setEnabled(true);
+  find_correspondence_->setEnabled(true);
   // deform_snakes_->setEnabled(false);
   // save_snakes_->setEnabled(true);
   // save_jfilament_snakes_->setEnabled(true);
@@ -1225,6 +1231,12 @@ void MainWindow::DeformSnakesForSequence() {
   // compute_point_density_->setEnabled(true);
   // compute_curvature_->setEnabled(true);
   // show_analysis_options_->setEnabled(true);
+}
+
+void MainWindow::FindCorrespondence() {
+  viewer_->SolveCorrespondence();
+  connect(scroll_bar_, SIGNAL(valueChanged(int)),
+          viewer_, SLOT(HighlightCorrespondingSnake(int)));
 }
 
 void MainWindow::ViewSnakesSequence() {
@@ -1289,33 +1301,57 @@ void MainWindow::ComputeSphericalOrientation() {
       this, tr("Save spherical orientation"), "..",
       tr("Text files(*.txt)"));
   if (filename.isEmpty()) return;
-  multisnake_->ComputeSphericalOrientation(filename.toStdString());
+
+  std::ofstream outfile;
+  outfile.open(filename.toStdString().c_str());
+  if (!outfile.is_open()) {
+    QMessageBox msg_box;
+    msg_box.setText("Opening file failed.");
+    msg_box.setIcon(QMessageBox::Critical);
+    msg_box.exec();
+    return;
+  }
+
+  multisnake_->ComputeSphericalOrientation(outfile);
   statusBar()->showMessage(tr("Spherical orientation file saved."));
+  outfile.close();
 }
 
 void MainWindow::ComputeRadialOrientation() {
   QString filename = QFileDialog::getSaveFileName(
-      this, tr("Save radial orientation file"), "..",
+      this, tr("Save radial orientation"), "..",
       tr("Text files(*.txt)"));
   if (filename.isEmpty()) return;
 
   PointType center;
   analysis_options_dialog_->GetImageCenter(center);
-  std::cout << "Image center: " << center << std::endl;
-  multisnake_->ComputeRadialOrientation(center, filename.toStdString());
+  double pixel_size = analysis_options_dialog_->GetPixelSize();
+
+  std::ofstream outfile;
+  outfile.open(filename.toStdString().c_str());
+  if (!outfile.is_open()) {
+    QMessageBox msg_box;
+    msg_box.setText("Opening file failed.");
+    msg_box.setIcon(QMessageBox::Critical);
+    msg_box.exec();
+    return;
+  }
+
+  multisnake_->ComputeRadialOrientation(center, pixel_size, outfile);
   statusBar()->showMessage(tr("Radial orientation file saved."));
+  outfile.close();
 }
 
 void MainWindow::ComputePointDensity() {
   QString filename = QFileDialog::getSaveFileName(
-      this, tr("Save SOAC point density/intensity file"), "..",
+      this, tr("Save SOAC point density/intensity"), "..",
       tr("Text files(*.txt)"));
   if (filename.isEmpty()) return;
+
   PointType center;
   analysis_options_dialog_->GetImageCenter(center);
   unsigned max_radius = analysis_options_dialog_->GetRadius();
   double pixel_size = analysis_options_dialog_->GetPixelSize();
-  std::cout << "pixel size: " << pixel_size << std::endl;
 
   std::ofstream outfile;
   outfile.open(filename.toStdString().c_str());
@@ -1329,19 +1365,28 @@ void MainWindow::ComputePointDensity() {
 
   multisnake_->ComputePointDensityAndIntensity(center, max_radius,
                                                pixel_size, outfile);
+  statusBar()->showMessage(tr("SOAC point density/intensity file saved."));
   outfile.close();
-  statusBar()->showMessage(
-      tr("SOAC point density/intensity written successfully."));
 }
 
 void MainWindow::ComputeCurvature() {
   QString filename = QFileDialog::getSaveFileName(
-      this, tr("Save curvature file"), "..", tr("Text files(*.txt)"));
+      this, tr("Save curvature"), "..", tr("Text files(*.txt)"));
   if (filename.isEmpty()) return;
   int coarse_graining = analysis_options_dialog_->GetCoarseGraining();
-  std::cout << coarse_graining << std::endl;
-  multisnake_->ComputeCurvature(coarse_graining, filename.toStdString());
+
+  std::ofstream outfile;
+  outfile.open(filename.toStdString().c_str());
+  if (!outfile.is_open()) {
+    QMessageBox msg_box;
+    msg_box.setText("Opening file failed.");
+    msg_box.setIcon(QMessageBox::Critical);
+    msg_box.exec();
+    return;
+  }
+  multisnake_->ComputeCurvature(coarse_graining, outfile);
   statusBar()->showMessage(tr("Curvature file saved."));
+  outfile.close();
 }
 
 void MainWindow::ShowAnalysisOptions() {

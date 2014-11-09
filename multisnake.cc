@@ -1457,24 +1457,15 @@ void Multisnake::PrintGroundTruthLocalSNRValues(int radial_near,
 
 
 void Multisnake::ComputeRadialOrientation(const PointType &center,
-                                          const std::string &filename) const {
+                                          double pixel_size,
+                                          std::ostream & os) const {
   if (converged_snakes_.empty()) return;
 
-  std::ofstream outfile;
-  outfile.open(filename.c_str());
-  if (!outfile.is_open()) {
-    std::cerr << "Cannot open file for radial orientation results."
-              << std::endl;
-    return;
-  }
-
-  const unsigned width = 15;
-  outfile << "Image file\t" << image_filename_ << "\n"
+  const unsigned width = 16;
+  os << "Image file\t" << image_filename_ << "\n"
           << "Image center\t" << center << "\n"
           << std::setw(width) << "radius (um)"
           << std::setw(width) << "theta" << std::endl;
-
-  const double spacing = 0.166; // droplet image
 
   for (SnakeConstIterator it = converged_snakes_.begin();
        it != converged_snakes_.end(); ++it) {
@@ -1482,12 +1473,10 @@ void Multisnake::ComputeRadialOrientation(const PointType &center,
       double r, theta;
       this->ComputeRTheta((*it)->GetPoint(i), (*it)->GetPoint(i+1),
                           center, r, theta);
-      outfile << std::setw(width) << r * spacing
+      os << std::setw(width) << r * pixel_size
               << std::setw(width) << theta << std::endl;
     }
   }
-
-  outfile.close();
 }
 
 void Multisnake::ComputeRTheta(const PointType &point1,
@@ -1572,17 +1561,8 @@ void Multisnake::ComputePointDensityAndIntensity(const PointType &center,
   }
 }
 
-void Multisnake::ComputeCurvature(int coarse_graining,
-                                  const std::string &filename) const {
-  std::ofstream outfile;
-  outfile.open(filename.c_str());
-  if (!outfile.is_open()) {
-    std::cerr << "Cannot open file for snake point density results."
-              << std::endl;
-    return;
-  }
-
-  outfile << "Image file\t" << image_filename_ << "\n"
+void Multisnake::ComputeCurvature(int coarse_graining, std::ostream &os) const {
+  os << "Image file\t" << image_filename_ << "\n"
           << "Coarse graining\t" << coarse_graining << std::endl;
 
   for (SnakeConstIterator it = converged_snakes_.begin();
@@ -1598,24 +1578,14 @@ void Multisnake::ComputeCurvature(int coarse_graining,
       vec2.Normalize();
       double length = coarse_graining * (*it)->spacing();
       double curvature = (vec1 - vec2).GetNorm() / length;
-      outfile << curvature << std::endl;
+      os << curvature << std::endl;
     }
   }
-  outfile.close();
 }
 
-void Multisnake::ComputeSphericalOrientation(
-    const std::string &filename) const {
-  std::ofstream outfile;
-  outfile.open(filename.c_str());
-  if (!outfile.is_open()) {
-    std::cerr << "Cannot open file for snake point density results."
-              << std::endl;
-    return;
-  }
-
-  const unsigned width = 15;
-  outfile << "Image file\t" << image_filename_ << "\n"
+void Multisnake::ComputeSphericalOrientation(std::ostream &os) const {
+  const unsigned width = 16;
+  os << "Image file\t" << image_filename_ << "\n"
           << std::setw(width) << "theta"
           << std::setw(width) << "phi" << std::endl;
   for (SnakeConstIterator it = converged_snakes_.begin();
@@ -1624,11 +1594,10 @@ void Multisnake::ComputeSphericalOrientation(
       VectorType vector = (*it)->GetPoint(i) - (*it)->GetPoint(i+1);
       double theta, phi;
       this->ComputeThetaPhi(vector, theta, phi);
-      outfile << std::setw(width) << theta
-              << std::setw(width) << phi << std::endl;
+      os << std::setw(width) << theta
+         << std::setw(width) << phi << std::endl;
     }
   }
-  outfile.close();
 }
 
 void Multisnake::ComputeThetaPhi(VectorType vector,

@@ -185,15 +185,15 @@ class Multisnake : public QObject {
   void PrintGroundTruthLocalSNRValues(int radial_near, int radial_far) const;
 
   void ComputeRadialOrientation(const PointType &center,
-                                const std::string &filename) const;
+                                double pixel_size,
+                                std::ostream & os) const;
 
   void ComputePointDensityAndIntensity(const PointType &center,
                                        unsigned max_r, double pixel_size,
                                        std::ostream & os) const;
 
-  void ComputeCurvature(int coarse_graining,
-                        const std::string &filename) const;
-  void ComputeSphericalOrientation(const std::string &filename) const;
+  void ComputeCurvature(int coarse_graining, std::ostream &os) const;
+  void ComputeSphericalOrientation(std::ostream &os) const;
 
   void DeleteSnakes(const SnakeSet &snakes);
 

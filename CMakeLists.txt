@@ -82,7 +82,8 @@ add_executable(batch_soax batch_soax.cc ${common_srcs}
 
 # # add_executable(snr image_snr.cc ${common_srcs})
 # add_executable(syn2 synthetic_tamara.cc ${common_srcs}
-#   ${multisnake_moc} multisnake.cc multisnake.h)
+add_executable(syn3 synthetic_scirep.cc ${common_srcs}
+  ${multisnake_moc} multisnake.cc multisnake.h)
 # # add_executable(snapshots batch_snapshots.cc)
 # add_executable(batch_resample batch_resample.cc)
 
@@ -131,6 +132,7 @@ target_link_libraries(batch_soax
 #   )
 
 # target_link_libraries(syn2 ${ITK_LIBRARIES})
+target_link_libraries(syn3 ${ITK_LIBRARIES})
 
 # target_link_libraries(batch_resample
 #   ${ITK_LIBRARIES}

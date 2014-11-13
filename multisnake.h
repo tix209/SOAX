@@ -252,6 +252,8 @@ class Multisnake : public QObject {
 
   void GenerateSyntheticTamara(double foreground, double background,
                                const char *filename) const;
+  void GenerateSyntheticImageShotNoise(unsigned foreground, unsigned background, unsigned offset,
+                                       double scaling, const std::string &filename) const;
   void LoadCurves(const char *filename, double *offset);
 
  signals:

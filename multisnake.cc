@@ -21,6 +21,9 @@
 #include "itkInvertIntensityImageFilter.h"
 #include "itkRegionOfInterestImageFilter.h"
 #include "itkPasteImageFilter.h"
+#include "itkStatisticsImageFilter.h"
+#include "itkImageDuplicator.h"
+#include "itkAbsoluteValueDifferenceImageFilter.h"
 #include "solver_bank.h"
 #include "utility.h"
 
@@ -1944,6 +1947,109 @@ void Multisnake::ComputeResultSnakesVertexErrorHausdorffDistance(
   hausdorff = max_error1 > max_error2 ? max_error1 : max_error2;
   // std::cout << "hausdorff: " << hausdorff << std::endl;
 }
+
+void Multisnake::GenerateSyntheticImageShotNoise(unsigned foreground, unsigned background,
+                                                 unsigned offset, double scaling,
+                                                 const std::string &filename) const {
+  if (!image_ || comparing_snakes1_.empty()) return;
+
+  FloatImageType::Pointer img = FloatImageType::New();
+  img->SetRegions(image_->GetLargestPossibleRegion());
+  img->Allocate();
+  img->FillBuffer(background);
+
+  // Assign centerline intensities
+  for (SnakeConstIterator it = comparing_snakes1_.begin();
+       it != comparing_snakes1_.end(); ++it) {
+    for (unsigned i = 0; i < (*it)->GetSize(); ++i) {
+      FloatImageType::IndexType index;
+      img->TransformPhysicalPointToIndex((*it)->GetPoint(i), index);
+      // img->SetPixel(index, img->GetPixel(index) + foreground);
+      img->SetPixel(index, foreground);
+    }
+  }
+
+  // apply PSF
+  double variance[3] = {3.0, 3.0, 3*2.88*2.88};
+  typedef itk::DiscreteGaussianImageFilter<FloatImageType, FloatImageType> GaussianFilterType;
+  GaussianFilterType::Pointer gaussian = GaussianFilterType::New();
+  gaussian->SetInput(img);
+  gaussian->SetVariance(variance);
+
+  // rescale the intensity back to foreground
+  typedef itk::RescaleIntensityImageFilter<FloatImageType, FloatImageType> RescalerType;
+  RescalerType::Pointer rescaler = RescalerType::New();
+  rescaler->SetInput(gaussian->GetOutput());
+  rescaler->SetOutputMinimum(background);
+  rescaler->SetOutputMaximum(foreground);
+  rescaler->Update();
+  img = rescaler->GetOutput();
+
+  typedef itk::StatisticsImageFilter<FloatImageType> StatisticsImageFilterType;
+  StatisticsImageFilterType::Pointer stat = StatisticsImageFilterType::New();
+  stat->SetInput(img);
+  stat->Update();
+  double mean_intensity = stat->GetMean();
+  // std::cout << "Mean: " << mean_intensity << std::endl;
+  double snr = std::sqrt(mean_intensity * scaling);
+  std::cout << "SNR: " << snr << std::endl;
+
+  typedef itk::ImageDuplicator<FloatImageType> DuplicatorType;
+  DuplicatorType::Pointer duplicator = DuplicatorType::New();
+  duplicator->SetInputImage(img);
+  duplicator->Update();
+  FloatImageType::Pointer clean_img = duplicator->GetOutput();
+
+  // apply shot noise
+  typedef itk::ImageRegionIterator<FloatImageType> IteratorType;
+  IteratorType iter(img, img->GetLargestPossibleRegion());
+  std::mt19937 generator(2003);
+  for (iter.GoToBegin(); !iter.IsAtEnd(); ++iter) {
+    std::poisson_distribution<> distribution(iter.Get() * scaling);
+    double intensity = distribution(generator) / scaling + offset;
+    double assigned_intensity = intensity > std::numeric_limits<unsigned short>::max()?
+        std::numeric_limits<unsigned short>::max() : intensity;
+    iter.Set(assigned_intensity);
+  }
+
+  // compute the difference image
+  typedef itk::AbsoluteValueDifferenceImageFilter <FloatImageType,
+                                                   FloatImageType,
+                                                   FloatImageType> DifferenceImageFilterType;
+
+  DifferenceImageFilterType::Pointer differ = DifferenceImageFilterType::New();
+  differ->SetInput1(img);
+  differ->SetInput2(clean_img);
+  differ->Update();
+  FloatImageType::Pointer diff_img = differ->GetOutput();
+
+  typedef itk::CastImageFilter<FloatImageType, ImageType> CasterType;
+  CasterType::Pointer caster = CasterType::New();
+  caster->SetInput(img);
+
+  typedef itk::ImageFileWriter<ImageType> WriterType;
+  WriterType::Pointer writer = WriterType::New();
+  writer->SetFileName(filename);
+  writer->SetInput(caster->GetOutput());
+  try {
+    writer->Update();
+  } catch(itk::ExceptionObject &e) {
+    std::cerr << "Multisnake::GenerateSyntheticImageShotNoise: Exception caught!\n"
+              << e << std::endl;
+  }
+
+  CasterType::Pointer caster2 = CasterType::New();
+  caster2->SetInput(diff_img);
+  const std::string label("-diff");
+  std::string diff_filename = filename;
+  diff_filename.insert(diff_filename.begin() + diff_filename.find_last_of('.'),
+                       label.begin(), label.end());
+  WriterType::Pointer writer2 = WriterType::New();
+  writer2->SetFileName(diff_filename);
+  writer2->SetInput(caster2->GetOutput());
+  writer2->Update();
+}
+
 
 void Multisnake::GenerateSyntheticTamara(double foreground, double background,
                                          const char *filename) const {

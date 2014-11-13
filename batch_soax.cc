@@ -135,12 +135,13 @@ int main(int argc, char **argv) {
 
               std::string snake_name = ConstructSnakeFilename(
                   image_path.string(), ridge_threshold, stretch);
+              std::cout << snake_name << std::endl;
               multisnake.SaveSnakes(multisnake.converged_snakes(),
                                     snake_path.string() + snake_name);
 
               std::cout << "Segmentation completed (Evolution time: "
                         << time_elasped << "s)" << std::endl;
-              multisnake.Reset();
+              multisnake.ResetContainers();
               stretch += stretch_range[1];
             }
             ridge_threshold += ridge_range[1];

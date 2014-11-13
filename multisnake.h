@@ -26,6 +26,7 @@ class Multisnake : public QObject {
   Multisnake();
   ~Multisnake();
   void Reset();
+  void ResetContainers();
 
   /*
    * Load the image and set image_filename_.

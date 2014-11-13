@@ -55,8 +55,10 @@ Multisnake::~Multisnake() {
 
 void Multisnake::Reset() {
   this->ClearSnakeContainer(initial_snakes_);
-  // this->ClearSnakeContainer(converged_snakes_);
-  converged_snakes_.clear();
+  if (converged_snakes_sequence_.empty())
+    this->ClearSnakeContainer(converged_snakes_);
+  else
+    converged_snakes_.clear();
   this->ClearSnakeContainer(comparing_snakes1_);
   this->ClearSnakeContainer(comparing_snakes2_);
   this->ClearSnakeContainerSequence(converged_snakes_sequence_);
@@ -68,6 +70,13 @@ void Multisnake::Reset() {
   image_ = NULL;
   external_force_ = NULL;
   solver_bank_->Reset();
+}
+
+void Multisnake::ResetContainers() {
+  this->ClearSnakeContainer(initial_snakes_);
+  this->ClearSnakeContainer(converged_snakes_);
+  junctions_.Reset();
+  solver_bank_->Reset(false);
 }
 
 void Multisnake::LoadImage(const std::string &filename) {
@@ -1202,7 +1211,7 @@ void Multisnake::SaveSnakes(const SnakeContainer &snakes,
   std::ofstream outfile;
   outfile.open(filename.c_str());
   if (!outfile.is_open()) {
-    std::cerr << "SaveSnakes: Couldn't open file: " << outfile << std::endl;
+    std::cerr << "SaveSnakes: Couldn't open file: " << filename << std::endl;
     return;
   }
 

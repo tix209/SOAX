@@ -1510,13 +1510,16 @@ void Multisnake::ComputeRTheta(const PointType &point1,
 void Multisnake::ComputePointDensityAndIntensity(const PointType &center,
                                                  unsigned max_r,
                                                  double pixel_size,
+                                                 unsigned type,
                                                  std::ostream & os) const {
   if (converged_snakes_.empty()) return;
 
   const unsigned width = 16;
   os << "Image file\t" << image_filename_
      << "\nImage center\t" << center
-     << "\nMax radius\t" << max_r << "\n"
+     << "\nMax radius\t" << max_r
+     << "\nType\t" << type << "\n"
+     << std::setw(width) << "radius (pixel)"
      << std::setw(width) << "radius (um)"
      << std::setw(width) << "soac density"
      << std::setw(width) << "soac intensity"
@@ -1566,7 +1569,8 @@ void Multisnake::ComputePointDensityAndIntensity(const PointType &center,
     voxel_intensities[i] /= voxel_counts[i];
     double r = (i+1) * pixel_size;
     double density = snaxel_counts[i] / (4 * kPi * r * r);
-    os << std::setw(width) << r
+    os << std::setw(width) << i + 1
+       << std::setw(width) << r
        << std::setw(width) << density
        << std::setw(width) << snake_intensities[i]
        << std::setw(width) << voxel_intensities[i] << std::endl;

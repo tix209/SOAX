@@ -29,6 +29,7 @@ class AnalysisOptionsDialog : public QDialog {
 
   unsigned GetRadius() const;
   double GetPixelSize() const;
+  unsigned GetType() const;
 
  public slots:
   void EnableOKButton();
@@ -44,6 +45,7 @@ class AnalysisOptionsDialog : public QDialog {
   QLineEdit *center_z_edit_;
   QLineEdit *radius_edit_;
   QLineEdit *pixel_size_edit_;
+  QLineEdit *type_edit_;
   QDialogButtonBox *button_box_;
 
   DISALLOW_COPY_AND_ASSIGN(AnalysisOptionsDialog);

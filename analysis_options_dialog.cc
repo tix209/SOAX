@@ -55,6 +55,7 @@ QGroupBox * AnalysisOptionsDialog::CreatePointDensityGroup() {
   center_z_edit_ = new QLineEdit("0");
   radius_edit_ = new QLineEdit("100");
   pixel_size_edit_ = new QLineEdit("1.0");
+  type_edit_ = new QLineEdit("0");
 
   connect(center_x_edit_, SIGNAL(textChanged(const QString &)),
           this, SLOT(EnableOKButton()));
@@ -66,19 +67,22 @@ QGroupBox * AnalysisOptionsDialog::CreatePointDensityGroup() {
           this, SLOT(EnableOKButton()));
   connect(pixel_size_edit_, SIGNAL(textChanged(const QString &)),
           this, SLOT(EnableOKButton()));
+  connect(type_edit_, SIGNAL(textChanged(const QString &)),
+          this, SLOT(EnableOKButton()));
 
   QLabel *center_label = new QLabel(tr("Center (x, y, z)"));
   // QLabel *center_y_label = new QLabel(tr("Center y"));
   // QLabel *center_z_label = new QLabel(tr("Center z"));
-  QLabel *radius_label = new QLabel(tr("Maximum radius"));
+  QLabel *radius_label = new QLabel(tr("Max radius"));
   QLabel *pixel_size_label = new QLabel(tr("Pixel size (um)"));
+  QLabel *type_label = new QLabel(tr("Type"));
 
   QHBoxLayout *hlayout1 = new QHBoxLayout;
   hlayout1->addWidget(center_label);
   hlayout1->addWidget(center_x_edit_);
   hlayout1->addWidget(center_y_edit_);
   hlayout1->addWidget(center_z_edit_);
-
+  hlayout1->addStretch();
   // QHBoxLayout *hlayout2 = new QHBoxLayout;
   // hlayout2->addWidget(center_y_label);
   // hlayout2->addWidget(center_y_edit_);
@@ -92,6 +96,8 @@ QGroupBox * AnalysisOptionsDialog::CreatePointDensityGroup() {
   hlayout4->addWidget(radius_edit_);
   hlayout4->addWidget(pixel_size_label);
   hlayout4->addWidget(pixel_size_edit_);
+  hlayout4->addWidget(type_label);
+  hlayout4->addWidget(type_edit_);
   hlayout4->addStretch();
 
   QVBoxLayout *vlayout  = new QVBoxLayout;
@@ -152,6 +158,10 @@ unsigned AnalysisOptionsDialog::GetRadius() const {
 
 double AnalysisOptionsDialog::GetPixelSize() const {
   return pixel_size_edit_->text().toDouble();
+}
+
+unsigned AnalysisOptionsDialog::GetType() const {
+  return type_edit_->text().toUInt();
 }
 
 } // namespace soax

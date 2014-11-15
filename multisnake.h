@@ -191,7 +191,7 @@ class Multisnake : public QObject {
 
   void ComputePointDensityAndIntensity(const PointType &center,
                                        unsigned max_r, double pixel_size,
-                                       std::ostream & os) const;
+                                       unsigned type, std::ostream & os) const;
 
   void ComputeCurvature(int coarse_graining, std::ostream &os) const;
   void ComputeSphericalOrientation(std::ostream &os) const;

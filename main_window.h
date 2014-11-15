@@ -197,6 +197,7 @@ class MainWindow : public QMainWindow {
   std::string snake_filename_;
   std::string viewpoint_filename_;
   std::string snapshot_filename_;
+  std::string analysis_filename_;
 
   Multisnake *multisnake_;
   Viewer *viewer_;

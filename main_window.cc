@@ -1297,13 +1297,14 @@ void MainWindow::GroupSnakes() {
 }
 
 void MainWindow::ComputeSphericalOrientation() {
+  QString dir = this->GetLastDirectory(analysis_filename_);
   QString filename = QFileDialog::getSaveFileName(
-      this, tr("Save spherical orientation"), "..",
-      tr("Text files(*.txt)"));
+      this, tr("Save spherical orientation"), dir, tr("Text files (*.txt)"));
   if (filename.isEmpty()) return;
+  analysis_filename_ = filename.toStdString();
 
   std::ofstream outfile;
-  outfile.open(filename.toStdString().c_str());
+  outfile.open(analysis_filename_.c_str());
   if (!outfile.is_open()) {
     QMessageBox msg_box;
     msg_box.setText("Opening file failed.");
@@ -1318,17 +1319,18 @@ void MainWindow::ComputeSphericalOrientation() {
 }
 
 void MainWindow::ComputeRadialOrientation() {
+  QString dir = this->GetLastDirectory(analysis_filename_);
   QString filename = QFileDialog::getSaveFileName(
-      this, tr("Save radial orientation"), "..",
-      tr("Text files(*.txt)"));
+      this, tr("Save radial orientation"), dir, tr("Text files (*.txt)"));
   if (filename.isEmpty()) return;
+  analysis_filename_ = filename.toStdString();
 
   PointType center;
   analysis_options_dialog_->GetImageCenter(center);
   double pixel_size = analysis_options_dialog_->GetPixelSize();
 
   std::ofstream outfile;
-  outfile.open(filename.toStdString().c_str());
+  outfile.open(analysis_filename_.c_str());
   if (!outfile.is_open()) {
     QMessageBox msg_box;
     msg_box.setText("Opening file failed.");
@@ -1343,18 +1345,20 @@ void MainWindow::ComputeRadialOrientation() {
 }
 
 void MainWindow::ComputePointDensity() {
+  QString dir = this->GetLastDirectory(analysis_filename_);
   QString filename = QFileDialog::getSaveFileName(
-      this, tr("Save SOAC point density/intensity"), "..",
-      tr("Text files(*.txt)"));
+      this, tr("Save SOAC point density/intensity"), dir, tr("Text files (*.txt)"));
   if (filename.isEmpty()) return;
+  analysis_filename_ = filename.toStdString();
 
   PointType center;
   analysis_options_dialog_->GetImageCenter(center);
   unsigned max_radius = analysis_options_dialog_->GetRadius();
   double pixel_size = analysis_options_dialog_->GetPixelSize();
+  unsigned type = analysis_options_dialog_->GetType();
 
   std::ofstream outfile;
-  outfile.open(filename.toStdString().c_str());
+  outfile.open(analysis_filename_.c_str());
   if (!outfile.is_open()) {
     QMessageBox msg_box;
     msg_box.setText("Opening file failed.");
@@ -1364,19 +1368,22 @@ void MainWindow::ComputePointDensity() {
   }
 
   multisnake_->ComputePointDensityAndIntensity(center, max_radius,
-                                               pixel_size, outfile);
+                                               pixel_size, type, outfile);
   statusBar()->showMessage(tr("SOAC point density/intensity file saved."));
   outfile.close();
 }
 
 void MainWindow::ComputeCurvature() {
+  QString dir = this->GetLastDirectory(analysis_filename_);
   QString filename = QFileDialog::getSaveFileName(
-      this, tr("Save curvature"), "..", tr("Text files(*.txt)"));
+      this, tr("Save curvature"), dir, tr("Text files (*.txt)"));
   if (filename.isEmpty()) return;
+  analysis_filename_ = filename.toStdString();
+
   int coarse_graining = analysis_options_dialog_->GetCoarseGraining();
 
   std::ofstream outfile;
-  outfile.open(filename.toStdString().c_str());
+  outfile.open(analysis_filename_.c_str());
   if (!outfile.is_open()) {
     QMessageBox msg_box;
     msg_box.setText("Opening file failed.");

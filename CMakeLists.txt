@@ -81,7 +81,8 @@ add_executable(eval_f evaluate_f.cc ${common_srcs}
   ${multisnake_moc} multisnake.cc multisnake.h)
 add_executable(best_snake best_snake.cc ${common_srcs}
   ${multisnake_moc} multisnake.cc multisnake.h)
-
+add_executable(batch_droplet_intensity batch_droplet_intensity.cc
+  ${common_srcs} ${multisnake_moc} multisnake.cc multisnake.h)
 # # add_executable(snr image_snr.cc ${common_srcs})
 # add_executable(syn2 synthetic_tamara.cc ${common_srcs}
 add_executable(syn3 synthetic_scirep.cc ${common_srcs}
@@ -119,6 +120,14 @@ target_link_libraries(eval_f
   )
 
 target_link_libraries(best_snake
+  ${QT_LIBRARIES}
+  ${ITK_LIBRARIES}
+  ${Boost_PROGRAM_OPTIONS_LIBRARY}
+  ${Boost_FILESYSTEM_LIBRARY}
+  ${Boost_SYSTEM_LIBRARY}
+  )
+
+target_link_libraries(batch_droplet_intensity
   ${QT_LIBRARIES}
   ${ITK_LIBRARIES}
   ${Boost_PROGRAM_OPTIONS_LIBRARY}

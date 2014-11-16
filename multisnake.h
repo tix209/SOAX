@@ -257,6 +257,9 @@ class Multisnake : public QObject {
                                        double scaling, const std::string &filename) const;
   void LoadCurves(const char *filename, double *offset);
 
+  double ComputeDropletMeanIntensity(PointType center, double radius);
+
+
  signals:
   void ExtractionProgressed(int value);
   void ExtractionCompleteForFrame(int frame_index);

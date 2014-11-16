@@ -82,6 +82,7 @@ add_executable(eval_f evaluate_f.cc ${common_srcs}
 add_executable(best_snake best_snake.cc ${common_srcs}
   ${multisnake_moc} multisnake.cc multisnake.h)
 add_executable(batch_droplet_intensity batch_droplet_intensity.cc
+  droplet_info_dict.h droplet_info_dict.cc droplet_info.h droplet_info.cc
   ${common_srcs} ${multisnake_moc} multisnake.cc multisnake.h)
 # # add_executable(snr image_snr.cc ${common_srcs})
 # add_executable(syn2 synthetic_tamara.cc ${common_srcs}

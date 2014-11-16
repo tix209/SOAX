@@ -2317,4 +2317,19 @@ ImageType::PixelType Multisnake::GetMaxImageIntensity() const {
   return filter->GetMaximum();
 }
 
+double Multisnake::ComputeDropletMeanIntensity(PointType center, double radius) {
+  DataContainer intensities;
+  typedef itk::ImageRegionConstIteratorWithIndex<ImageType> IteratorType;
+  assert(image_);
+  IteratorType it(image_, image_->GetLargestPossibleRegion());
+  for (it.GoToBegin(); !it.IsAtEnd(); ++it) {
+    PointType p;
+    image_->TransformIndexToPhysicalPoint(it.GetIndex(), p);
+    if (p.EuclideanDistanceTo(center) < radius)
+      intensities.push_back(it.Get());
+  }
+  return Mean(intensities);
+}
+
+
 } // namespace soax

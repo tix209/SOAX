@@ -9,9 +9,11 @@
 
 
 #include <iostream>
+#include <fstream>
 #include "boost/program_options.hpp"
 #include "boost/filesystem.hpp"
 #include "multisnake.h"
+#include "droplet_info_dict.h"
 
 int main (int argc, char **argv) {
   try {
@@ -30,8 +32,12 @@ int main (int argc, char **argv) {
         ("background,b", po::value<int>()->required(),
          "Mean intensity of background");
 
+    po::options_description optional("Optional opitions");
+    optional.add_options()
+        ("output,o", po::value<std::string>(), "Path of output file (.csv)");
+
     po::options_description all("Allowed options");
-    all.add(generic).add(required);
+    all.add(generic).add(required).add(optional);
     po::variables_map vm;
     po::store(parse_command_line(argc, argv, all), vm);
 
@@ -59,14 +65,47 @@ int main (int argc, char **argv) {
     try {
       soax::Multisnake multisnake;
       if (fs::is_directory(image_dir)) {
+        soax::DropletInfoDict droplet_infos;
+        std::string info_filename(vm["droplet"].as<std::string>());
+        if (!droplet_infos.LoadInfo(info_filename)) {
+          std::cerr << "Error reading " << info_filename << std::endl;
+          return EXIT_FAILURE;
+        }
+
+        std::string output_filename("droplet_mean_foregrounds.txt");
+        if (vm.count("output"))
+          output_filename = vm["output"].as<std::string>();
+        fs::path outpath(output_filename);
+        if (fs::exists(outpath)) {
+          std::cout << "Warning: output file aleady exists. "
+              "New output will be appended to its end!" << std::endl;
+        }
+
+        std::ofstream outfile(output_filename.c_str(), std::ofstream::app);
+        if (!outfile) {
+          std::cerr << "Couldn't open outfile " << output_filename << std::endl;
+          return EXIT_FAILURE;
+        }
+        outfile << "ImageFileName,MeanForeground" << std::endl;
+
         typedef std::vector<fs::path> Paths;
         Paths image_paths;
         std::copy(fs::directory_iterator(image_dir), fs::directory_iterator(),
                   back_inserter(image_paths));
         std::sort(image_paths.begin(), image_paths.end());
-        for (Paths::const_iterator it = image_paths.begin(); it != image_paths.end(); ++it) {
-          std::cout << it->filename().string() << std::endl;
+        for (Paths::const_iterator it = image_paths.begin();
+             it != image_paths.end(); ++it) {
+          std::string imagename = it->filename().string();
+          if (droplet_infos.Has(imagename)) {
+            multisnake.LoadImage(it->string());
+            soax::PointType center = droplet_infos.Get(imagename).center();
+            double radius = droplet_infos.Get(imagename).radius();
+            double intensity = multisnake.ComputeDropletMeanIntensity(center, radius);
+            int background = vm["background"].as<int>();
+            outfile << imagename << "," << intensity - background << std::endl;
+          }
         }
+        outfile.close();
       } else {
         std::cerr << "Argument of --image is not a directory. Abort." << std::endl;
         return EXIT_FAILURE;

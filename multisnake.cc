@@ -1334,39 +1334,6 @@ void Multisnake::PrintSnakes(const SnakeContainer &snakes) const {
   }
 }
 
-
-// void Multisnake::EvaluateByVertexErrorHausdorffDistance(
-//     const std::string &snake_path,
-//     const std::string &filename) const {
-//   std::ofstream outfile;
-//   outfile.open(filename.c_str(), std::ios::out | std::ios::app);
-//   if (!outfile.is_open()) {
-//     std::cerr << "Couldn't open error stat file: " << filename << std::endl;
-//     return;
-//   }
-
-//   double vertex_error = 20.0;
-//   double hausdorff = 60.0;
-//   if (!converged_snakes_.empty()) {
-//     DataContainer errors1, errors2;
-//     this->ComputeErrorFromSnakesToComparingSnakes(errors1);
-//     this->ComputeErrorFromComparingSnakesToSnakes(errors2);
-//     vertex_error = (Mean(errors1) + Mean(errors2))/2;
-
-//     double max_error1 = Maximum(errors1);
-//     double max_error2 = Maximum(errors2);
-//     hausdorff = max_error1 > max_error2 ? max_error1 : max_error2;
-//   }
-
-//   const unsigned width = 10;
-//   outfile << std::setw(width) << ridge_threshold_
-//           << std::setw(width) << Snake::stretch_factor()
-//           << std::setw(width) << vertex_error
-//           << std::setw(width) << hausdorff
-//           << "\t" << GetImageName(snake_path) << std::endl;
-//   outfile.close();
-// }
-
 void Multisnake::ComputeErrorFromSnakesToComparingSnakes(
     DataContainer &errors) const {
   for (SnakeConstIterator iter = converged_snakes_.begin();
@@ -1404,55 +1371,6 @@ double Multisnake::ComputeShortestDistance(
   }
   return min_dist;
 }
-
-
-// void Multisnake::EvaluateByFFunction(double threshold, double penalizer,
-//                                      int radial_near, int radial_far,
-//                                      const std::string &snake_path,
-//                                      const std::string &filename) const {
-//   std::ofstream outfile;
-//   outfile.open(filename.c_str(), std::ios::out | std::ios::app);
-//   if (!outfile.is_open()) {
-//     std::cerr << "Couldn't open f-function file: " << filename << std::endl;
-//     return;
-//   }
-
-//   double fvalue = this->ComputeFValue(converged_snakes_, threshold,
-//                                       penalizer, radial_near, radial_far);
-//   // if (!converged_snakes_.empty()) {
-//   //   // interpolator_->SetInputImage(image_);
-//   //   unsigned total_npoints = 0;
-//   //   unsigned npoints_low_snr = 0;
-//   //   for (SnakeConstIterator it = converged_snakes_.begin();
-//   //        it != converged_snakes_.end(); it++) {
-//   //     for (unsigned i = 0; i < (*it)->GetSize(); i++) {
-//   //       double local_snr = 0.0;
-//   //       bool local_bg_defined = (*it)->ComputeLocalSNR(
-//   //           i, radial_near, radial_far, local_snr);
-//   //       if (local_bg_defined) {
-//   //         total_npoints++;
-//   //         if (local_snr < threshold) npoints_low_snr++;
-//   //       }
-//   //     }
-//   //   }
-//   //   ImageType::SizeType size = image_->GetLargestPossibleRegion().GetSize();
-//   //   double normalizer = std::sqrt(static_cast<double>(
-//   //       size[1]*size[1]+size[2]*size[2]+size[0]*size[0]));
-//   //   fvalue = (penalizer * npoints_low_snr - total_npoints) *
-//   //       Snake::desired_spacing() / normalizer;
-//   // }
-
-//   const unsigned width = 15;
-//   outfile << std::setw(width) << ridge_threshold_
-//           << std::setw(width) << Snake::stretch_factor()
-//           << std::setw(width) << fvalue
-//           << std::setw(width) << threshold
-//           << std::setw(width) << penalizer
-//           << std::setw(width) << radial_near
-//           << std::setw(width) << radial_far
-//           << std::endl;
-//   outfile.close();
-// }
 
 void Multisnake::PrintGroundTruthLocalSNRValues(int radial_near,
                                                 int radial_far) const {
@@ -2317,7 +2235,7 @@ ImageType::PixelType Multisnake::GetMaxImageIntensity() const {
   return filter->GetMaximum();
 }
 
-double Multisnake::ComputeDropletMeanIntensity(PointType center, double radius) {
+double Multisnake::ComputeDropletMeanIntensity(PointType center, double radius) const {
   DataContainer intensities;
   typedef itk::ImageRegionConstIteratorWithIndex<ImageType> IteratorType;
   assert(image_);
@@ -2331,5 +2249,43 @@ double Multisnake::ComputeDropletMeanIntensity(PointType center, double radius) 
   return Mean(intensities);
 }
 
+void Multisnake::ComputeSOACPointsFraction(const PointType &center,
+                                           double radius,
+                                           unsigned binning,
+                                           DataContainer &fractions) const {
+  assert(!converged_snakes_.empty());
+  std::vector<unsigned> counts(binning, 0);
+  std::vector<double> ranges(binning, 0.0);
+  double radius_step = radius / binning;
+  for (int i = 0; i < binning; i++) {
+    ranges[i] = radius_step * (i + 1);
+  }
+  ranges.back() = kPlusInfinity;  // last bucket is for >= 0.9r
+  unsigned number_of_soac_points = this->GetNumberOfSOACPoints(converged_snakes_);
+  for (SnakeConstIterator it = converged_snakes_.begin();
+       it != converged_snakes_.end(); ++it) {
+    for (unsigned j = 0; j != (*it)->GetSize(); ++j) {
+      double distance_to_center = center.EuclideanDistanceTo((*it)->GetPoint(j));
+      std::vector<double>::iterator position_it = std::upper_bound(
+          ranges.begin(), ranges.end(), distance_to_center);
+      std::vector<double>::difference_type n = position_it - ranges.begin();
+      assert(n >= 0);
+      counts[n]++;
+    }
+  }
+
+  for (unsigned i = 0; i < binning; i++) {
+    double frac = static_cast<double>(counts[i]) / number_of_soac_points;
+    fractions.push_back(frac);
+  }
+}
+
+unsigned Multisnake::GetNumberOfSOACPoints(const SnakeContainer &snakes) const {
+  unsigned count = 0;
+  for (SnakeConstIterator it = snakes.begin(); it != snakes.end(); ++it) {
+    count += (*it)->GetSize();
+  }
+  return count;
+}
 
 } // namespace soax

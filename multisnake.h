@@ -257,8 +257,12 @@ class Multisnake : public QObject {
                                        double scaling, const std::string &filename) const;
   void LoadCurves(const char *filename, double *offset);
 
-  double ComputeDropletMeanIntensity(PointType center, double radius);
+  double ComputeDropletMeanIntensity(PointType center, double radius) const;
 
+  void ComputeSOACPointsFraction(const PointType &center,
+                                 double radius,
+                                 unsigned binning,
+                                 DataContainer &fractions) const;
 
  signals:
   void ExtractionProgressed(int value);
@@ -352,28 +356,6 @@ class Multisnake : public QObject {
 
   void ComputeThetaPhi(VectorType vector, double &theta, double &phi) const;
 
-  /*
-   * Compute F-value for a set of snakes.
-   */
-  // double ComputeFValue(const SnakeContainer &snakes,
-  //                      double threshold, double penalizer,
-  //                      int radial_near,int radial_far) const;
-
-  /*
-   * Compute a binary image of input image using Otsu's method and
-   * return the applied threshold.
-   */
-  // int ComputeBinaryImage(ImageType::Pointer &img) const;
-
-  /*
-   * Compute the intensity statistics of input image using the binary
-   * image produced by Otsu's method (see above method)
-   */
-  // void ComputeForegroundBackgroundStatistics(int threshold,
-  //                                            double &fg_mean,
-  //                                            double &bg_mean,
-  //                                            double &bg_std) const;
-
   ImageType::PixelType GetMaxImageIntensity() const;
 
   void ComputeLocalSNRs(const SnakeContainer &snakes,
@@ -388,7 +370,7 @@ class Multisnake : public QObject {
   void PrintCandidatePoints(BoolVectorImageType::Pointer image,
                             std::ostream &os, unsigned direction) const;
 
-
+  unsigned GetNumberOfSOACPoints(const SnakeContainer &snakes) const;
 
 
   std::string image_filename_;

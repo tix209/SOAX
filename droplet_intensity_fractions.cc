@@ -29,6 +29,8 @@ int main (int argc, char **argv) {
          "Directory of images files")
         ("droplet,d", po::value<std::string>()->required(),
          "Path of the droplet info file (.csv)")
+        ("snake,s", po::value<std::string>()->required(),
+         "Directory of snake files")
         ("background,b", po::value<int>()->required(),
          "Mean intensity of background");
 
@@ -77,16 +79,17 @@ int main (int argc, char **argv) {
           output_filename = vm["output"].as<std::string>();
         fs::path outpath(output_filename);
         if (fs::exists(outpath)) {
-          std::cout << "Warning: output file aleady exists. "
-              "New output will be appended to its end!" << std::endl;
+          std::cout << "Warning: output file aleady exists and will be overwritten."
+                    << std::endl;
         }
 
-        std::ofstream outfile(output_filename.c_str(), std::ofstream::app);
+        std::ofstream outfile(output_filename.c_str());
         if (!outfile) {
           std::cerr << "Couldn't open outfile " << output_filename << std::endl;
           return EXIT_FAILURE;
         }
-        outfile << "ImageFileName,MeanForeground" << std::endl;
+        outfile << "ImageFileName,MeanForeground,0.1r,0.2r,0.3r,0.4r,0.5r,0.6r,0.7r,0.8r,0.9r,g0.9r"
+                << std::endl;
 
         typedef std::vector<fs::path> Paths;
         Paths image_paths;
@@ -102,7 +105,25 @@ int main (int argc, char **argv) {
             double radius = droplet_infos.Get(imagename).radius();
             double intensity = multisnake.ComputeDropletMeanIntensity(center, radius);
             int background = vm["background"].as<int>();
-            outfile << imagename << "," << intensity - background << std::endl;
+            outfile << imagename << "," << intensity - background;
+
+            std::string snake_filename1 = vm["snake"].as<std::string>() + imagename;
+            std::string snake_filename2(snake_filename1);
+            snake_filename1.replace(snake_filename1.end()-4, snake_filename1.end(), ".txt");
+            snake_filename2.replace(snake_filename2.end()-4, snake_filename2.end(), "_edit.txt");
+            //std::cout << snake_filename1 << "\n" << snake_filename2 << std::endl;
+            //return EXIT_SUCCESS;
+            fs::path snake_path2(snake_filename2);
+            if (fs::exists(snake_path2))
+              multisnake.LoadConvergedSnakes(snake_filename2);
+            else
+              multisnake.LoadConvergedSnakes(snake_filename1);
+            std::vector<double> fractions;
+            multisnake.ComputeSOACPointsFraction(fractions);
+            for (int i = 0; i < fractions.size(); i++) {
+              outfile << "," << fractions[i];
+            }
+            outfile << std::endl;
           }
         }
         outfile.close();

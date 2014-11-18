@@ -1,8 +1,11 @@
 /** This file computing the mean droplet intensity for all the
  * droplets in a directory. The meta information of droplets such as
- * center location, radius, etc. are provided by another file. The
- * droplet intensity is substracted by an estimated common mean
- * background intensity value.
+ * center location, radius, etc. needs to be provided by another
+ * file. The droplet intensity is substracted by an estimated common
+ * mean background intensity value.
+ *
+ * This file also computing the SOAC points fraction with respect to
+ * th radius binning to N buckets.
  *
  * Copyright (C) 2014 Ting Xu, IDEA Lab, Lehigh University.
  */
@@ -32,7 +35,9 @@ int main (int argc, char **argv) {
         ("snake,s", po::value<std::string>()->required(),
          "Directory of snake files")
         ("background,b", po::value<int>()->required(),
-         "Mean intensity of background");
+         "Mean intensity of background")
+        ("binning,n", po::value<unsigned>()->required(),
+         "Number of buckets to bin the radius");
 
     po::options_description optional("Optional opitions");
     optional.add_options()
@@ -74,6 +79,7 @@ int main (int argc, char **argv) {
           return EXIT_FAILURE;
         }
 
+
         std::string output_filename("droplet_mean_foregrounds.txt");
         if (vm.count("output"))
           output_filename = vm["output"].as<std::string>();
@@ -82,14 +88,19 @@ int main (int argc, char **argv) {
           std::cout << "Warning: output file aleady exists and will be overwritten."
                     << std::endl;
         }
-
         std::ofstream outfile(output_filename.c_str());
         if (!outfile) {
           std::cerr << "Couldn't open outfile " << output_filename << std::endl;
           return EXIT_FAILURE;
         }
-        outfile << "ImageFileName,MeanForeground,0.1r,0.2r,0.3r,0.4r,0.5r,0.6r,0.7r,0.8r,0.9r,g0.9r"
-                << std::endl;
+        outfile << "ImageFileName,MeanForeground";
+        unsigned binning = vm["binning"].as<unsigned>();
+        unsigned i = 0;
+        for (; i < binning-1; i++) {
+          outfile << "," << 1.0 / binning * (i+1) << "r";
+        }
+        outfile << "," << ">=" << 1.0 / binning * i << "r" << std::endl;
+
 
         typedef std::vector<fs::path> Paths;
         Paths image_paths;
@@ -107,19 +118,28 @@ int main (int argc, char **argv) {
             int background = vm["background"].as<int>();
             outfile << imagename << "," << intensity - background;
 
+
             std::string snake_filename1 = vm["snake"].as<std::string>() + imagename;
             std::string snake_filename2(snake_filename1);
-            snake_filename1.replace(snake_filename1.end()-4, snake_filename1.end(), ".txt");
-            snake_filename2.replace(snake_filename2.end()-4, snake_filename2.end(), "_edit.txt");
-            //std::cout << snake_filename1 << "\n" << snake_filename2 << std::endl;
-            //return EXIT_SUCCESS;
+            snake_filename1.replace(snake_filename1.end()-4,
+                                    snake_filename1.end(), ".txt");
+            snake_filename2.replace(snake_filename2.end()-4,
+                                    snake_filename2.end(), "_edit.txt");
+            fs::path snake_path1(snake_filename1);
             fs::path snake_path2(snake_filename2);
-            if (fs::exists(snake_path2))
+            if (fs::exists(snake_path2)) {
               multisnake.LoadConvergedSnakes(snake_filename2);
-            else
+            } else if (fs::exists(snake_path1)) {
               multisnake.LoadConvergedSnakes(snake_filename1);
+            } else {
+              std::cerr << "Couldn't find snake file for image " << imagename
+                        << ". Abort." << std::endl;
+              return EXIT_FAILURE;
+            }
+
+
             std::vector<double> fractions;
-            multisnake.ComputeSOACPointsFraction(fractions);
+            multisnake.ComputeSOACPointsFraction(center, radius, binning, fractions);
             for (int i = 0; i < fractions.size(); i++) {
               outfile << "," << fractions[i];
             }

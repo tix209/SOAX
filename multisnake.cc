@@ -543,6 +543,7 @@ void Multisnake::InitializeSnakes() {
   }
   // std::sort(initial_snakes_.begin(), initial_snakes_.end(), IsShorter);
   std::sort(initial_snakes_.begin(), initial_snakes_.end(), IsDarker);
+  // std::sort(initial_snakes_.begin(), initial_snakes_.end(), IsBrighter);
   // this->PrintSnakes(initial_snakes_);
 }
 
@@ -1032,7 +1033,7 @@ void Multisnake::LoadSnakes(const std::string &filename,
   PointContainer junction_points;
 
   while (std::getline(infile, line)) {
-    if (isalpha(line[0])) {
+    if (snakes == converged_snakes_ && isalpha(line[0])) {
       std::stringstream converter;
       converter << line;
       converter >> name >> value;
@@ -2275,8 +2276,8 @@ void Multisnake::ComputeSOACPointsFraction(const PointType &center,
   }
 
   for (unsigned i = 0; i < binning; i++) {
-    double frac = static_cast<double>(counts[i]) / number_of_soac_points;
-    fractions.push_back(frac);
+    double percentage = static_cast<double>(counts[i]) / number_of_soac_points * 100;
+    fractions.push_back(percentage);
   }
 }
 

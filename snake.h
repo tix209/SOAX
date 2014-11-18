@@ -228,8 +228,6 @@ class Snake {
 
   double ComputeLocalStretch(bool is_head, bool is_2d);
 
-  double ComputeCircularMeanIntensity(bool is_head, bool is_fg);
-
   /*
    * Compute the mean foreground and background intensity around the
    * tips. The sample points are on a orthogonal plane at tips. For

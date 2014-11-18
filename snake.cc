@@ -467,68 +467,56 @@ void Snake::UpdateTailTangent() {
  * are cancelled out. */
 double Snake::ComputeLocalStretch(bool is_head, bool is_2d) {
   PointType &vertex = is_head ? vertices_.front() : vertices_.back();
-  // double fg = this->ComputeVertexIntensity(vertex);
-
+  double fg = interpolator_->Evaluate(vertex);
+  // double fg = 0.0;
   // Good for noisy images such as OCT vessels and microtubules,
   // and actin rings.
-  // double fg1 = this->ComputeCircularMeanIntensity(is_head, true);
-  double fg = interpolator_->Evaluate(vertex);
   // if (is_2d)
   //   // fg = this->ComputeForegroundMeanIntensity2d(is_head);
-  //   fg = intensity_scaling_ * interpolator_->Evaluate(vertex);
+  //   fg = interpolator_->Evaluate(vertex);
   // else
   //   fg = this->ComputeForegroundMeanIntensity(is_head);
 
   if (fg < background_ + kEpsilon || fg > foreground_)
     return 0.0;
-  // std::cout << "fg: " << fg;
 
-  // double bg1 = this->ComputeCircularMeanIntensity(is_head, false);
   double bg = 0.0;
   if (is_2d)
     bg = this->ComputeBackgroundMeanIntensity2d(is_head);
   else
     bg = this->ComputeBackgroundMeanIntensity(is_head);
 
-  // if (abs(bg1-bg) > kEpsilon) {
-  // std::cout << "\tbg: " << bg << std::endl;
-  // }
   if (bg < 0.0)
     return 0.0;
 
   // if (is_2d) // a symmetric definition, good for inverted intensity
   //   return abs((fg - bg) / (fg + bg));
-  // else
+
   return 1.0 - bg / fg;
 }
 
 double Snake::ComputeForegroundMeanIntensity(bool is_head) const {
-  PointType vertex = is_head ? vertices_.front() : vertices_.back();
+  assert(radial_near_ > 0);
+  const PointType &vertex = is_head ? vertices_.front() : vertices_.back();
+  DataContainer fgs;
+  fgs.push_back(interpolator_->Evaluate(vertex));
 
   if (radial_near_ > 1) {
     const VectorType &normal = is_head ? head_tangent_ : tail_tangent_;
     VectorType radial;
     this->GetStartingRadialDirection(radial, normal, vertex);
-    DataContainer fgs;
-    fgs.push_back(intensity_scaling_ * interpolator_->Evaluate(vertex));
 
     for (int s = 0; s < number_of_sectors_; s++) {
       for (int d = 1; d < radial_near_; d++) {
         PointType sample_point;
         this->ComputeSamplePoint(sample_point, vertex, radial, normal, d, s);
         if (this->IsInsideImage(sample_point)) {
-          double intensity = interpolator_->Evaluate(sample_point);
-          fgs.push_back(intensity_scaling_ * intensity);
+          fgs.push_back(interpolator_->Evaluate(sample_point));
         }
       }
     }
-    return Mean(fgs);
-  } else if (radial_near_ == 1) {
-    return intensity_scaling_ * interpolator_->Evaluate(vertex);
-  } else { // should never reach here
-    std::cerr << "Fatal error: radial_near_ is less than 1!" << std::endl;
-    return 0.0;
   }
+  return Mean(fgs);
 }
 
 double Snake::ComputeBackgroundMeanIntensity(bool is_head) const {
@@ -655,40 +643,6 @@ bool Snake::CheckOrthogonality(const VectorType &vec1,
     return false;
 }
 
-
-double Snake::ComputeCircularMeanIntensity(bool is_head, bool is_fg) {
-  const VectorType &normal = is_head ? head_tangent_ : tail_tangent_;
-  PointType &vertex = is_head ? vertices_.front() : vertices_.back();
-  VectorType radial;
-  this->GetStartingRadialDirection(radial, normal, vertex);
-
-  int rnear = is_fg ? 0 : radial_near_;
-  int rfar = is_fg ? radial_near_ : radial_far_;
-
-  DataContainer intensities;
-  for (int s = 0; s < number_of_sectors_; s++) {
-    for (int d = rnear; d < rfar; d++) {
-      PointType sample_point;
-      this->ComputeSamplePoint(sample_point, vertex, radial, normal, d, s);
-      if (this->IsInsideImage(sample_point)) {
-        double intensity = interpolator_->Evaluate(sample_point);
-        intensities.push_back(intensity_scaling_ * intensity);
-      }
-    }
-  }
-
-  // if (is_fg)
-  //   PrintDataContainer(intensities);
-  //   std::cout << "size: " << intensities.size() << std::endl;
-
-  if (intensities.empty()) {
-    // std::cout << "empty intensities!" << std::endl;
-    // this->PrintSelf();
-    return 0.0; // could be a bug here!!!
-  } else {
-    return Mean(intensities);
-  }
-}
 
 void Snake::GetStartingRadialDirection(VectorType &direction,
                                        const VectorType &normal,

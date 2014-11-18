@@ -81,7 +81,7 @@ add_executable(eval_f evaluate_f.cc ${common_srcs}
   ${multisnake_moc} multisnake.cc multisnake.h)
 add_executable(best_snake best_snake.cc ${common_srcs}
   ${multisnake_moc} multisnake.cc multisnake.h)
-add_executable(droplet_intensity_fraction droplet_intensity_fraction.cc
+add_executable(droplet_intensity_fractions droplet_intensity_fractions.cc
   droplet_info_dict.h droplet_info_dict.cc droplet_info.h droplet_info.cc
   ${common_srcs} ${multisnake_moc} multisnake.cc multisnake.h)
 # # add_executable(snr image_snr.cc ${common_srcs})
@@ -128,7 +128,7 @@ target_link_libraries(best_snake
   ${Boost_SYSTEM_LIBRARY}
   )
 
-target_link_libraries(droplet_intensity_fraction
+target_link_libraries(droplet_intensity_fractions
   ${QT_LIBRARIES}
   ${ITK_LIBRARIES}
   ${Boost_PROGRAM_OPTIONS_LIBRARY}

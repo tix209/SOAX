@@ -318,6 +318,10 @@ class Multisnake : public QObject {
     return s1->ComputeIntensity() < s2->ComputeIntensity();
   }
 
+  static bool IsBrighter(Snake *s1, Snake *s2) {
+    return s1->ComputeIntensity() > s2->ComputeIntensity();
+  }
+
   void AssignParameters(const std::string &name,
                         const std::string &value);
 

@@ -95,6 +95,10 @@ class MainWindow : public QMainWindow {
   void SetParameters();
   void ViewSnakesSequence();
 
+  void SetupScrollBarConnections();
+
+  void TearDownScrollBarConnections();
+
 
   QWidget *central_widget_;
   ParametersDialog *parameters_dialog_;

@@ -102,12 +102,13 @@ Viewer::Viewer():
   selected_junction_color_ = kBlue;
   sphere_color_ = kRed;
 
-  current_frame_ = 0;
+  frame_index_ = 0;
   volume_shown_ = false;
   snakes_shown_ = false;
   junctions_shown_ = false;
 
-  corresponding_snake_ = NULL;
+  corresponding_snake_forward_ = NULL;
+  corresponding_snake_backward_ = NULL;
 }
 
 Viewer::~Viewer() {
@@ -115,7 +116,8 @@ Viewer::~Viewer() {
   selected_snakes_.clear();
   snakes_sequence_.clear();
   junctions_sequence_.clear();
-  correspondence_.clear();
+  forward_correspondence_.clear();
+  backward_correspondence_.clear();
   this->RemoveJunctions();
   this->RemoveSnakes();
   this->RemoveColorSegments();
@@ -270,15 +272,15 @@ void Viewer::SetupVolumeSequence(vtkSmartPointer<vtkImageData> data, int index) 
   volume_sequence_.push_back(volume);
 }
 
-void Viewer::UpdateFrame(int index) {
-  if (index == current_frame_) return;
+void Viewer::UpdateFrameRendering(int index) {
+  if (index == frame_index_) return;
   if (volume_shown_) {
-    renderer_->RemoveViewProp(volume_sequence_[current_frame_]);
+    renderer_->RemoveViewProp(volume_sequence_[frame_index_]);
     renderer_->AddViewProp(volume_sequence_[index]);
   }
   this->UpdateSlicePlanes(index);
 
-  current_frame_ = index;
+  // frame_index_ = index;
   this->Render();
 }
 
@@ -392,14 +394,14 @@ void Viewer::ToggleMIPRendering(bool state) {
     if (volume_sequence_.empty()) {
       renderer_->AddViewProp(volume_);
     } else {
-      renderer_->AddViewProp(volume_sequence_[current_frame_]);
+      renderer_->AddViewProp(volume_sequence_[frame_index_]);
     }
     renderer_->ResetCamera();
   } else {
     if (volume_sequence_.empty()) {
       renderer_->RemoveViewProp(volume_);
     } else {
-      renderer_->RemoveViewProp(volume_sequence_[current_frame_]);
+      renderer_->RemoveViewProp(volume_sequence_[frame_index_]);
     }
   }
   this->Render();
@@ -994,7 +996,7 @@ void Viewer::SelectSnakeForView() {
       actor->GetProperty()->SetColor(selected_snake_color_);
       selected_snake_ = it->second;
       it->second->PrintSelf();
-      this->UpdateCorrespondingSnake();
+      this->UpdateCorrespondingSnakes();
     }
   }
 }
@@ -1014,64 +1016,89 @@ void Viewer::DeselectSnakeForView() {
 }
 
 void Viewer::HighlightCorrespondingSnake(int index) {
-  if (corresponding_snake_) {
-    SnakeActorMap::const_iterator it = snake_actors_.find(corresponding_snake_);
+  if (index > frame_index_ && corresponding_snake_forward_) {
+    SnakeActorMap::const_iterator it = snake_actors_.find(corresponding_snake_forward_);
     if (it != snake_actors_.end()) {
-      std::cout << "find it!" << std::endl;
       it->second->GetProperty()->SetColor(selected_snake_color_);
-      corresponding_snake_->PrintSelf();
-      selected_snake_ = corresponding_snake_;
-      this->UpdateCorrespondingSnake();
-      this->Render();
+      selected_snake_ = corresponding_snake_forward_;
     }
   }
+
+  if (index < frame_index_ && corresponding_snake_backward_) {
+    SnakeActorMap::const_iterator it = snake_actors_.find(corresponding_snake_backward_);
+    if (it != snake_actors_.end()) {
+      it->second->GetProperty()->SetColor(selected_snake_color_);
+      selected_snake_ = corresponding_snake_backward_;
+    }
+  }
+
+  this->UpdateCorrespondingSnakes();
+  this->Render();
 }
 
-void Viewer::UpdateCorrespondingSnake() {
-  CorrespondenceMap::const_iterator it = correspondence_.find(selected_snake_);
-  if (it != correspondence_.end()) {
-    corresponding_snake_ = it->second;
+
+
+void Viewer::UpdateCorrespondingSnakes() {
+  CorrespondenceMap::const_iterator forward_it =
+      forward_correspondence_.find(selected_snake_);
+  CorrespondenceMap::const_iterator backward_it =
+      backward_correspondence_.find(selected_snake_);
+
+  if (forward_it != forward_correspondence_.end()) {
+    corresponding_snake_forward_ = forward_it->second;
   } else {
-    corresponding_snake_ = NULL;
+    corresponding_snake_forward_ = NULL;
+  }
+  if (backward_it != backward_correspondence_.end()) {
+    corresponding_snake_backward_ = backward_it->second;
+  } else {
+    corresponding_snake_backward_ = NULL;
   }
 }
 
 void Viewer::SolveCorrespondence() {
-  assert(snakes_sequence_.empty());
+  assert(!snakes_sequence_.empty());
   this->GetAllSnakes();
-  int n = all_snakes_.size();
-  FloatMatrix similarity;
-  similarity.resize(n, std::vector<double>(n, 0.0));
-  this->ComputeSimilarityMatrix(similarity);
+  unsigned n = all_snakes_.size();
+  // FloatMatrix similarity;
+  // similarity.resize(n, std::vector<double>(n, 0.0));
+  // this->ComputeSimilarityMatrix(similarity);
   // fill in the Hungarian
 
   IntMatrix assignment;
   assignment.resize(n, std::vector<int>(n, 0));
-  assignment[0][5] = 1;
-  this->UpdateCorrespondenceMap(assignment);
+  assignment[4][8] = 1;
+  assignment[8][12] = 1;
+  assignment[12][15] = 1;
+  assignment[8][4] = 1;
+  assignment[12][8] = 1;
+  assignment[15][12] = 1;
+  this->ComputeCorrespondenceMap(assignment);
 }
 
-void Viewer::UpdateCorrespondenceMap(const IntMatrix &assignment) {
+void Viewer::ComputeCorrespondenceMap(const IntMatrix &assignment) {
   for (int i = 0; i < assignment.size(); i++) {
     for (int j = 0; j < assignment[i].size(); j++) {
       if (assignment[i][j]) {
-        std::cout << i << '\t' << j << std::endl;
-        correspondence_[all_snakes_[i]] = all_snakes_[j];
-        break;
+        if (i < j) {
+          forward_correspondence_[all_snakes_[i]] = all_snakes_[j];
+        } else if (i > j) {
+          backward_correspondence_[all_snakes_[i]] = all_snakes_[j];
+        }
       }
     }
   }
 }
 
 void Viewer::GetAllSnakes() {
-  assert(snakes_sequence_.empty());
-  snakes_number_partial_sum_.reserve(snakes_sequence_.size()+1);
-  snakes_number_partial_sum_.push_back(0);
+  assert(!snakes_sequence_.empty());
+  // snakes_number_partial_sum_.reserve(snakes_sequence_.size()+1);
+  // snakes_number_partial_sum_.push_back(0);
   for (int i = 0; i < snakes_sequence_.size(); i++) {
     for (int j = 0; j < snakes_sequence_[i].size(); j++) {
       all_snakes_.push_back(snakes_sequence_[i][j]);
     }
-    snakes_number_partial_sum_.push_back(snakes_sequence_[i].size());
+    // snakes_number_partial_sum_.push_back(snakes_sequence_[i].size());
   }
 }
 
@@ -1099,8 +1126,7 @@ void Viewer::ComputeSimilarityMatrix(FloatMatrix &sim) {
 }
 
 bool Viewer::InSameFrame(int i, int j) {
-  if (i == j) return true;
-  return false;
+  return i == j;
 }
 
 double Viewer::ComputeDistance(Snake *si, Snake *sj) {

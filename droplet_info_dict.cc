@@ -22,9 +22,9 @@ bool DropletInfoDict::LoadInfo(const std::string &filename) {
       record.push_back(cell);
     }
 
-    assert(record.size() == 6);
+    assert(record.size() == 7);
     DropletInfo info(std::stod(record[1]), std::stod(record[2]), std::stod(record[3]),
-                     std::stod(record[4]), std::stoi(record[5]));
+                     std::stod(record[4]), std::stoi(record[6]));
     assert(dict_.find(record.front()) == dict_.end());
     dict_[record.front()] = info;
   }

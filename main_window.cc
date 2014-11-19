@@ -598,12 +598,8 @@ void MainWindow::OpenImageSequence() {
   multisnake_->LoadImageSequence(image_filename_, nslices);
   scroll_bar_->setMinimum(0);
   scroll_bar_->setMaximum(multisnake_->image_sequence().size()-1);
-  connect(scroll_bar_, SIGNAL(valueChanged(int)), viewer_, SLOT(UpdateFrame(int)));
-  connect(scroll_bar_, SIGNAL(valueChanged(int)), this, SLOT(ShowFrameNumber(int)));
-  connect(scroll_bar_, SIGNAL(valueChanged(int)),
-          viewer_, SLOT(UpdateLeftCornerText(int)));
   viewer_->SetupImageSequence(multisnake_->image_sequence());
-  // this->ShowFrameNumber(0);
+  this->SetupScrollBarConnections();
   toggle_planes_->setChecked(true);
   toggle_mip_->setChecked(true);
   toggle_orientation_marker_->setChecked(true);
@@ -638,8 +634,36 @@ void MainWindow::OpenImageSequence() {
   save_snapshot_->setEnabled(true);
 }
 
+void MainWindow::SetupScrollBarConnections() {
+  connect(scroll_bar_, SIGNAL(valueChanged(int)),
+          viewer_, SLOT(UpdateFrameRendering(int)));
+  connect(scroll_bar_, SIGNAL(valueChanged(int)),
+          viewer_, SLOT(UpdateLeftCornerText(int)));
+  connect(scroll_bar_, SIGNAL(valueChanged(int)),
+          viewer_, SLOT(UpdateSnakesJunctions(int)));
+  connect(scroll_bar_, SIGNAL(valueChanged(int)),
+          viewer_, SLOT(HighlightCorrespondingSnake(int)));
+  connect(scroll_bar_, SIGNAL(valueChanged(int)),
+          viewer_, SLOT(UpdateFrameIndex(int)));
+  connect(scroll_bar_, SIGNAL(valueChanged(int)), this, SLOT(ShowFrameNumber(int)));
+}
+
+void MainWindow::TearDownScrollBarConnections() {
+  disconnect(scroll_bar_, SIGNAL(valueChanged(int)), this, SLOT(ShowFrameNumber(int)));
+  disconnect(scroll_bar_, SIGNAL(valueChanged(int)),
+             viewer_, SLOT(UpdateFrameIndex(int)));
+  disconnect(scroll_bar_, SIGNAL(valueChanged(int)),
+             viewer_, SLOT(HighlightCorrespondingSnake(int)));
+  disconnect(scroll_bar_, SIGNAL(valueChanged(int)),
+             viewer_, SLOT(UpdateSnakesJunctions(int)));
+  disconnect(scroll_bar_, SIGNAL(valueChanged(int)),
+             viewer_, SLOT(UpdateLeftCornerText(int)));
+  disconnect(scroll_bar_, SIGNAL(valueChanged(int)),
+             viewer_, SLOT(UpdateFrameRendering(int)));
+}
+
 void MainWindow::ShowFrameNumber(int frame_number) {
-  QString msg = QString("Displaying frame # ") + QString::number(frame_number+1);
+  QString msg = QString("Frame ") + QString::number(frame_number);
   statusBar()->showMessage(msg, message_timeout_);
 }
 
@@ -965,15 +989,7 @@ void MainWindow::CloseSession() {
   disconnect(multisnake_, SIGNAL(ExtractionCompleteForFrame(int)),
              progress_bar_, SLOT(setValue(int)));
 
-  disconnect(scroll_bar_, SIGNAL(valueChanged(int)), viewer_, SLOT(UpdateFrame(int)));
-  disconnect(scroll_bar_, SIGNAL(valueChanged(int)), this, SLOT(ShowFrameNumber(int)));
-  disconnect(scroll_bar_, SIGNAL(valueChanged(int)),
-             viewer_, SLOT(UpdateLeftCornerText(int)));
-  disconnect(scroll_bar_, SIGNAL(valueChanged(int)),
-             viewer_, SLOT(UpdateSnakesJunctions(int)));
-  disconnect(scroll_bar_, SIGNAL(valueChanged(int)),
-             viewer_, SLOT(HighlightCorrespondingSnake(int)));
-
+  this->TearDownScrollBarConnections();
   this->ResetActions();
   open_image_->setEnabled(true);
   open_image_sequence_->setEnabled(true);
@@ -1235,13 +1251,9 @@ void MainWindow::DeformSnakesForSequence() {
 
 void MainWindow::FindCorrespondence() {
   viewer_->SolveCorrespondence();
-  connect(scroll_bar_, SIGNAL(valueChanged(int)),
-          viewer_, SLOT(HighlightCorrespondingSnake(int)));
 }
 
 void MainWindow::ViewSnakesSequence() {
-  connect(scroll_bar_, SIGNAL(valueChanged(int)),
-          viewer_, SLOT(UpdateSnakesJunctions(int)));
   viewer_->set_snakes_sequence(multisnake_->converged_snakes_sequence());
   viewer_->set_junctions_sequence(multisnake_->junctions_sequence());
   toggle_snakes_->setChecked(true);

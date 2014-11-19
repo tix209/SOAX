@@ -1,6 +1,7 @@
 #ifndef SOAX_VIEWER_H_
 #define SOAX_VIEWER_H_
 
+#include <unordered_map>
 #include <QObject>
 #include "vtkSmartPointer.h"
 #include "global.h"
@@ -38,6 +39,8 @@ class Viewer : public QObject {
   void SetupImage(ImageType::Pointer image);
 
   void SetupImageSequence(const std::vector<ImageType::Pointer> &images);
+
+  int frame_index() const {return frame_index_;}
 
   double window() const {return window_;}
   void set_window(double window) {window_ = window;}
@@ -139,7 +142,9 @@ class Viewer : public QObject {
   void ToggleTrimBody(bool state);
   void ToggleDeleteJunction(bool state);
 
-  void UpdateFrame(int index);
+  void UpdateFrameRendering(int index);
+  void UpdateFrameIndex(int index) {frame_index_ = index;}
+
   void UpdateSnakesJunctions(int index);
   void UpdateLeftCornerText(int index);
   void HighlightCorrespondingSnake(int index);
@@ -162,11 +167,11 @@ class Viewer : public QObject {
   void DeselectJunction();
 
  private:
-  typedef std::map<vtkActor *, Snake *> ActorSnakeMap;
-  typedef std::map<Snake *, vtkActor *> SnakeActorMap;
-  typedef std::map<vtkActor *, PointType> ActorPointMap;
+  typedef std::unordered_map<vtkActor *, Snake *> ActorSnakeMap;
+  typedef std::unordered_map<Snake *, vtkActor *> SnakeActorMap;
+  typedef std::unordered_map<vtkActor *, PointType> ActorPointMap;
   typedef std::vector<vtkActor *> ActorContainer;
-  typedef std::map<Snake*, Snake*> CorrespondenceMap;
+  typedef std::unordered_map<Snake*, Snake*> CorrespondenceMap;
 
   void SetupSlicePlanes(vtkImageData *data);
   void SetupMIPRendering(vtkImageData *data);
@@ -208,17 +213,18 @@ class Viewer : public QObject {
 
   void ComputeSequenceIntensityRange(const std::vector<ImageType::Pointer> &images);
 
-  /** Update the CORRESPONDING_SNAKE_ based on the current
-   * SELECTED_SNAKE_, using the information of ASSIGNMENT_MATRIX_.
+  /** Update the CORRESPONDING_SNAKE_FORWARD_ and
+   * CORRESPONDING_SNAKE_BACKWARD_ based on the current
+   * SELECTED_SNAKE_ using ASSIGNMENT_MATRIX_.
    */
-  void UpdateCorrespondingSnake();
+  void UpdateCorrespondingSnakes();
 
   /** Initialize the ALL_SNAKES_ and SNAKES_NUMBER_PARTIAL_SUM_.
    */
   void GetAllSnakes();
 
   void ComputeSimilarityMatrix(FloatMatrix &sim);
-  void UpdateCorrespondenceMap(const IntMatrix &assignment);
+  void ComputeCorrespondenceMap(const IntMatrix &assignment);
 
   bool InSameFrame(int i, int j);
   double ComputeDistance(Snake *si, Snake *sj);
@@ -246,7 +252,9 @@ class Viewer : public QObject {
   double mip_max_intensity_;
   double clip_span_;
   unsigned color_segment_step_;
-  int current_frame_;
+
+  /* Current frame index */
+  int frame_index_;
   std::vector<unsigned> sequence_min_intensity_;
   std::vector<unsigned> sequence_max_intensity_;
 
@@ -262,14 +270,16 @@ class Viewer : public QObject {
   // IntMatrix assignment_matrix_;
   std::vector<int> snakes_number_partial_sum_;
   // FloatMatrix similarity_matrix_;
-  CorrespondenceMap correspondence_;
+  CorrespondenceMap forward_correspondence_;
+  CorrespondenceMap backward_correspondence_;
 
   vtkActor *on_snake_sphere1_;
   vtkActor *on_snake_sphere2_;
   vtkActor *off_snake_sphere_;
   vtkActor *trimmed_actor_;
   Snake *selected_snake_;
-  Snake *corresponding_snake_;
+  Snake *corresponding_snake_forward_;
+  Snake *corresponding_snake_backward_;
   Snake *trimmed_snake_;
   unsigned trim_tip_index_;
   unsigned trim_body_index1_;

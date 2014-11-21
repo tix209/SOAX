@@ -33,6 +33,8 @@
 #include "vtkSmartVolumeMapper.h"
 #include "itkStatisticsImageFilter.h"
 #include "snake.h"
+#include "utility.h"
+
 
 namespace soax {
 
@@ -54,8 +56,15 @@ Viewer::Viewer():
   qvtk_ = new QVTKWidget;
   renderer_ = vtkSmartPointer<vtkRenderer>::New();
   qvtk_->GetRenderWindow()->AddRenderer(renderer_);
+
   camera_ = vtkSmartPointer<vtkCamera>::New();
+  // camera_->SetFocalPoint(0, 0, 0);
+  // camera_->SetPosition(1, 0, 0);
+  // camera_->ComputeViewPlaneNormal();
+  // camera_->SetViewUp(0, 0, 1);
+  // camera_->OrthogonalizeViewUp();
   renderer_->SetActiveCamera(camera_);
+  // renderer_->ResetCamera();
 
   for (unsigned i = 0; i < kDimension; i++) {
     slice_planes_[i] = vtkImagePlaneWidget::New();
@@ -994,8 +1003,11 @@ void Viewer::SelectSnakeForView() {
     ActorSnakeMap::const_iterator it = actor_snakes_.find(actor);
     if (it != actor_snakes_.end()) {
       actor->GetProperty()->SetColor(selected_snake_color_);
+      // if (selected_snake_) {
+      //   snake_actors_[selected_snake_]->GetProperty()->SetColor(snake_color_);
+      // }
       selected_snake_ = it->second;
-      it->second->PrintSelf();
+      // it->second->PrintSelf();
       this->UpdateCorrespondingSnakes();
     }
   }
@@ -1060,19 +1072,42 @@ void Viewer::SolveCorrespondence() {
   assert(!snakes_sequence_.empty());
   this->GetAllSnakes();
   unsigned n = all_snakes_.size();
-  // FloatMatrix similarity;
-  // similarity.resize(n, std::vector<double>(n, 0.0));
-  // this->ComputeSimilarityMatrix(similarity);
+  Matrix<double> distance_matrix(n, n);
+  this->ComputeDistanceMatrix(distance_matrix);
+  std::ofstream outfile("distance_matrix.csv");
+  this->PrintMatrix(distance_matrix, outfile);
+  outfile.close();
   // fill in the Hungarian
+  Munkres solver;
+  solver.solve(distance_matrix);
+  outfile.open("solved_matrix.csv");
+  this->PrintMatrix(distance_matrix, outfile);
+  outfile.close();
 
   IntMatrix assignment;
   assignment.resize(n, std::vector<int>(n, 0));
-  assignment[4][8] = 1;
-  assignment[8][12] = 1;
-  assignment[12][15] = 1;
-  assignment[8][4] = 1;
-  assignment[12][8] = 1;
-  assignment[15][12] = 1;
+  for (int i = 0; i < n; i++) {
+    for (int j = i+1; j < n; j++) {
+      if (fabs(distance_matrix(i, j)) < kEpsilon) {
+        assignment[i][j] = 1;
+        assignment[j][i] = 1;
+      }
+    }
+  }
+  // std::ofstream outfile2("assignment_matrix.csv");
+  // for (int i = 0; i < n; i++) {
+  //   for (int j = 0; j < n; j++) {
+  //     outfile2 << assignment[i][j] << ",";
+  //   }
+  //   outfile2 << std::endl;
+  // }
+  // outfile2.close();
+  // assignment[4][8] = 1;
+  // assignment[8][12] = 1;
+  // assignment[12][15] = 1;
+  // assignment[8][4] = 1;
+  // assignment[12][8] = 1;
+  // assignment[15][12] = 1;
   this->ComputeCorrespondenceMap(assignment);
 }
 
@@ -1092,49 +1127,75 @@ void Viewer::ComputeCorrespondenceMap(const IntMatrix &assignment) {
 
 void Viewer::GetAllSnakes() {
   assert(!snakes_sequence_.empty());
-  // snakes_number_partial_sum_.reserve(snakes_sequence_.size()+1);
-  // snakes_number_partial_sum_.push_back(0);
-  for (int i = 0; i < snakes_sequence_.size(); i++) {
-    for (int j = 0; j < snakes_sequence_[i].size(); j++) {
+  unsigned max_number_of_frames = 5;
+  snake_quantity_partial_sums_.reserve(max_number_of_frames);
+  unsigned last_size = 0;
+  for (unsigned i = 0; i < max_number_of_frames; i++) {
+    for (unsigned j = 0; j < snakes_sequence_[i].size(); j++) {
       all_snakes_.push_back(snakes_sequence_[i][j]);
     }
-    // snakes_number_partial_sum_.push_back(snakes_sequence_[i].size());
+    snake_quantity_partial_sums_.push_back(
+        last_size + snakes_sequence_[i].size());
+    last_size = snake_quantity_partial_sums_.back();
   }
+
+  // for (unsigned i = 0; i < snake_quantity_partial_sums_.size(); ++i) {
+  //   std::cout << snake_quantity_partial_sums_[i] << std::endl;
+  // }
 }
 
-void Viewer::ComputeSimilarityMatrix(FloatMatrix &sim) {
+void Viewer::ComputeDistanceMatrix(Matrix<double> &distance_matrix) {
   assert(!all_snakes_.empty());
-  FloatMatrix dist(sim);
+
   // Compute the curve distance first.
-  for (int i = 0; i < dist.size(); i++) {
-    for (int j = 0; j < dist[i].size(); j++) {
-      if (!this->InSameFrame(i, j)) {
-        dist[i][j] = this->ComputeDistance(all_snakes_[i], all_snakes_[j]);
-      }
-    }
-  }
-  double max_dist = this->GetMaximum(dist);
-  for (int i = 0; i < sim.size(); i++) {
-    for (int j = 0; j < sim[i].size(); j++) {
-      if (this->InSameFrame(i, j)) {
-        sim[i][j] = 0.0;
+  for (unsigned i = 0; i < distance_matrix.rows(); i++) {
+    for (unsigned j = 0; j < distance_matrix.columns(); j++) {
+      if (this->HasEdge(i, j)) {
+        distance_matrix(i, j) = kPlusInfinity;
       } else {
-        sim[i][j] = std::exp(-dist[i][j]/max_dist);
+        distance_matrix(i, j) = this->ComputeDistance(all_snakes_[i], all_snakes_[j]);
       }
     }
   }
 }
 
-bool Viewer::InSameFrame(int i, int j) {
-  return i == j;
+bool Viewer::HasEdge(int i, int j) {
+  assert(!snake_quantity_partial_sums_.empty());
+  return (i >= j) ||
+      (std::upper_bound(snake_quantity_partial_sums_.begin(),
+                        snake_quantity_partial_sums_.end(), i) ==
+      std::upper_bound(snake_quantity_partial_sums_.begin(),
+                       snake_quantity_partial_sums_.end(), j));
 }
 
 double Viewer::ComputeDistance(Snake *si, Snake *sj) {
-  return 0.0;
+  DataContainer distances;
+  for (int i = 0; i < si->GetSize(); i++) {
+    distances.push_back(this->ComputeShortestDistance(si->GetPoint(i), sj));
+  }
+  for (int j = 0; j < sj->GetSize(); j++) {
+    distances.push_back(this->ComputeShortestDistance(sj->GetPoint(j), si));
+  }
+  return Mean(distances);
 }
 
-double Viewer::GetMaximum(const FloatMatrix &matrix) {
-  return 0.0;
+double Viewer::ComputeShortestDistance(const PointType &p, Snake *s) {
+  double min_dist = kPlusInfinity;
+  for (int i = 0; i < s->GetSize(); i++) {
+    double d = p.EuclideanDistanceTo(s->GetPoint(i));
+    if (d < min_dist)
+      min_dist = d;
+  }
+  return min_dist;
+}
+
+void Viewer::PrintMatrix(const Matrix<double> m, std::ostream &os) {
+  for (int row = 0 ; row < m.rows() ; row++) {
+    for (int col = 0; col < m.columns(); col++) {
+      os << m(row, col) << ",";
+    }
+    os << std::endl;
+  }
 }
 
 void Viewer::ToggleDeleteSnake(bool state) {
@@ -1643,6 +1704,8 @@ void Viewer::SaveViewpoint(const std::string &filename) const {
 void Viewer::PrintScreenAsPNGImage(const std::string &filename) const {
   vtkNew<vtkWindowToImageFilter> filter;
   filter->SetInput(qvtk_->GetRenderWindow());
+  // filter->SetMagnification(2);
+  filter->SetInputBufferTypeToRGBA();
   filter->Update();
   vtkNew<vtkPNGWriter> png_writer;
   png_writer->SetInputConnection(filter->GetOutputPort());
@@ -1653,6 +1716,8 @@ void Viewer::PrintScreenAsPNGImage(const std::string &filename) const {
 void Viewer::PrintScreenAsTIFFImage(const std::string &filename) const {
   vtkNew<vtkWindowToImageFilter> filter;
   filter->SetInput(qvtk_->GetRenderWindow());
+  // filter->SetMagnification(2);
+  filter->SetInputBufferTypeToRGBA();
   filter->Update();
 
   std::string name = filename;

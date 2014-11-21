@@ -71,7 +71,8 @@ qt4_wrap_cpp(mocs ${moc_gui_srcs})
 qt4_add_resources(rccs ${rcc_srcs})
 
 add_executable(soax soax.cc ${common_srcs} ${gui_srcs} ${mocs}
-  ${rccs} ${multisnake_moc} multisnake.cc multisnake.h)
+  ${rccs} ${multisnake_moc} multisnake.cc multisnake.h munkres.cpp
+  munkres.h)
 
 add_executable(batch_soax batch_soax.cc ${common_srcs}
   ${multisnake_moc} multisnake.cc multisnake.h)

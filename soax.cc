@@ -9,7 +9,7 @@ int main(int argc, char **argv) {
   if (argc == 1) {
     QApplication app(argc, argv);
     soax::MainWindow window;
-    window.resize(900, 600);
+    window.resize(1024, 1024);
     window.show();
     // window.showMaximized();
     return app.exec();

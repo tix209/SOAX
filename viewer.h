@@ -6,6 +6,8 @@
 #include "vtkSmartPointer.h"
 #include "global.h"
 #include "junctions.h"
+#include "munkres.h"
+
 
 class QVTKWidget;
 class vtkImagePlaneWidget;
@@ -219,16 +221,18 @@ class Viewer : public QObject {
    */
   void UpdateCorrespondingSnakes();
 
-  /** Initialize the ALL_SNAKES_ and SNAKES_NUMBER_PARTIAL_SUM_.
+  /** Initialize the ALL_SNAKES_ and SNAKE_QUANTITY_PARTIAL_SUMS_.
    */
   void GetAllSnakes();
 
-  void ComputeSimilarityMatrix(FloatMatrix &sim);
+  void ComputeDistanceMatrix(Matrix<double> &distance_matrix);
   void ComputeCorrespondenceMap(const IntMatrix &assignment);
 
-  bool InSameFrame(int i, int j);
+  bool HasEdge(int i, int j);
   double ComputeDistance(Snake *si, Snake *sj);
-  double GetMaximum(const FloatMatrix &matrix);
+
+  void PrintMatrix(const Matrix<double> m, std::ostream &os = std::cout);
+  double ComputeShortestDistance(const PointType &p, Snake *s);
 
   QVTKWidget *qvtk_;
   vtkSmartPointer<vtkRenderer> renderer_;
@@ -267,9 +271,9 @@ class Viewer : public QObject {
   std::vector<SnakeContainer> snakes_sequence_;
   std::vector<PointContainer> junctions_sequence_;
   SnakeContainer all_snakes_;
-  // IntMatrix assignment_matrix_;
-  std::vector<int> snakes_number_partial_sum_;
-  // FloatMatrix similarity_matrix_;
+
+  std::vector<int> snake_quantity_partial_sums_;
+
   CorrespondenceMap forward_correspondence_;
   CorrespondenceMap backward_correspondence_;
 

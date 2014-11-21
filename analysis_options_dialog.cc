@@ -73,8 +73,8 @@ QGroupBox * AnalysisOptionsDialog::CreatePointDensityGroup() {
   QLabel *center_label = new QLabel(tr("Center (x, y, z)"));
   // QLabel *center_y_label = new QLabel(tr("Center y"));
   // QLabel *center_z_label = new QLabel(tr("Center z"));
-  QLabel *radius_label = new QLabel(tr("Max radius"));
-  QLabel *pixel_size_label = new QLabel(tr("Pixel size (um)"));
+  QLabel *radius_label = new QLabel(tr("Radius (pixel)"));
+  QLabel *pixel_size_label = new QLabel(tr("Resolution (um/pixel)"));
   QLabel *type_label = new QLabel(tr("Type"));
 
   QHBoxLayout *hlayout1 = new QHBoxLayout;

@@ -421,7 +421,8 @@ void MainWindow::CreateMenus() {
 }
 
 void MainWindow::CreateToolBar() {
-  toolbar_ = addToolBar(tr("shortcuts"));
+  toolbar_ = new QToolBar(tr("shortcuts"), this);
+  addToolBar(Qt::LeftToolBarArea, toolbar_);
   toolbar_->addAction(open_image_);
   toolbar_->addAction(load_parameters_);
   toolbar_->addAction(save_snakes_);
@@ -1311,7 +1312,7 @@ void MainWindow::GroupSnakes() {
 void MainWindow::ComputeSphericalOrientation() {
   QString dir = this->GetLastDirectory(analysis_filename_);
   QString filename = QFileDialog::getSaveFileName(
-      this, tr("Save spherical orientation"), dir, tr("Text files (*.txt)"));
+      this, tr("Save spherical orientation"), dir, tr("CSV files (*.csv)"));
   if (filename.isEmpty()) return;
   analysis_filename_ = filename.toStdString();
 
@@ -1325,7 +1326,10 @@ void MainWindow::ComputeSphericalOrientation() {
     return;
   }
 
-  multisnake_->ComputeSphericalOrientation(outfile);
+  PointType center;
+  analysis_options_dialog_->GetImageCenter(center);
+  double max_r = 0.9 * analysis_options_dialog_->GetRadius();;
+  multisnake_->ComputeSphericalOrientation(center, max_r, outfile);
   statusBar()->showMessage(tr("Spherical orientation file saved."));
   outfile.close();
 }
@@ -1365,7 +1369,7 @@ void MainWindow::ComputePointDensity() {
 
   PointType center;
   analysis_options_dialog_->GetImageCenter(center);
-  unsigned max_radius = analysis_options_dialog_->GetRadius();
+  double max_radius = analysis_options_dialog_->GetRadius() * 1.1;
   double pixel_size = analysis_options_dialog_->GetPixelSize();
   unsigned type = analysis_options_dialog_->GetType();
 
@@ -1487,7 +1491,7 @@ void MainWindow::SaveSnapshot() {
   snapshot_filename_ = filename.toStdString();
 
   viewer_->PrintScreenAsPNGImage(snapshot_filename_);
-  // viewer_->PrintScreenAsTIFFImage(snapshot_filename_);
+  viewer_->PrintScreenAsTIFFImage(snapshot_filename_);
   // viewer_->PrintScreenAsVectorImage(snapshot_filename_);
   statusBar()->showMessage("Snapshots saved.", message_timeout_);
 }

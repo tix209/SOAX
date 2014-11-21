@@ -190,11 +190,12 @@ class Multisnake : public QObject {
                                 std::ostream & os) const;
 
   void ComputePointDensityAndIntensity(const PointType &center,
-                                       unsigned max_r, double pixel_size,
+                                       double max_radius, double pixel_size,
                                        unsigned type, std::ostream & os) const;
 
   void ComputeCurvature(int coarse_graining, std::ostream &os) const;
-  void ComputeSphericalOrientation(std::ostream &os) const;
+  void ComputeSphericalOrientation(const PointType &center,
+                                   double max_r, std::ostream &os) const;
 
   void DeleteSnakes(const SnakeSet &snakes);
 
@@ -376,6 +377,7 @@ class Multisnake : public QObject {
 
   unsigned GetNumberOfSOACPoints(const SnakeContainer &snakes) const;
 
+  bool IsInsideSphere(const PointType &center, double r, const PointType p) const;
 
   std::string image_filename_;
   ImageType::Pointer image_;

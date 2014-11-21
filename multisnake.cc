@@ -1427,13 +1427,15 @@ void Multisnake::ComputeRTheta(const PointType &point1,
 }
 
 void Multisnake::ComputePointDensityAndIntensity(const PointType &center,
-                                                 unsigned max_r,
+                                                 double max_radius,
                                                  double pixel_size,
                                                  unsigned type,
                                                  std::ostream & os) const {
   if (converged_snakes_.empty()) return;
 
   const unsigned width = 16;
+  unsigned max_r = static_cast<unsigned>(max_radius);
+
   os << "Image file\t" << image_filename_
      << "\nImage center\t" << center
      << "\nMax radius\t" << max_r
@@ -1518,21 +1520,27 @@ void Multisnake::ComputeCurvature(int coarse_graining, std::ostream &os) const {
   }
 }
 
-void Multisnake::ComputeSphericalOrientation(std::ostream &os) const {
-  const unsigned width = 16;
-  os << "Image file\t" << image_filename_ << "\n"
-          << std::setw(width) << "theta"
-          << std::setw(width) << "phi" << std::endl;
+void Multisnake::ComputeSphericalOrientation(const PointType &center,
+                                             double max_r, std::ostream &os) const {
+  os << "Polar,Azimuthal" << std::endl;
   for (SnakeConstIterator it = converged_snakes_.begin();
        it != converged_snakes_.end(); ++it) {
     for (unsigned i = 0; i < (*it)->GetSize() - 1; ++i) {
-      VectorType vector = (*it)->GetPoint(i) - (*it)->GetPoint(i+1);
-      double theta, phi;
-      this->ComputeThetaPhi(vector, theta, phi);
-      os << std::setw(width) << theta
-         << std::setw(width) << phi << std::endl;
+      const PointType &p1 = (*it)->GetPoint(i);
+      const PointType &p2 = (*it)->GetPoint(i+1);
+      if (this->IsInsideSphere(center, max_r, p1) &&
+          this->IsInsideSphere(center, max_r, p2)) {
+        double theta, phi;
+        this->ComputeThetaPhi(p1 - p2, theta, phi);
+        os << theta << "," << phi << std::endl;
+      }
     }
   }
+}
+
+bool Multisnake::IsInsideSphere(const PointType &center,
+                                double r, const PointType p) const {
+  return center.EuclideanDistanceTo(p) < r;
 }
 
 void Multisnake::ComputeThetaPhi(VectorType vector,

@@ -91,6 +91,7 @@ Viewer::Viewer():
   picker_ = vtkSmartPointer<vtkPointPicker>::New();
   picker_->SetTolerance(0.01);
   qvtk_->GetInteractor()->SetPicker(picker_);
+  snakes_actor_ = NULL;
   on_snake_sphere1_ = vtkActor::New();
   on_snake_sphere2_ = vtkActor::New();
   off_snake_sphere_ = vtkActor::New();
@@ -555,6 +556,20 @@ void Viewer::ToggleCubeAxes(bool state) {
 
 // }
 
+void Viewer::SetupSnakesAsOneActor(const SnakeContainer &snakes) {
+  if (snakes.empty()) return;
+  vtkPolyData *curve = this->MakePolyDataForMultipleSnakes(snakes);
+  vtkDataSetMapper *mapper = vtkDataSetMapper::New();
+  mapper->SetInputData(curve);
+  snakes_actor_ = vtkActor::New();
+  snakes_actor_->SetMapper(mapper);
+  mapper->Update();
+  mapper->Delete();
+  curve->Delete();
+  this->SetupEvolvingActorProperty(snakes_actor_);
+  // renderer_->AddActor(snakes_actor_);
+}
+
 void Viewer::SetupSnakes(const SnakeContainer &snakes, unsigned category) {
   if (snakes.empty()) return;
 
@@ -565,16 +580,16 @@ void Viewer::SetupSnakes(const SnakeContainer &snakes, unsigned category) {
 
 void Viewer::SetupSnake(Snake *snake, unsigned category) {
   // Remove the old snake from the scene and actor-snake map
-  SnakeActorMap::iterator it = snake_actors_.find(snake);
-  if (it != snake_actors_.end()) {
+  SnakeActorMap::iterator it = snake_actor_map_.find(snake);
+  if (it != snake_actor_map_.end()) {
     renderer_->RemoveActor(it->second);
-    actor_snakes_.erase(it->second);
+    actor_snake_map_.erase(it->second);
     it->second->Delete();
   }
 
   vtkActor *actor = this->ActSnake(snake);
-  actor_snakes_[actor] = snake;
-  snake_actors_[snake] = actor;
+  actor_snake_map_[actor] = snake;
+  snake_actor_map_[snake] = actor;
 
   switch (category) {
     case 0:
@@ -589,7 +604,7 @@ void Viewer::SetupSnake(Snake *snake, unsigned category) {
     default:
       std::cerr << "SetupSnake: unknown snake category!" << std::endl;
   }
-  renderer_->AddActor(actor);
+  // renderer_->AddActor(actor);
 }
 
 vtkActor * Viewer::ActSnake(Snake *snake) {
@@ -647,6 +662,38 @@ vtkPolyData * Viewer::MakePolyData(Snake *snake,
   return curve;
 }
 
+vtkPolyData * Viewer::MakePolyDataForMultipleSnakes(const SnakeContainer &snakes) {
+  vtkPolyData *curve = vtkPolyData::New();
+  vtkPoints *points = vtkPoints::New();
+  vtkCellArray *cells = vtkCellArray::New();
+
+  unsigned int index = 0;
+  vtkIdType cell_index[2];
+  vtkFloatingPointType coordinates[3];
+
+  for (SnakeContainer::const_iterator s_iter = snakes.begin();
+       s_iter != snakes.end(); ++s_iter) {
+    for (unsigned i = 0; i < (*s_iter)->GetSize(); ++i) {
+      coordinates[0] = (*s_iter)->GetX(i);
+      coordinates[1] = (*s_iter)->GetY(i);
+      coordinates[2] = (*s_iter)->GetZ(i);
+      points->InsertPoint(index, coordinates);
+      if (i != (*s_iter)->GetSize() - 1) {
+        cell_index[0] = index;
+        cell_index[1] = index + 1;
+        cells->InsertNextCell(2, cell_index);
+      }
+      index++;
+    }
+  }
+  curve->SetPoints(points);
+  curve->SetLines(cells);
+  points->Delete();
+  cells->Delete();
+
+  return curve;
+}
+
 void Viewer::SetupEvolvingActorProperty(vtkActor *actor) {
   actor->GetProperty()->SetInterpolationToPhong();
   actor->GetProperty()->SetOpacity(snake_opacity_);
@@ -681,19 +728,21 @@ void Viewer::SetupAnotherComparingActorProperty(vtkActor *actor) {
 }
 
 void Viewer::ChangeSnakeColor(Snake *s, double *color) {
-  snake_actors_[s]->GetProperty()->SetColor(color);
+  snake_actor_map_[s]->GetProperty()->SetColor(color);
 }
 
 void Viewer::ToggleSnakes(bool state) {
   snakes_shown_ = state;
   if (state) {
-    for (ActorSnakeMap::iterator it = actor_snakes_.begin();
-         it != actor_snakes_.end(); ++it) {
+    renderer_->AddActor(snakes_actor_);
+    for (ActorSnakeMap::iterator it = actor_snake_map_.begin();
+         it != actor_snake_map_.end(); ++it) {
       renderer_->AddActor(it->first);
     }
   } else {
-    for (ActorSnakeMap::iterator it = actor_snakes_.begin();
-         it != actor_snakes_.end(); ++it) {
+    renderer_->RemoveActor(snakes_actor_);
+    for (ActorSnakeMap::iterator it = actor_snake_map_.begin();
+         it != actor_snake_map_.end(); ++it) {
       renderer_->RemoveActor(it->first);
     }
   }
@@ -701,26 +750,30 @@ void Viewer::ToggleSnakes(bool state) {
 }
 
 void Viewer::RemoveSnakes() {
-  for (ActorSnakeMap::iterator it = actor_snakes_.begin();
-       it != actor_snakes_.end(); ++it) {
+  for (ActorSnakeMap::iterator it = actor_snake_map_.begin();
+       it != actor_snake_map_.end(); ++it) {
     renderer_->RemoveActor(it->first);
     it->first->Delete();
   }
-  snake_actors_.clear();
-  actor_snakes_.clear();
+  snake_actor_map_.clear();
+  actor_snake_map_.clear();
   selected_snakes_.clear();
+  if (snakes_actor_) {
+    snakes_actor_->Delete();
+    snakes_actor_ = NULL;
+  }
 }
 
 void Viewer::RemoveSnake(Snake *snake) {
-  SnakeActorMap::iterator it = snake_actors_.find(snake);
-  if (it == snake_actors_.end()) {
+  SnakeActorMap::iterator it = snake_actor_map_.find(snake);
+  if (it == snake_actor_map_.end()) {
     return;
   }
 
   vtkActor *actor = it->second;
   renderer_->RemoveActor(actor);
-  snake_actors_.erase(snake);
-  actor_snakes_.erase(actor);
+  snake_actor_map_.erase(snake);
+  actor_snake_map_.erase(actor);
   actor->Delete();
 }
 
@@ -815,8 +868,8 @@ vtkPolyData * Viewer::MakeClippedPolyData(unsigned axis, double position) {
   vtkIdType cell_index[2];
   vtkFloatingPointType coordinates[3];
 
-  for (SnakeActorMap::const_iterator it = snake_actors_.begin();
-       it != snake_actors_.end(); ++it) {
+  for (SnakeActorMap::const_iterator it = snake_actor_map_.begin();
+       it != snake_actor_map_.end(); ++it) {
     for (unsigned i = 0; i < it->first->GetSize(); ++i) {
       coordinates[0] = it->first->GetX(i);
       coordinates[1] = it->first->GetY(i);
@@ -870,9 +923,9 @@ void Viewer::ColorSnakes(bool state, bool azimuthal) {
 }
 
 void Viewer::SetupColorSegments(bool azimuthal) {
-  if (actor_snakes_.empty()) return;
-  for (ActorSnakeMap::const_iterator it = actor_snakes_.begin();
-       it != actor_snakes_.end(); ++it) {
+  if (actor_snake_map_.empty()) return;
+  for (ActorSnakeMap::const_iterator it = actor_snake_map_.begin();
+       it != actor_snake_map_.end(); ++it) {
     unsigned step = color_segment_step_ > it->second->GetSize() - 1 ?
         it->second->GetSize() - 1 : color_segment_step_;
     unsigned i = 0;
@@ -1000,11 +1053,11 @@ void Viewer::SelectSnakeForView() {
                 0, renderer_);
   vtkActor *actor = picker_->GetActor();
   if (actor) {
-    ActorSnakeMap::const_iterator it = actor_snakes_.find(actor);
-    if (it != actor_snakes_.end()) {
+    ActorSnakeMap::const_iterator it = actor_snake_map_.find(actor);
+    if (it != actor_snake_map_.end()) {
       actor->GetProperty()->SetColor(selected_snake_color_);
       // if (selected_snake_) {
-      //   snake_actors_[selected_snake_]->GetProperty()->SetColor(snake_color_);
+      //   snake_actor_map_[selected_snake_]->GetProperty()->SetColor(snake_color_);
       // }
       selected_snake_ = it->second;
       // it->second->PrintSelf();
@@ -1019,8 +1072,8 @@ void Viewer::DeselectSnakeForView() {
                 0, renderer_);
   vtkActor *actor = picker_->GetActor();
   if (actor) {
-    ActorSnakeMap::const_iterator it = actor_snakes_.find(actor);
-    if (it != actor_snakes_.end()) {
+    ActorSnakeMap::const_iterator it = actor_snake_map_.find(actor);
+    if (it != actor_snake_map_.end()) {
       actor->GetProperty()->SetColor(snake_color_);
       selected_snake_ = NULL;
     }
@@ -1029,16 +1082,16 @@ void Viewer::DeselectSnakeForView() {
 
 void Viewer::HighlightCorrespondingSnake(int index) {
   if (index > frame_index_ && corresponding_snake_forward_) {
-    SnakeActorMap::const_iterator it = snake_actors_.find(corresponding_snake_forward_);
-    if (it != snake_actors_.end()) {
+    SnakeActorMap::const_iterator it = snake_actor_map_.find(corresponding_snake_forward_);
+    if (it != snake_actor_map_.end()) {
       it->second->GetProperty()->SetColor(selected_snake_color_);
       selected_snake_ = corresponding_snake_forward_;
     }
   }
 
   if (index < frame_index_ && corresponding_snake_backward_) {
-    SnakeActorMap::const_iterator it = snake_actors_.find(corresponding_snake_backward_);
-    if (it != snake_actors_.end()) {
+    SnakeActorMap::const_iterator it = snake_actor_map_.find(corresponding_snake_backward_);
+    if (it != snake_actor_map_.end()) {
       it->second->GetProperty()->SetColor(selected_snake_color_);
       selected_snake_ = corresponding_snake_backward_;
     }
@@ -1222,8 +1275,8 @@ void Viewer::SelectSnakeForDeletion() {
                 0, renderer_);
   vtkActor *actor = picker_->GetActor();
   if (actor) {
-    ActorSnakeMap::const_iterator it = actor_snakes_.find(actor);
-    if (it != actor_snakes_.end()) {
+    ActorSnakeMap::const_iterator it = actor_snake_map_.find(actor);
+    if (it != actor_snake_map_.end()) {
       actor->GetProperty()->SetColor(selected_snake_color_);
       selected_snakes_.insert(it->second);
       it->second->PrintSelf();
@@ -1237,8 +1290,8 @@ void Viewer::DeselectSnakeForDeletion() {
                 0, renderer_);
   vtkActor *actor = picker_->GetActor();
   if (actor) {
-    ActorSnakeMap::const_iterator it = actor_snakes_.find(actor);
-    if (it != actor_snakes_.end()) {
+    ActorSnakeMap::const_iterator it = actor_snake_map_.find(actor);
+    if (it != actor_snake_map_.end()) {
       actor->GetProperty()->SetColor(snake_color_);
       selected_snakes_.erase(it->second);
     }
@@ -1249,11 +1302,11 @@ void Viewer::RemoveSelectedSnakes() {
   if (selected_snakes_.empty()) return;
   for (SnakeSet::const_iterator it = selected_snakes_.begin();
        it != selected_snakes_.end(); ++it) {
-    SnakeActorMap::const_iterator snake_actor_it = snake_actors_.find(*it);
-    if (snake_actor_it != snake_actors_.end()) {
+    SnakeActorMap::const_iterator snake_actor_it = snake_actor_map_.find(*it);
+    if (snake_actor_it != snake_actor_map_.end()) {
       renderer_->RemoveActor(snake_actor_it->second);
-      actor_snakes_.erase(snake_actor_it->second);
-      snake_actors_.erase(*it);
+      actor_snake_map_.erase(snake_actor_it->second);
+      snake_actor_map_.erase(*it);
       snake_actor_it->second->Delete();
     }
   }
@@ -1295,8 +1348,8 @@ void Viewer::SelectVertex() {
                 0, renderer_);
   vtkActor *actor = picker_->GetActor();
   if (actor) {
-    ActorSnakeMap::const_iterator it = actor_snakes_.find(actor);
-    if (it != actor_snakes_.end()) {
+    ActorSnakeMap::const_iterator it = actor_snake_map_.find(actor);
+    if (it != actor_snake_map_.end()) {
       unsigned index = static_cast<unsigned>(picker_->GetPointId());
       this->SetupSphere(it->second->GetPoint(index), on_snake_sphere1_,
                         sphere_color_);
@@ -1484,8 +1537,8 @@ void Viewer::SelectBodyVertex() {
                 0, renderer_);
   vtkActor *actor = picker_->GetActor();
   if (actor) {
-    ActorSnakeMap::const_iterator it = actor_snakes_.find(actor);
-    if (it != actor_snakes_.end()) {
+    ActorSnakeMap::const_iterator it = actor_snake_map_.find(actor);
+    if (it != actor_snake_map_.end()) {
       unsigned index = static_cast<unsigned>(picker_->GetPointId());
 
       if (is_trim_body_second_click_) {

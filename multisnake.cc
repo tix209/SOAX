@@ -55,10 +55,11 @@ Multisnake::~Multisnake() {
 
 void Multisnake::Reset() {
   this->ClearSnakeContainer(initial_snakes_);
-  if (converged_snakes_sequence_.empty())
+  if (converged_snakes_sequence_.empty()) {
     this->ClearSnakeContainer(converged_snakes_);
-  else
+  } else {
     converged_snakes_.clear();
+  }
   this->ClearSnakeContainer(comparing_snakes1_);
   this->ClearSnakeContainer(comparing_snakes2_);
   this->ClearSnakeContainerSequence(converged_snakes_sequence_);
@@ -839,6 +840,7 @@ void Multisnake::ClearSnakeContainer(SnakeContainer &snakes) {
   if (snakes.empty()) return;
   for (SnakeContainer::iterator it = snakes.begin();
        it != snakes.end(); ++it) {
+    // std::cout << "Deleting snakes ..." << std::endl;
     delete *it;
   }
   snakes.clear();

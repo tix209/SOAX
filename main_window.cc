@@ -1054,8 +1054,8 @@ void MainWindow::InitializeSnakes() {
   statusBar()->showMessage(msg, message_timeout_);
 
   viewer_->RemoveSnakes();
-  viewer_->SetupSnakes(multisnake_->initial_snakes());
-  // viewer_->SetupSnakesAsOneActor(multisnake_->initial_snakes());
+  // viewer_->SetupSnakes(multisnake_->initial_snakes());
+  viewer_->SetupSnakesAsOneActor(multisnake_->initial_snakes());
   toggle_snakes_->setChecked(true);
   viewer_->Render();
 

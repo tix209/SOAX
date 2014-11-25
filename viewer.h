@@ -68,6 +68,7 @@ class Viewer : public QObject {
   void UpdateWindowLevel(double window, double level);
   void UpdateMIPIntensityRange(double min, double max);
 
+  void SetupSnakesAsOneActor(const SnakeContainer &snakes);
   void SetupSnakes(const SnakeContainer &snakes, unsigned category = 0);
   // void SetupSnakesSequence(const std::vector<SnakeContainer> &snakes_sequence,
   //                          unsigned category = 0);
@@ -190,6 +191,7 @@ class Viewer : public QObject {
 
   vtkActor * ActSnake(Snake *snake);
   vtkActor * ActSnakeSegments(Snake *snake, unsigned start, unsigned end);
+  vtkPolyData * MakePolyDataForMultipleSnakes(const SnakeContainer &snakes);
   vtkPolyData * MakePolyData(Snake *snake,unsigned start, unsigned end);
   void SetupEvolvingActorProperty(vtkActor *actor);
   void SetupComparingActorProperty(vtkActor *actor);
@@ -234,6 +236,8 @@ class Viewer : public QObject {
   void PrintMatrix(const Matrix<double> m, std::ostream &os = std::cout);
   double ComputeShortestDistance(const PointType &p, Snake *s);
 
+
+
   QVTKWidget *qvtk_;
   vtkSmartPointer<vtkRenderer> renderer_;
   vtkSmartPointer<vtkCamera> camera_;
@@ -262,8 +266,8 @@ class Viewer : public QObject {
   std::vector<unsigned> sequence_min_intensity_;
   std::vector<unsigned> sequence_max_intensity_;
 
-  ActorSnakeMap actor_snakes_;
-  SnakeActorMap snake_actors_;
+  ActorSnakeMap actor_snake_map_;
+  SnakeActorMap snake_actor_map_;
   ActorPointMap actor_junctions_;
   SnakeSet selected_snakes_;
   ActorPointMap selected_junctions_;
@@ -277,6 +281,7 @@ class Viewer : public QObject {
   CorrespondenceMap forward_correspondence_;
   CorrespondenceMap backward_correspondence_;
 
+  vtkActor *snakes_actor_;
   vtkActor *on_snake_sphere1_;
   vtkActor *on_snake_sphere2_;
   vtkActor *off_snake_sphere_;

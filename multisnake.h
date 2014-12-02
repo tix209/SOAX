@@ -379,6 +379,10 @@ class Multisnake : public QObject {
 
   bool IsInsideSphere(const PointType &center, double r, const PointType p) const;
 
+  /** Use non smoothed image gradient as external force.
+   */
+  void UpdateExternalForce();
+
   std::string image_filename_;
   ImageType::Pointer image_;
   std::vector<ImageType::Pointer> image_sequence_;

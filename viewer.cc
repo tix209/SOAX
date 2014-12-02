@@ -567,7 +567,7 @@ void Viewer::SetupSnakesAsOneActor(const SnakeContainer &snakes) {
   mapper->Delete();
   curve->Delete();
   this->SetupEvolvingActorProperty(snakes_actor_);
-  // renderer_->AddActor(snakes_actor_);
+  renderer_->AddActor(snakes_actor_);
 }
 
 void Viewer::SetupSnakes(const SnakeContainer &snakes, unsigned category) {
@@ -604,7 +604,7 @@ void Viewer::SetupSnake(Snake *snake, unsigned category) {
     default:
       std::cerr << "SetupSnake: unknown snake category!" << std::endl;
   }
-  // renderer_->AddActor(actor);
+  renderer_->AddActor(actor);
 }
 
 vtkActor * Viewer::ActSnake(Snake *snake) {
@@ -734,7 +734,8 @@ void Viewer::ChangeSnakeColor(Snake *s, double *color) {
 void Viewer::ToggleSnakes(bool state) {
   snakes_shown_ = state;
   if (state) {
-    renderer_->AddActor(snakes_actor_);
+    if (snakes_actor_)
+      renderer_->AddActor(snakes_actor_);
     for (ActorSnakeMap::iterator it = actor_snake_map_.begin();
          it != actor_snake_map_.end(); ++it) {
       renderer_->AddActor(it->first);
@@ -759,6 +760,7 @@ void Viewer::RemoveSnakes() {
   actor_snake_map_.clear();
   selected_snakes_.clear();
   if (snakes_actor_) {
+    renderer_->RemoveActor(snakes_actor_);
     snakes_actor_->Delete();
     snakes_actor_ = NULL;
   }

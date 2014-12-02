@@ -102,26 +102,31 @@ void SolverBank::InitializeSolver(SolverType *solver, unsigned order,
 }
 
 void SolverBank::FillMatrixOpen(SolverType *solver, unsigned order) {
+  /* alpha_0 = 0; alpha_{N-1} = alpha; beta_0 = beta_{N-1} = 0 */
   const double diag0 = 2 * alpha_ + 6 * beta_ + gamma_;
   const double diag1 = -alpha_ - 4 * beta_;
 
   // main diagonal
-  solver->SetMatrixValue(0, 0, alpha_+beta_+gamma_, 0);
-  solver->SetMatrixValue(1, 1, 2*alpha_+5*beta_+gamma_, 0);
+  solver->SetMatrixValue(0, 0, alpha_ + beta_ + gamma_, 0);
+  solver->SetMatrixValue(1, 1, 2 * alpha_ + 5 * beta_ + gamma_, 0);
   for (unsigned i = 2; i < order - 2; i++)
     solver->SetMatrixValue(i, i, diag0, 0);
-  solver->SetMatrixValue(order-2, order-2, alpha_+5*beta_+gamma_, 0);
-  solver->SetMatrixValue(order-1, order-1, beta_+gamma_, 0);
+  // solver->SetMatrixValue(order-2, order-2, alpha_+5*beta_+gamma_, 0);
+  // solver->SetMatrixValue(order-1, order-1, beta_+gamma_, 0);
+  solver->SetMatrixValue(order - 2, order - 2, 2 * alpha_ + 5 * beta_ + gamma_, 0);
+  solver->SetMatrixValue(order - 1, order - 1, alpha_ + beta_ + gamma_, 0);
 
   // +1/-1 diagonal
-  solver->SetMatrixValue(0, 1, -alpha_-2*beta_, 0);
-  solver->SetMatrixValue(1, 0, -alpha_-2*beta_, 0);
+  solver->SetMatrixValue(0, 1, -alpha_ - 2 * beta_, 0);
+  solver->SetMatrixValue(1, 0, -alpha_ - 2 * beta_, 0);
   for (unsigned i = 1; i < order - 2; i++) {
     solver->SetMatrixValue(i, i+1, diag1, 0);
     solver->SetMatrixValue(i+1, i, diag1, 0);
   }
-  solver->SetMatrixValue(order-2, order-1, -2*beta_, 0);
-  solver->SetMatrixValue(order-1, order-2, -2*beta_, 0);
+  // solver->SetMatrixValue(order-2, order-1, -2*beta_, 0);
+  // solver->SetMatrixValue(order-1, order-2, -2*beta_, 0);
+  solver->SetMatrixValue(order - 2, order - 1, -alpha_ - 2 * beta_, 0);
+  solver->SetMatrixValue(order - 1, order - 2, -alpha_ - 2 * beta_, 0);
 
   // +2/-2 diagonal
   for (unsigned i = 2; i < order; ++i) {

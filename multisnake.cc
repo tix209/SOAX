@@ -520,12 +520,39 @@ void Multisnake::ComputeImageGradientForSequence(int index) {
   this->ComputeImageGradient();
 }
 
+void Multisnake::UpdateExternalForce() {
+  typedef itk::Image<double, kDimension> InternalImageType;
+  typedef itk::ShiftScaleImageFilter<ImageType, InternalImageType> ScalerType;
+  ScalerType::Pointer scaler = ScalerType::New();
+  scaler->SetInput(image_);
+  scaler->SetScale(intensity_scaling_);
+  scaler->SetShift(0.0);
+  scaler->Update();
+
+  typedef itk::GradientImageFilter<InternalImageType> FilterType;
+  FilterType::Pointer filter = FilterType::New();
+  filter->SetInput(scaler->GetOutput());
+  typedef itk::VectorCastImageFilter<FilterType::OutputImageType,
+                                     VectorImageType> CasterType;
+  CasterType::Pointer caster = CasterType::New();
+  caster->SetInput(filter->GetOutput());
+  try {
+    caster->Update();
+  } catch(itk::ExceptionObject & e) {
+    std::cerr << "Exception caught when updating external force!\n"
+              << e << std::endl;
+  }
+  external_force_ = caster->GetOutput();
+  external_force_->DisconnectPipeline();
+  vector_interpolator_->SetInputImage(external_force_);
+}
+
 void Multisnake::InitializeSnakes() {
   this->ClearSnakeContainer(initial_snakes_);
   BoolVectorImageType::Pointer ridge_image =
       InitializeBoolVectorImage();
   this->ScanGradient(ridge_image);
-
+  // this->UpdateExternalForce();
   unsigned num_directions = 2;
   if (!is_2d_ && initialize_z_) num_directions = 3;
   // unsigned num_directions = 1; // for blood vessels

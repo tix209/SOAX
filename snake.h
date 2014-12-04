@@ -407,6 +407,11 @@ class Snake {
    */
   static const double kBoundary;
 
+  /**
+   * Voxel size relative to x/y.
+   */
+  static double z_spacing_;
+
   DISALLOW_COPY_AND_ASSIGN(Snake);
 };
 

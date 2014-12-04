@@ -569,8 +569,8 @@ void Multisnake::InitializeSnakes() {
   for (unsigned d = 0; d < num_directions; ++d) {
     this->LinkCandidates(candidate_image, d);
   }
-  // std::sort(initial_snakes_.begin(), initial_snakes_.end(), IsShorter);
-  std::sort(initial_snakes_.begin(), initial_snakes_.end(), IsDarker);
+  std::sort(initial_snakes_.begin(), initial_snakes_.end(), IsShorter);
+  // std::sort(initial_snakes_.begin(), initial_snakes_.end(), IsDarker);
   // std::sort(initial_snakes_.begin(), initial_snakes_.end(), IsBrighter);
   // this->PrintSnakes(initial_snakes_);
 }

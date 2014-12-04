@@ -27,7 +27,7 @@ double Snake::grouping_distance_threshold_ = 3.0;
 unsigned Snake::grouping_delta_ = 6.0;
 double Snake::direction_threshold_ = 2.0;
 bool Snake::damp_z_ = false;
-
+double Snake::z_spacing_ = 2.88;
 const double Snake::kBoundary = 0.5;
 
 
@@ -520,27 +520,46 @@ double Snake::ComputeForegroundMeanIntensity(bool is_head) const {
 }
 
 double Snake::ComputeBackgroundMeanIntensity(bool is_head) const {
-  PointType vertex = is_head ? vertices_.front() : vertices_.back();
+  const PointType &vertex = is_head ? vertices_.front() : vertices_.back();
   const VectorType &normal = is_head ? head_tangent_ : tail_tangent_;
-  VectorType radial;
-  this->GetStartingRadialDirection(radial, normal, vertex);
+  // std::cout << normal.GetNorm() << std::endl;
+  assert(std::fabs(normal.GetNorm() - 1.0) < 1e-9);
+  VectorType z_axis;
+  z_axis[0] = 0.0;
+  z_axis[1] = 0.0;
+  z_axis[2] = 1.0;
+  VectorType projection = z_axis - normal[2] * normal;
+  VectorType long_axis;
+  long_axis[0] = 1.0;
+  long_axis[1] = 0.0;
+  long_axis[2] = 0.0;
+  VectorType short_axis;
+  short_axis[0] = 0.0;
+  short_axis[1] = 1.0;
+  short_axis[2] = 0.0;
+  double projection_length = projection.GetNorm();
+  if (projection_length > kEpsilon) {
+    long_axis = projection / projection_length;
+    short_axis = itk::CrossProduct(long_axis, normal);
+    short_axis.Normalize();
+  }
   DataContainer bgs;
-  for (int s = 0; s < number_of_sectors_; s++) {
-    for (int d = radial_near_; d < radial_far_; d++) {
-      PointType sample_point;
-      this->ComputeSamplePoint(sample_point, vertex, radial, normal, d, s);
-      if (this->IsInsideImage(sample_point)) {
-        double intensity = interpolator_->Evaluate(sample_point);
+  const double angle_step = 2 * kPi / number_of_sectors_;
+  for (int r = radial_near_; r < radial_far_; r++) {
+    for (int s = 0; s < number_of_sectors_; s++) {
+      double angle = s * angle_step;
+      VectorType v = static_cast<double>(r) * (std::cos(angle) * long_axis +
+                                               std::sin(angle) * short_axis);
+      v[2] *= z_spacing_;
+      PointType p = vertex + v;
+      if (this->IsInsideImage(p)) {
+        double intensity = interpolator_->Evaluate(p);
         if (intensity > background_)
           bgs.push_back(intensity);
       }
     }
   }
 
-  // int number_of_samples = number_of_sectors_ * (radial_far_ - radial_near_);
-  // unsigned threshold = static_cast<unsigned>(number_of_samples * 0.5);
-
-  // if (bgs.size() < threshold)  {
   if (bgs.empty()) {
     return -1.0; // return a negative value intentionally
   } else {

@@ -24,6 +24,8 @@
 #include "itkStatisticsImageFilter.h"
 #include "itkImageDuplicator.h"
 #include "itkAbsoluteValueDifferenceImageFilter.h"
+#include "itkSquaredDifferenceImageFilter.h"
+#include "itkSquareImageFilter.h"
 #include "solver_bank.h"
 #include "utility.h"
 
@@ -1954,15 +1956,6 @@ void Multisnake::GenerateSyntheticImageShotNoise(unsigned foreground, unsigned b
   rescaler->Update();
   img = rescaler->GetOutput();
 
-  typedef itk::StatisticsImageFilter<FloatImageType> StatisticsImageFilterType;
-  StatisticsImageFilterType::Pointer stat = StatisticsImageFilterType::New();
-  stat->SetInput(img);
-  stat->Update();
-  double mean_intensity = stat->GetMean();
-  // std::cout << "Mean: " << mean_intensity << std::endl;
-  double snr = std::sqrt(mean_intensity * scaling);
-  std::cout << "SNR: " << snr << std::endl;
-
   typedef itk::ImageDuplicator<FloatImageType> DuplicatorType;
   DuplicatorType::Pointer duplicator = DuplicatorType::New();
   duplicator->SetInputImage(img);
@@ -1981,16 +1974,44 @@ void Multisnake::GenerateSyntheticImageShotNoise(unsigned foreground, unsigned b
     iter.Set(assigned_intensity);
   }
 
-  // compute the difference image
-  typedef itk::AbsoluteValueDifferenceImageFilter <FloatImageType,
-                                                   FloatImageType,
-                                                   FloatImageType> DifferenceImageFilterType;
+  // compute image snr
+  // typedef itk::SquareImageFilter <FloatImageType, FloatImageType> SquareImageFilterType;
+  // SquareImageFilterType::Pointer square = SquareImageFilterType::New();
+  // square->SetInput(clean_img);
+  // square->Update();
+  // typedef itk::SquaredDifferenceImageFilter<FloatImageType,
+  //                                           FloatImageType,
+  //                                           FloatImageType> SquaredDifferenceImageFilterType;
+  // SquaredDifferenceImageFilterType::Pointer squared_differ = SquaredDifferenceImageFilterType::New();
+  // squared_differ->SetInput1(img);
+  // squared_differ->SetInput2(clean_img);
+  // squared_differ->Update();
 
-  DifferenceImageFilterType::Pointer differ = DifferenceImageFilterType::New();
-  differ->SetInput1(img);
-  differ->SetInput2(clean_img);
-  differ->Update();
-  FloatImageType::Pointer diff_img = differ->GetOutput();
+  typedef itk::StatisticsImageFilter<FloatImageType> StatisticsImageFilterType;
+  StatisticsImageFilterType::Pointer stat1 = StatisticsImageFilterType::New();
+  stat1->SetInput(clean_img);
+  stat1->Update();
+  // StatisticsImageFilterType::Pointer stat2 = StatisticsImageFilterType::New();
+  // stat2->SetInput(squared_differ->GetOutput());
+  // stat2->Update();
+  double mean_intensity = stat1->GetMean();
+  std::cout << "Mean: " << mean_intensity << std::endl;
+  // double snr = std::sqrt(mean_intensity * scaling);
+  double snr = (mean_intensity - background) * std::sqrt(scaling / background);
+  std::cout << "SNR: " << snr << std::endl;
+
+
+
+  // compute the difference image
+  // typedef itk::AbsoluteValueDifferenceImageFilter <FloatImageType,
+  //                                                  FloatImageType,
+  //                                                  FloatImageType> DifferenceImageFilterType;
+
+  // DifferenceImageFilterType::Pointer differ = DifferenceImageFilterType::New();
+  // differ->SetInput1(img);
+  // differ->SetInput2(clean_img);
+  // differ->Update();
+  // FloatImageType::Pointer diff_img = differ->GetOutput();
 
   typedef itk::CastImageFilter<FloatImageType, ImageType> CasterType;
   CasterType::Pointer caster = CasterType::New();
@@ -2008,8 +2029,10 @@ void Multisnake::GenerateSyntheticImageShotNoise(unsigned foreground, unsigned b
   }
 
   CasterType::Pointer caster2 = CasterType::New();
-  caster2->SetInput(diff_img);
-  const std::string label("-diff");
+  // caster2->SetInput(diff_img);
+  // const std::string label("-diff");
+  caster2->SetInput(clean_img);
+  const std::string label("-clean");
   std::string diff_filename = filename;
   diff_filename.insert(diff_filename.begin() + diff_filename.find_last_of('.'),
                        label.begin(), label.end());

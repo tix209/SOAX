@@ -967,21 +967,55 @@ bool Snake::ComputeLocalBackgroundMeanStd(unsigned index,int radial_near,
   DataContainer bgs;
   const VectorType normal = this->ComputeUnitTangentVector(index);
   PointType vertex = vertices_.at(index);
-  VectorType radial;
-  this->GetStartingRadialDirection(radial, normal, vertex);
-  // std::cout << "staring radial direction: " << radial << std::endl;
-  const int number_of_sectors = 8;
+  VectorType z_axis;
+  z_axis[0] = 0.0;
+  z_axis[1] = 0.0;
+  z_axis[2] = 1.0;
+  VectorType projection = z_axis - normal[2] * normal;
+  VectorType long_axis;
+  long_axis[0] = 1.0;
+  long_axis[1] = 0.0;
+  long_axis[2] = 0.0;
+  VectorType short_axis;
+  short_axis[0] = 0.0;
+  short_axis[1] = 1.0;
+  short_axis[2] = 0.0;
+  double projection_length = projection.GetNorm();
+  if (projection_length > kEpsilon) {
+    long_axis = projection / projection_length;
+    short_axis = itk::CrossProduct(long_axis, normal);
+    short_axis.Normalize();
+  }
 
-  for (int s = 0; s < number_of_sectors; s++) {
-    for (int d = radial_near; d < radial_far; d++) {
-      PointType sample_point;
-      this->ComputeSamplePoint(sample_point, vertex, radial, normal, d, s);
-      // std::cout << "sample point: " << sample_point << std::endl;
-      if (this->IsInsideImage(sample_point)) {
-        bgs.push_back(interpolator_->Evaluate(sample_point));
+  const double angle_step = 2 * kPi / number_of_sectors_;
+  for (int r = radial_near; r < radial_far; r++) {
+    for (int s = 0; s < number_of_sectors_; s++) {
+      double angle = s * angle_step;
+      VectorType v = static_cast<double>(r) * (std::cos(angle) * long_axis +
+                                               std::sin(angle) * short_axis);
+      v[2] *= z_spacing_;
+      PointType p = vertex + v;
+      if (this->IsInsideImage(p)) {
+        bgs.push_back(interpolator_->Evaluate(p));
       }
     }
   }
+
+  // VectorType radial;
+  // this->GetStartingRadialDirection(radial, normal, vertex);
+  // // std::cout << "staring radial direction: " << radial << std::endl;
+  // const int number_of_sectors = 8;
+
+  // for (int s = 0; s < number_of_sectors; s++) {
+  //   for (int d = radial_near; d < radial_far; d++) {
+  //     PointType sample_point;
+  //     this->ComputeSamplePoint(sample_point, vertex, radial, normal, d, s);
+  //     // std::cout << "sample point: " << sample_point << std::endl;
+  //     if (this->IsInsideImage(sample_point)) {
+  //       bgs.push_back(interpolator_->Evaluate(sample_point));
+  //     }
+  //   }
+  // }
   bool local_bg_defined = bgs.size() > 1;
   if (local_bg_defined) {
     mean = Mean(bgs);

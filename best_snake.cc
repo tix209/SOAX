@@ -81,10 +81,10 @@ int main (int argc, char **argv) {
     std::vector<double> t_range(3, 0.0), c_range(3, 0.0);
     t_range[0] = 1.0; // start
     t_range[1] = 0.1; // step
-    t_range[2] = 3.01; // end
+    t_range[2] = 4.0; // end
     c_range[0] = 1.0; // start
     c_range[1] = 0.1; // step
-    c_range[2] = 3.01; // end
+    c_range[2] = 4.0; // end
 
     po::options_description optional("Optional options");
     optional.add_options()
@@ -95,11 +95,11 @@ int main (int argc, char **argv) {
         ("t-range,t",
          po::value<std::vector<double> >(&t_range)->multitoken(),
          "Range of low SNR threshold (start step end)"
-         " Default: 1.0 0.1 3.0")
+         " Default: 1.0 0.1 4.0")
         ("c-range,c",
          po::value<std::vector<double> >(&c_range)->multitoken(),
          "Range of penalizing factor (start step end)"
-         " Default: 1.0 0.1 3.0")
+         " Default: 1.0 0.1 4.0")
         ("ground-truth,g", po::value<std::string>(),
          "Path of the ground truth snake")
         ("error,e", po::value<std::string>(),
@@ -112,7 +112,7 @@ int main (int argc, char **argv) {
 
     if (vm.count("version")) {
       const std::string version_msg(
-          "best_snake 1.0\n"
+          "best_snake 1.1\n"
           "Copyright (C) 2014 Ting Xu, IDEA Lab, Lehigh University.");
       std::cout << version_msg << std::endl;
       return EXIT_SUCCESS;

@@ -987,9 +987,10 @@ bool Snake::ComputeLocalBackgroundMeanStd(unsigned index,int radial_near,
     short_axis.Normalize();
   }
 
+  const int number_of_sectors = 16;
   const double angle_step = 2 * kPi / number_of_sectors_;
   for (int r = radial_near; r < radial_far; r++) {
-    for (int s = 0; s < number_of_sectors_; s++) {
+    for (int s = 0; s < number_of_sectors; s++) {
       double angle = s * angle_step;
       VectorType v = static_cast<double>(r) * (std::cos(angle) * long_axis +
                                                std::sin(angle) * short_axis);

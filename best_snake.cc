@@ -81,25 +81,25 @@ int main (int argc, char **argv) {
     std::vector<double> t_range(3, 0.0), c_range(3, 0.0);
     t_range[0] = 1.0; // start
     t_range[1] = 0.1; // step
-    t_range[2] = 4.0; // end
+    t_range[2] = 3.0; // end
     c_range[0] = 1.0; // start
     c_range[1] = 0.1; // step
-    c_range[2] = 4.0; // end
+    c_range[2] = 3.0; // end
 
     po::options_description optional("Optional options");
     optional.add_options()
-        ("rnear,n", po::value<int>()->default_value(4),
+        ("rnear,n", po::value<int>()->default_value(3),
          "Inner radius of local background annulus")
-        ("rfar,f", po::value<int>()->default_value(8),
+        ("rfar,f", po::value<int>()->default_value(6),
          "Outer radius of local background annulus")
         ("t-range,t",
          po::value<std::vector<double> >(&t_range)->multitoken(),
          "Range of low SNR threshold (start step end)"
-         " Default: 1.0 0.1 4.0")
+         " Default: 1.0 0.1 3.0")
         ("c-range,c",
          po::value<std::vector<double> >(&c_range)->multitoken(),
          "Range of penalizing factor (start step end)"
-         " Default: 1.0 0.1 4.0")
+         " Default: 1.0 0.1 3.0")
         ("ground-truth,g", po::value<std::string>(),
          "Path of the ground truth snake")
         ("error,e", po::value<std::string>(),

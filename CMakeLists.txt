@@ -92,6 +92,9 @@ add_executable(syn3 synthetic_scirep.cc ${common_srcs}
   ${multisnake_moc} multisnake.cc multisnake.h)
 # # add_executable(snapshots batch_snapshots.cc)
 # add_executable(batch_resample batch_resample.cc)
+add_executable(local_snr image_local_snr.cc ${common_srcs} ${multisnake_moc}
+  multisnake.cc multisnake.h)
+
 
 target_link_libraries(soax
   ${QT_LIBRARIES}
@@ -146,6 +149,13 @@ target_link_libraries(droplet_intensity_fractions
 #   )
 
 target_link_libraries(snr
+  ${ITK_LIBRARIES}
+  ${QT_LIBRARIES}
+  ${Boost_PROGRAM_OPTIONS_LIBRARY}
+  ${Boost_FILESYSTEM_LIBRARY}
+  ${Boost_SYSTEM_LIBRARY}
+)
+target_link_libraries(local_snr
   ${ITK_LIBRARIES}
   ${QT_LIBRARIES}
   ${Boost_PROGRAM_OPTIONS_LIBRARY}

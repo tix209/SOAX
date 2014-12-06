@@ -917,11 +917,13 @@ bool Snake::ComputeLocalSNRAtIndex(unsigned index, int radial_near,
 
   if (local_bg_defined) {
     if (bg_std < kEpsilon) {
+      // std::cerr << "local background std is zero!" << std::endl;
       if (foreground > bg_mean)
         local_snr = kPlusInfinity;
       else
         local_snr = 0.0;
     } else {
+      // std::cerr << "local background is not defined!" << std::endl;
       local_snr = (foreground - bg_mean) / bg_std;
     }
     // std::cout << "local snr: " << local_snr << std::endl;
@@ -930,36 +932,36 @@ bool Snake::ComputeLocalSNRAtIndex(unsigned index, int radial_near,
   return local_bg_defined;
 }
 
-double Snake::ComputeLocalForegroundMean(unsigned index, int radial_near) const {
-  if (radial_near < 1) {
-    std::cerr << "Fatal error: radial_near is less than 1!" << std::endl;
-    return 0.0;
-  }
+// double Snake::ComputeLocalForegroundMean(unsigned index, int radial_near) const {
+//   if (radial_near < 1) {
+//     std::cerr << "Fatal error: radial_near is less than 1!" << std::endl;
+//     return 0.0;
+//   }
 
-  DataContainer fgs;
-  fgs.push_back(interpolator_->Evaluate(this->GetPoint(index)));
+//   DataContainer fgs;
+//   fgs.push_back(interpolator_->Evaluate(this->GetPoint(index)));
 
-  if (radial_near > 1) {
-    const VectorType normal = this->ComputeUnitTangentVector(index);
-    PointType vertex = vertices_.at(index);
-    VectorType radial;
-    this->GetStartingRadialDirection(radial, normal, vertex);
-    // std::cout << "staring radial direction: " << radial << std::endl;
-    const int number_of_sectors = 8;
+//   if (radial_near > 1) {
+//     const VectorType normal = this->ComputeUnitTangentVector(index);
+//     PointType vertex = vertices_.at(index);
+//     VectorType radial;
+//     this->GetStartingRadialDirection(radial, normal, vertex);
+//     // std::cout << "staring radial direction: " << radial << std::endl;
+//     const int number_of_sectors = 8;
 
-    for (int s = 0; s < number_of_sectors; s++) {
-      for (int d = 1; d < radial_near; d++) {
-        PointType sample_point;
-        this->ComputeSamplePoint(sample_point, vertex, radial, normal, d, s);
-        // std::cout << "sample point: " << sample_point << std::endl;
-        if (this->IsInsideImage(sample_point)) {
-          fgs.push_back(interpolator_->Evaluate(sample_point));
-        }
-      }
-    }
-  }
-  return Mean(fgs);
-}
+//     for (int s = 0; s < number_of_sectors; s++) {
+//       for (int d = 1; d < radial_near; d++) {
+//         PointType sample_point;
+//         this->ComputeSamplePoint(sample_point, vertex, radial, normal, d, s);
+//         // std::cout << "sample point: " << sample_point << std::endl;
+//         if (this->IsInsideImage(sample_point)) {
+//           fgs.push_back(interpolator_->Evaluate(sample_point));
+//         }
+//       }
+//     }
+//   }
+//   return Mean(fgs);
+// }
 
 bool Snake::ComputeLocalBackgroundMeanStd(unsigned index,int radial_near,
                                           int radial_far, double &mean,
@@ -1017,7 +1019,7 @@ bool Snake::ComputeLocalBackgroundMeanStd(unsigned index,int radial_near,
   //     }
   //   }
   // }
-  bool local_bg_defined = bgs.size() > 1;
+  bool local_bg_defined = bgs.size() > number_of_sectors / 2;
   if (local_bg_defined) {
     mean = Mean(bgs);
     std = StandardDeviation(bgs, mean);

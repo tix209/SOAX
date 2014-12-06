@@ -46,14 +46,14 @@ int main (int argc, char **argv) {
          "Evaluation output file path")
         ;
 
-    int radial_near(4);
-    int radial_far(8);
+    int radial_near(3);
+    int radial_far(6);
     po::options_description optional("Optional options");
     optional.add_options()
         ("near,n", po::value<int>(&radial_near),
-         "Inner radius of annulus for local SNR estimation. (default: 4)")
+         "Inner radius of annulus for local SNR estimation. (default: 3)")
         ("far,f", po::value<int>(&radial_far),
-         "Outer radius of annulus for local SNR estimation. (default: 8)")
+         "Outer radius of annulus for local SNR estimation. (default: 6)")
         ;
 
     po::options_description all("Allowed options");
@@ -63,7 +63,7 @@ int main (int argc, char **argv) {
     po::store(parse_command_line(argc, argv, all), vm);
 
     if (vm.count("version")) {
-      std::cout << "SOAX Evaluation by F-function 1.0\n"
+      std::cout << "SOAX Evaluation by F-function 1.1\n"
           "Copyright (C) 2014 Ting Xu, IDEA Lab, Lehigh University."
                 << std::endl;
       return EXIT_SUCCESS;

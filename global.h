@@ -16,6 +16,7 @@ const unsigned kDimension = 3;
 const double kPi = 3.14159265358979323846264338;
 const double kEpsilon = std::numeric_limits<double>::epsilon();
 const double kPlusInfinity = std::numeric_limits<double>::max();
+const double kMinusInfinity = std::numeric_limits<double>::min();
 const unsigned kBigNumber = std::numeric_limits<unsigned>::max();
 
 const unsigned kMinimumEvolvingSize = 5;

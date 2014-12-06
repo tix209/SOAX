@@ -1404,19 +1404,6 @@ double Multisnake::ComputeShortestDistance(
   return min_dist;
 }
 
-void Multisnake::PrintGroundTruthLocalSNRValues(int radial_near,
-                                                int radial_far) const {
-  DataContainer snrs;
-  this->ComputeLocalSNRs(comparing_snakes1_, radial_near, radial_far, snrs);
-  if (snrs.empty()) return;
-  std::cout << "========= Local SNR Info =========" << std::endl;
-  std::cout << "Min: " << Minimum(snrs) << "\tMax: " << Maximum(snrs)
-            << std::endl;
-  double mean_snr = Mean(snrs);
-  std::cout << "Mean: " << mean_snr << "\t Median: " << Median(snrs)
-            << "\t Std: " << StandardDeviation(snrs, mean_snr) << std::endl;
-}
-
 
 void Multisnake::ComputeRadialOrientation(const PointType &center,
                                           double pixel_size,
@@ -1627,229 +1614,6 @@ void Multisnake::AddSubsnakesToInitialSnakes(Snake *s) {
                          s->subsnakes().begin(), s->subsnakes().end());
 }
 
-// double Multisnake::ComputeImageSNR2(const std::string &filename) const {
-//   typedef itk::OtsuMultipleThresholdsImageFilter<ImageType,
-//                                                  ImageType> FilterType;
-//   FilterType::Pointer filter = FilterType::New();
-//   filter->SetInput(image_);
-//   filter->SetNumberOfThresholds(2);
-//   filter->Update();
-//   if (!filename.empty()) {
-//     typedef itk::ImageFileWriter<ImageType> WriterType;
-//     WriterType::Pointer writer = WriterType::New();
-//     writer->SetFileName(filename);
-//     writer->SetInput(filter->GetOutput());
-//     writer->Update();
-//   }
-
-//   FilterType::ThresholdVectorType thresholds = filter->GetThresholds();
-//   std::cout << "thresholds: " << std::endl;
-//   for (unsigned i = 0; i < thresholds.size(); ++i) {
-//     std::cout << thresholds[i] << std::endl;
-//   }
-
-//   // Compute intensity statistics of foreground and background voxels
-//   // foreground voxels have intensity [thresholds[1], max_intensity]
-//   // background voxels have intensity [thresholds[0], thresholds[1])
-//   DataContainer fgs, bgs;
-//   typedef itk::ImageRegionConstIterator<ImageType> ConstIteratorType;
-//   ConstIteratorType it(image_, image_->GetLargestPossibleRegion());
-//   it.GoToBegin();
-//   while (!it.IsAtEnd()) {
-//     if (it.Get() >= thresholds[1]) { // foreground
-//       fgs.push_back(it.Get());
-//     } else if (it.Get() >= thresholds[0]) { // background
-//       bgs.push_back(it.Get());
-//     }
-//     ++it;
-//   }
-
-//   double fg_mean = Mean(fgs);
-//   double bg_mean = Mean(bgs);
-//   double bg_std = StandardDeviation(bgs, bg_mean);
-//   if (bg_std < kEpsilon) {
-//     std::cerr << "Background intensity std is zero!" << std::endl;
-//     return 0.0;
-//   }
-//   return (fg_mean - bg_mean) / bg_std;
-// }
-
-// double Multisnake::ComputeImageSNR(const std::string &binary_filename) const {
-//   ImageType::Pointer img = NULL;
-//   int threshold = this->ComputeBinaryImage(img);
-//   std::cout << "Otsu threshold: " << threshold << std::endl;
-
-//   if (!binary_filename.empty()) {
-//     typedef itk::ImageFileWriter<ImageType> WriterType;
-//     WriterType::Pointer writer = WriterType::New();
-//     // std::string::size_type slash_pos = image_filename_.find_last_of("/\\");
-//     // std::string::size_type dot_pos = image_filename_.find_last_of(".");
-//     // std::string extracted_name = image_filename_.substr(
-//     //     slash_pos+1, dot_pos-slash_pos-1);
-//     // std::cout << "extracted name: " << extracted_name << std::endl;
-//     // writer->SetFileName(extracted_name + "_binary.mha");
-//     writer->SetFileName(binary_filename);
-//     writer->SetInput(img);
-//     writer->Update();
-//   }
-
-//   double fg_mean(0.0), bg_mean(0.0), bg_std(0.0);
-//   this->ComputeForegroundBackgroundStatistics(threshold, fg_mean,
-//                                               bg_mean, bg_std);
-//   if (bg_std < kEpsilon) {
-//     std::cerr << "Background intensity std is zero!" << std::endl;
-//     return 0.0;
-//   }
-//   return (fg_mean - bg_mean) / bg_std;
-// }
-
-// int Multisnake::ComputeBinaryImage(ImageType::Pointer &img) const {
-//   typedef itk::OtsuThresholdImageFilter<ImageType, ImageType> FilterType;
-//   FilterType::Pointer otsu_filter = FilterType::New();
-//   otsu_filter->SetInput(image_);
-//   otsu_filter->SetOutsideValue(255);
-//   otsu_filter->SetInsideValue(0);
-//   otsu_filter->Update();
-//   img = otsu_filter->GetOutput();
-//   return otsu_filter->GetThreshold();
-// }
-
-// void Multisnake::ComputeForegroundBackgroundStatistics(
-//     int threshold, double &fg_mean, double &bg_mean, double &bg_std) const {
-//   DataContainer fgs, bgs;
-//   typedef itk::ImageRegionConstIterator<ImageType> ConstIteratorType;
-//   ConstIteratorType it(image_, image_->GetLargestPossibleRegion());
-//   it.GoToBegin();
-//   while (!it.IsAtEnd()) {
-//     if (it.Get() > threshold) { // foreground
-//       fgs.push_back(it.Get());
-//     } else { // background
-//       bgs.push_back(it.Get());
-//     }
-//     ++it;
-//   }
-//   fg_mean = Mean(fgs);
-//   bg_mean = Mean(bgs);
-//   bg_std = StandardDeviation(bgs, bg_mean);
-//   // std::cout << "fg mean: " << fg_mean << "\tbg mean: " << bg_mean
-//   //           << "\tbg std: " << bg_std << std::endl;
-// }
-
-// double Multisnake::ComputeForegroundSNR() const {
-//   const unsigned max_intensity_levels = 1 << 16;
-//   std::vector<unsigned> histogram(max_intensity_levels, 0);
-//   int intensity_threshold = 0;
-//   // only consider those voxels with intensity greater than
-//   // "intensity_threshold"
-//   this->ComputeHistogram(histogram, intensity_threshold);
-//   int otsu_threshold1 = this->ComputeOtsuThreshold(histogram);
-//   std::cout << "first Otsu's threshold = " << otsu_threshold1 << std::endl;
-//   // reset the histogram
-//   std::fill(histogram.begin(), histogram.end(), 0);
-//   this->ComputeHistogram(histogram, otsu_threshold1);
-//   int otsu_threshold2 = this->ComputeOtsuThreshold(histogram);
-//   std::cout << "Second Otsu's threshold = " << otsu_threshold2 << std::endl;
-
-//   DataContainer fgs, bgs;
-//   typedef itk::ImageRegionConstIterator<ImageType> ConstIteratorType;
-//   ConstIteratorType it(image_, image_->GetLargestPossibleRegion());
-//   it.GoToBegin();
-//   while (!it.IsAtEnd()) {
-//     if (it.Get() >= otsu_threshold1) {
-//       if (it.Get() >= otsu_threshold2) { // foreground
-//         fgs.push_back(it.Get());
-//       } else { // background
-//         bgs.push_back(it.Get());
-//       }
-//     }
-//     ++it;
-//   }
-//   double fg_mean = Mean(fgs);
-//   double bg_mean = Mean(bgs);
-//   double bg_std = StandardDeviation(bgs, bg_mean);
-//   if (bg_std < kEpsilon) {
-//     std::cerr << "Background intensity std is zero!" << std::endl;
-//     return 0.0;
-//   }
-//   return (fg_mean - bg_mean) / bg_std;
-// }
-
-// void Multisnake::ComputeHistogram(std::vector<unsigned> &hist,
-//                                   int threshold) const {
-//   typedef itk::ImageRegionConstIterator<ImageType> ConstIteratorType;
-//   ConstIteratorType it(image_, image_->GetLargestPossibleRegion());
-//   it.GoToBegin();
-//   while (!it.IsAtEnd()) {
-//     if (it.Get() >= threshold) {
-//       hist[it.Get()]++;
-//     }
-//     ++it;
-//   }
-// }
-
-// double Multisnake::ComputeOtsuThreshold(
-//     const std::vector<unsigned> &hist) const {
-//   unsigned total_nvoxels = 0;
-//   double total_intensities = 0.0;
-//   for (unsigned i = 0; i < hist.size(); ++i) {
-//     total_nvoxels += hist[i];
-//     total_intensities += i * hist[i];
-//   }
-
-//   double var_max = 0.0;
-//   unsigned threshold = 0;
-
-//   double sum_bg = 0.0;
-//   unsigned weight_bg = 0;
-//   unsigned weight_fg = 0;
-//   for (unsigned i = 0; i < hist.size(); ++i) {
-//     weight_bg += hist[i];
-//     if (!weight_bg) continue;
-
-//     weight_fg = total_nvoxels - weight_bg;
-//     if (!weight_fg) break;
-
-//     sum_bg += static_cast<double>(i * hist[i]);
-//     double mean_bg = sum_bg / weight_bg;
-//     double mean_fg = (total_intensities - sum_bg) / weight_fg;
-//     double var = static_cast<double>(
-//         weight_bg * weight_fg * (mean_bg - mean_fg) * (mean_bg - mean_fg));
-
-//     if (var > var_max) {
-//       var_max = var;
-//       threshold = i;
-//     }
-//   }
-
-//   return threshold;
-// }
-
-// double Multisnake::ComputeFValue(const SnakeContainer &snakes,
-//                                  double threshold, double penalizer,
-//                                  int radial_near, int radial_far) const {
-//   double fvalue = 0.0;
-//   if (!snakes.empty()) {
-//     unsigned total_npoints = 0;
-//     unsigned low_snr_npoints = 0;
-//     for (SnakeConstIterator it = snakes.begin(); it != snakes.end(); it++) {
-//       for (unsigned i = 0; i < (*it)->GetSize(); i++) {
-//         double local_snr = 0.0;
-
-//         bool local_bg_defined = (*it)->ComputeLocalSNR(
-//             i, radial_near, radial_far, local_snr);
-//         if (local_bg_defined) {
-//           total_npoints++;
-//           if (local_snr < threshold) low_snr_npoints++;
-//         }
-//       }
-//     }
-//     // std::cout << "c: " << penalizer << std::endl;
-//     // std::cout << "Low SNR points: " << low_snr_npoints << std::endl;
-//     fvalue = (penalizer * low_snr_npoints - total_npoints) *
-//         Snake::desired_spacing();
-//   }
-//   return fvalue;
-// }
 double Multisnake::ComputeGroundTruthFValue(const DataContainer &snrs,
                                             double threshold,
                                             double penalizer) const {
@@ -1873,6 +1637,19 @@ double Multisnake::ComputeFValue(const DataContainer &snrs,
     if (*it < threshold) low_snr_npoints++;
   }
   return penalizer * low_snr_npoints - snrs.size();
+}
+
+void Multisnake::PrintGroundTruthLocalSNRValues(int radial_near,
+                                                int radial_far) const {
+  DataContainer snrs;
+  this->ComputeLocalSNRs(comparing_snakes1_, radial_near, radial_far, snrs);
+  if (snrs.empty()) return;
+  std::cout << "========= Local SNR Info =========" << std::endl;
+  std::cout << "Min: " << Minimum(snrs) << "\tMax: " << Maximum(snrs)
+            << std::endl;
+  double mean_snr = Mean(snrs);
+  std::cout << "Mean: " << mean_snr << "\t Median: " << Median(snrs)
+            << "\t Std: " << StandardDeviation(snrs, mean_snr) << std::endl;
 }
 
 void Multisnake::ComputeGroundTruthLocalSNRs(int radial_near, int radial_far,

@@ -422,7 +422,7 @@ void MainWindow::CreateMenus() {
 
 void MainWindow::CreateToolBar() {
   toolbar_ = new QToolBar(tr("shortcuts"), this);
-  addToolBar(Qt::LeftToolBarArea, toolbar_);
+  addToolBar(toolbar_);
   toolbar_->addAction(open_image_);
   toolbar_->addAction(load_parameters_);
   toolbar_->addAction(save_snakes_);
@@ -1100,7 +1100,14 @@ void MainWindow::DeformSnakes() {
   connect(multisnake_, SIGNAL(ExtractionProgressed(int)),
           progress_bar_, SLOT(setValue(int)));
   // multisnake_->DeformSnakes(progress_bar_);
+
+  time_t start, end;
+  time(&start);
   multisnake_->DeformSnakes();
+  time(&end);
+  double time_elasped = difftime(end, start) / 60.0;
+  std::cout << "Extraction complete. Evolution time: "
+            << time_elasped << "m" << std::endl;
   unsigned num_snakes = multisnake_->GetNumberOfConvergedSnakes();
   QString msg = "Number of converged snakes: " + QString::number(num_snakes);
   statusBar()->showMessage(msg, message_timeout_);

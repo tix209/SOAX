@@ -78,6 +78,8 @@ add_executable(batch_soax batch_soax.cc ${common_srcs}
   ${multisnake_moc} multisnake.cc multisnake.h)
 add_executable(eval_gt evaluate_gt.cc ${common_srcs}
   ${multisnake_moc} multisnake.cc multisnake.h)
+add_executable(batch_eval_gt batch_evaluate_gt.cc ${common_srcs}
+  ${multisnake_moc} multisnake.cc multisnake.h)
 add_executable(eval_f evaluate_f.cc ${common_srcs}
   ${multisnake_moc} multisnake.cc multisnake.h)
 add_executable(best_snake best_snake.cc ${common_srcs}
@@ -112,6 +114,13 @@ target_link_libraries(batch_soax
   )
 
 target_link_libraries(eval_gt
+  ${ITK_LIBRARIES}
+  ${Boost_PROGRAM_OPTIONS_LIBRARY}
+  ${Boost_FILESYSTEM_LIBRARY}
+  ${Boost_SYSTEM_LIBRARY}
+  )
+
+target_link_libraries(batch_eval_gt
   ${ITK_LIBRARIES}
   ${Boost_PROGRAM_OPTIONS_LIBRARY}
   ${Boost_FILESYSTEM_LIBRARY}

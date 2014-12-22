@@ -101,47 +101,49 @@ int main(int argc, char **argv) {
 
           double ridge_threshold = ridge_range[0];
           while (ridge_threshold < ridge_range[2]) {
-            // for (int ridge_exp = ridge_range[0]; ridge_exp < ridge_range[2];
-            //      ridge_exp += static_cast<int>(ridge_range[1])) {
-            //   double ridge_threshold = std::pow(2, ridge_exp);
-            std::cout << "\nSegmentation started on " << image_path
+            std::cout << "\nExtraction started on " << image_path
                       << "\nridge_threshold is set to: " << ridge_threshold
                       << std::endl;
             multisnake.set_ridge_threshold(ridge_threshold);
             double stretch = stretch_range[0];
             while (stretch < stretch_range[2]) {
-              // for (int stretch_exp = stretch_range[0];
-              //      stretch_exp < stretch_range[2];
-              //      stretch_exp += static_cast<int>(stretch_range[1])) {
-              //   double stretch = std::pow(2, stretch_exp);
-              std::cout << "stretch is set to: " << stretch << std::endl;
-              soax::Snake::set_stretch_factor(stretch);
-
-              std::cout << "=========== Current Parameters ==========="
-                        << std::endl;
-              multisnake.WriteParameters(std::cout);
-              std::cout << "=========================================="
-                        << std::endl;
-
-              multisnake.InitializeSnakes();
-
-              time_t start, end;
-              time(&start);
-              multisnake.DeformSnakes();
-              time(&end);
-              double time_elasped = difftime(end, start);
-              multisnake.CutSnakesAtTJunctions();
-              multisnake.GroupSnakes();
-
               std::string snake_name = ConstructSnakeFilename(
                   image_path.string(), ridge_threshold, stretch);
-              std::cout << snake_name << std::endl;
-              multisnake.SaveSnakes(multisnake.converged_snakes(),
-                                    snake_path.string() + snake_name);
+              fs::path output_snake_path(snake_path.string() + snake_name);
+              // std::cout << "output_snake_path: " << output_snake_path << std::endl;
+              if (fs::exists(output_snake_path)) {
+                std::cout << snake_name << " existed. No extraction is performed."
+                          << std::endl;
+              } else {
+                std::cout << "stretch is set to: " << stretch << std::endl;
+                soax::Snake::set_stretch_factor(stretch);
 
-              std::cout << "Segmentation completed (Evolution time: "
-                        << time_elasped << "s)" << std::endl;
-              multisnake.ResetContainers();
+                std::cout << "=========== Current Parameters ==========="
+                          << std::endl;
+                multisnake.WriteParameters(std::cout);
+                std::cout << "=========================================="
+                          << std::endl;
+
+                multisnake.InitializeSnakes();
+
+                time_t start, end;
+                time(&start);
+                multisnake.DeformSnakes();
+                time(&end);
+                double time_elasped = difftime(end, start);
+                multisnake.CutSnakesAtTJunctions();
+                multisnake.GroupSnakes();
+
+                // std::string snake_name = ConstructSnakeFilename(
+                //     image_path.string(), ridge_threshold, stretch);
+                std::cout << snake_name << std::endl;
+                multisnake.SaveSnakes(multisnake.converged_snakes(),
+                                      snake_path.string() + snake_name);
+
+                std::cout << "Segmentation completed (Evolution time: "
+                          << time_elasped << "s)" << std::endl;
+                multisnake.ResetContainers();
+              }
               stretch += stretch_range[1];
             }
             ridge_threshold += ridge_range[1];

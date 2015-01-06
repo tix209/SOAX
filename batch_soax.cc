@@ -308,7 +308,7 @@ std::string ConstructSnakeFilename(const std::string &image_path,
   // std::cout << "extracted name: " << extracted_name << std::endl;
   std::ostringstream buffer;
   // std::cout << "default: " << buffer.precision() << std::endl;
-  buffer.precision(2);
+  buffer.precision(4);
   // std::cout << "current: " << buffer.precision() << std::endl;
   buffer << std::showpoint << extracted_name << "--ridge"
          << ridge_threshold << "--stretch" << stretch << ".txt";

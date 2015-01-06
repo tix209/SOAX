@@ -10,7 +10,7 @@ namespace soax {
 double Snake::intensity_scaling_ = 0.0;
 unsigned short Snake::foreground_ = 65535;
 unsigned short Snake::background_ = 1600;
-double Snake::desired_spacing_ = 2.0;
+double Snake::desired_spacing_ = 1.0; // make sure this is 1.0
 double Snake::minimum_length_ = 10.0;
 unsigned Snake::max_iterations_ = 10000;
 double Snake::change_threshold_ = 0.1;

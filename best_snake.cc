@@ -251,9 +251,13 @@ void ComputeBestSnakes(soax::Multisnake &ms,
 
       if (gt) {
         ms.LoadConvergedSnakes(filename);
+        // std::cout << ms.GetNumberOfConvergedSnakes()
+        //           << " resultant snakes loaded." << std::endl;
         double vertex_error(100.0), hausdorff(100.0);
+        // ms.PrintSnakes(ms.comparing_snakes1());
         ms.ComputeResultSnakesVertexErrorHausdorffDistance(vertex_error,
                                                            hausdorff);
+        // std::cout << vertex_error << "\t" << hausdorff << std::endl;
         tc_errors[std::make_pair(t, c)] =
             std::make_pair(vertex_error, hausdorff);
       }

@@ -101,8 +101,10 @@ int main(int argc, char **argv) {
           // std::cout << multisnake.GetNumberOfConvergedSnakes()
           //           << " resultant snakes loaded." << std::endl;
           double vertex_error(100.0), hausdorff(100.0);
+          // multisnake.PrintSnakes(multisnake.comparing_snakes1());
           multisnake.ComputeResultSnakesVertexErrorHausdorffDistance(
               vertex_error, hausdorff);
+          // std::cout << vertex_error << "\t" << hausdorff << std::endl;
           outfile << std::setw(width) << multisnake.ridge_threshold()
                   << std::setw(width) << soax::Snake::stretch_factor()
                   << std::setw(width) << vertex_error

@@ -990,7 +990,7 @@ bool Snake::ComputeLocalBackgroundMeanStd(unsigned index,int radial_near,
   }
 
   const int number_of_sectors = 16;
-  const double angle_step = 2 * kPi / number_of_sectors_;
+  const double angle_step = 2 * kPi / number_of_sectors;
   for (int r = radial_near; r < radial_far; r++) {
     for (int s = 0; s < number_of_sectors; s++) {
       double angle = s * angle_step;

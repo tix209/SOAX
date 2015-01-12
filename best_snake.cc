@@ -246,7 +246,7 @@ void ComputeBestSnakes(soax::Multisnake &ms,
       std::string filename = GetBestFilename(fmap, t, c, min_f);
       tc_filenames[std::make_pair(t, c)] = filename;
 
-      if ((t + c > 3.0) && (t + c < 5.0))
+      if ((t + c > 3.0) && (t + c < 6.0))
         candidate_filenames.insert(filename);
 
       if (gt) {

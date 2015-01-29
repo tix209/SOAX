@@ -1182,7 +1182,7 @@ void Viewer::ComputeCorrespondenceMap(const IntMatrix &assignment) {
 
 void Viewer::GetAllSnakes() {
   assert(!snakes_sequence_.empty());
-  unsigned max_number_of_frames = 5;
+  unsigned max_number_of_frames = snakes_sequence_.size();
   snake_quantity_partial_sums_.reserve(max_number_of_frames);
   unsigned last_size = 0;
   for (unsigned i = 0; i < max_number_of_frames; i++) {
@@ -1205,7 +1205,7 @@ void Viewer::ComputeDistanceMatrix(Matrix<double> &distance_matrix) {
   // Compute the curve distance first.
   for (unsigned i = 0; i < distance_matrix.rows(); i++) {
     for (unsigned j = 0; j < distance_matrix.columns(); j++) {
-      if (this->HasEdge(i, j)) {
+      if (this->HasNoEdge(i, j)) {
         distance_matrix(i, j) = kPlusInfinity;
       } else {
         distance_matrix(i, j) = this->ComputeDistance(all_snakes_[i], all_snakes_[j]);
@@ -1214,7 +1214,7 @@ void Viewer::ComputeDistanceMatrix(Matrix<double> &distance_matrix) {
   }
 }
 
-bool Viewer::HasEdge(int i, int j) {
+bool Viewer::HasNoEdge(int i, int j) {
   assert(!snake_quantity_partial_sums_.empty());
   return (i >= j) ||
       (std::upper_bound(snake_quantity_partial_sums_.begin(),

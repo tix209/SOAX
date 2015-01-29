@@ -129,6 +129,21 @@ void Multisnake::LoadImage(const std::string &filename) {
   this->set_intensity_scaling(intensity_scaling_);
 }
 
+void Multisnake::LoadImageSequence2(const std::vector<std::string> &names) {
+  typedef itk::ImageFileReader<ImageType> ReaderType;
+
+  for (int i = 0; i < names.size(); ++i) {
+    ReaderType::Pointer reader = ReaderType::New();
+    reader->SetFileName(names[i]);
+    reader->Update();
+    image_sequence_.push_back(reader->GetOutput());
+  }
+  image_filename_ = names.front();
+  this->SetImage(0);
+  interpolator_->SetInputImage(image_);
+  this->set_intensity_scaling(intensity_scaling_);
+}
+
 void Multisnake::LoadImageSequence(const std::string &filename, int nslices) {
   typedef itk::ImageFileReader<ImageType> ReaderType;
   typedef itk::RegionOfInterestImageFilter<ImageType, ImageType>

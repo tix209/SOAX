@@ -36,6 +36,7 @@ class Multisnake : public QObject {
   /** Load a single file of image sequence.
    */
   void LoadImageSequence(const std::string &filename, int nslices);
+  void LoadImageSequence2(const std::vector<std::string> &names);
 
   std::string GetImageName(bool suffix = true) const;
 

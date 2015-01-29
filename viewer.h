@@ -230,7 +230,7 @@ class Viewer : public QObject {
   void ComputeDistanceMatrix(Matrix<double> &distance_matrix);
   void ComputeCorrespondenceMap(const IntMatrix &assignment);
 
-  bool HasEdge(int i, int j);
+  bool HasNoEdge(int i, int j);
   double ComputeDistance(Snake *si, Snake *sj);
 
   void PrintMatrix(const Matrix<double> m, std::ostream &os = std::cout);

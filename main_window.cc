@@ -597,6 +597,18 @@ void MainWindow::OpenImageSequence() {
   this->setWindowTitle(filename.prepend("SOAX - "));
 
   multisnake_->LoadImageSequence(image_filename_, nslices);
+  // QDir curr_dir(QFileInfo(image_filename_.c_str()).absolutePath());
+  // curr_dir.setNameFilters(QStringList() << "*.mha");
+  // curr_dir.setSorting(QDir::Name);
+  // QStringList entries = curr_dir.entryList();
+  // QString item;
+  // std::vector<std::string> names;
+  // foreach (item, entries) {
+  //   std::cout << curr_dir.filePath(item).toStdString() << std::endl;
+  //   names.push_back(curr_dir.filePath(item).toStdString());
+  // }
+  // multisnake_->LoadImageSequence2(names);
+
   scroll_bar_->setMinimum(0);
   scroll_bar_->setMaximum(multisnake_->image_sequence().size()-1);
   viewer_->SetupImageSequence(multisnake_->image_sequence());

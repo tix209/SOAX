@@ -34,7 +34,7 @@ class Snake {
   const PointType &GetHead() const {return vertices_.front();}
   const PointType &GetTail() const {return vertices_.back();}
   const PointType &GetTip(bool is_head) const;
-  PointContainer vertices() const {return vertices_;}
+  const PointContainer & vertices() const {return vertices_;}
 
   /*
    * Resample snake points to make them equally spaced close to the

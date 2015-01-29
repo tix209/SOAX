@@ -74,28 +74,28 @@ add_executable(soax soax.cc ${common_srcs} ${gui_srcs} ${mocs}
   ${rccs} ${multisnake_moc} multisnake.cc multisnake.h munkres.cpp
   munkres.h)
 
-add_executable(batch_soax batch_soax.cc ${common_srcs}
-  ${multisnake_moc} multisnake.cc multisnake.h)
-add_executable(eval_gt evaluate_gt.cc ${common_srcs}
-  ${multisnake_moc} multisnake.cc multisnake.h)
-add_executable(batch_eval_gt batch_evaluate_gt.cc ${common_srcs}
-  ${multisnake_moc} multisnake.cc multisnake.h)
-add_executable(eval_f evaluate_f.cc ${common_srcs}
-  ${multisnake_moc} multisnake.cc multisnake.h)
-add_executable(best_snake best_snake.cc ${common_srcs}
-  ${multisnake_moc} multisnake.cc multisnake.h)
-add_executable(droplet_intensity_fractions droplet_intensity_fractions.cc
-  droplet_info_dict.h droplet_info_dict.cc droplet_info.h droplet_info.cc
-  ${common_srcs} ${multisnake_moc} multisnake.cc multisnake.h)
-add_executable(snr image_snr.cc ${common_srcs} ${multisnake_moc}
-  multisnake.cc multisnake.h)
+# add_executable(batch_soax batch_soax.cc ${common_srcs}
+#   ${multisnake_moc} multisnake.cc multisnake.h)
+# add_executable(eval_gt evaluate_gt.cc ${common_srcs}
+#   ${multisnake_moc} multisnake.cc multisnake.h)
+# add_executable(batch_eval_gt batch_evaluate_gt.cc ${common_srcs}
+#   ${multisnake_moc} multisnake.cc multisnake.h)
+# add_executable(eval_f evaluate_f.cc ${common_srcs}
+#  ${multisnake_moc} multisnake.cc multisnake.h)
+# add_executable(best_snake best_snake.cc ${common_srcs}
+#   ${multisnake_moc} multisnake.cc multisnake.h)
+# add_executable(droplet_intensity_fractions droplet_intensity_fractions.cc
+#   droplet_info_dict.h droplet_info_dict.cc droplet_info.h droplet_info.cc
+#   ${common_srcs} ${multisnake_moc} multisnake.cc multisnake.h)
+# add_executable(snr image_snr.cc ${common_srcs} ${multisnake_moc}
+#   multisnake.cc multisnake.h)
 # add_executable(syn2 synthetic_tamara.cc ${common_srcs}
-add_executable(syn3 synthetic_scirep.cc ${common_srcs}
-  ${multisnake_moc} multisnake.cc multisnake.h)
+# add_executable(syn3 synthetic_scirep.cc ${common_srcs}
+#   ${multisnake_moc} multisnake.cc multisnake.h)
 # # add_executable(snapshots batch_snapshots.cc)
 # add_executable(batch_resample batch_resample.cc)
-add_executable(local_snr image_local_snr.cc ${common_srcs} ${multisnake_moc}
-  multisnake.cc multisnake.h)
+# add_executable(local_snr image_local_snr.cc ${common_srcs} ${multisnake_moc}
+#   multisnake.cc multisnake.h)
 
 
 target_link_libraries(soax
@@ -105,50 +105,50 @@ target_link_libraries(soax
   ${Boost_PROGRAM_OPTIONS_LIBRARY}
   )
 
-target_link_libraries(batch_soax
-  ${QT_LIBRARIES}
-  ${ITK_LIBRARIES}
-  ${Boost_PROGRAM_OPTIONS_LIBRARY}
-  ${Boost_FILESYSTEM_LIBRARY}
-  ${Boost_SYSTEM_LIBRARY}
-  )
+# target_link_libraries(batch_soax
+#   ${QT_LIBRARIES}
+#   ${ITK_LIBRARIES}
+#   ${Boost_PROGRAM_OPTIONS_LIBRARY}
+#   ${Boost_FILESYSTEM_LIBRARY}
+#   ${Boost_SYSTEM_LIBRARY}
+#   )
 
-target_link_libraries(eval_gt
-  ${ITK_LIBRARIES}
-  ${Boost_PROGRAM_OPTIONS_LIBRARY}
-  ${Boost_FILESYSTEM_LIBRARY}
-  ${Boost_SYSTEM_LIBRARY}
-  )
+# target_link_libraries(eval_gt
+#   ${ITK_LIBRARIES}
+#   ${Boost_PROGRAM_OPTIONS_LIBRARY}
+#   ${Boost_FILESYSTEM_LIBRARY}
+#   ${Boost_SYSTEM_LIBRARY}
+#   )
 
-target_link_libraries(batch_eval_gt
-  ${ITK_LIBRARIES}
-  ${Boost_PROGRAM_OPTIONS_LIBRARY}
-  ${Boost_FILESYSTEM_LIBRARY}
-  ${Boost_SYSTEM_LIBRARY}
-  )
+# target_link_libraries(batch_eval_gt
+#   ${ITK_LIBRARIES}
+#   ${Boost_PROGRAM_OPTIONS_LIBRARY}
+#   ${Boost_FILESYSTEM_LIBRARY}
+#   ${Boost_SYSTEM_LIBRARY}
+#   )
 
-target_link_libraries(eval_f
-  ${ITK_LIBRARIES}
-  ${Boost_PROGRAM_OPTIONS_LIBRARY}
-  ${Boost_FILESYSTEM_LIBRARY}
-  ${Boost_SYSTEM_LIBRARY}
-  )
+# target_link_libraries(eval_f
+#   ${ITK_LIBRARIES}
+#   ${Boost_PROGRAM_OPTIONS_LIBRARY}
+#   ${Boost_FILESYSTEM_LIBRARY}
+#   ${Boost_SYSTEM_LIBRARY}
+#   )
 
-target_link_libraries(best_snake
-  ${QT_LIBRARIES}
-  ${ITK_LIBRARIES}
-  ${Boost_PROGRAM_OPTIONS_LIBRARY}
-  ${Boost_FILESYSTEM_LIBRARY}
-  ${Boost_SYSTEM_LIBRARY}
-  )
+# target_link_libraries(best_snake
+#   ${QT_LIBRARIES}
+#   ${ITK_LIBRARIES}
+#   ${Boost_PROGRAM_OPTIONS_LIBRARY}
+#   ${Boost_FILESYSTEM_LIBRARY}
+#   ${Boost_SYSTEM_LIBRARY}
+#   )
 
-target_link_libraries(droplet_intensity_fractions
-  ${QT_LIBRARIES}
-  ${ITK_LIBRARIES}
-  ${Boost_PROGRAM_OPTIONS_LIBRARY}
-  ${Boost_FILESYSTEM_LIBRARY}
-  ${Boost_SYSTEM_LIBRARY}
-  )
+# target_link_libraries(droplet_intensity_fractions
+#   ${QT_LIBRARIES}
+#   ${ITK_LIBRARIES}
+#   ${Boost_PROGRAM_OPTIONS_LIBRARY}
+#   ${Boost_FILESYSTEM_LIBRARY}
+#   ${Boost_SYSTEM_LIBRARY}
+#   )
 
 # target_link_libraries(bestt
 #   ${ITK_LIBRARIES}
@@ -157,21 +157,21 @@ target_link_libraries(droplet_intensity_fractions
 #   ${Boost_SYSTEM_LIBRARY}
 #   )
 
-target_link_libraries(snr
-  ${ITK_LIBRARIES}
-  ${QT_LIBRARIES}
-  ${Boost_PROGRAM_OPTIONS_LIBRARY}
-  ${Boost_FILESYSTEM_LIBRARY}
-  ${Boost_SYSTEM_LIBRARY}
-)
-target_link_libraries(local_snr
-  ${ITK_LIBRARIES}
-  ${QT_LIBRARIES}
-  ${Boost_PROGRAM_OPTIONS_LIBRARY}
-  ${Boost_FILESYSTEM_LIBRARY}
-  ${Boost_SYSTEM_LIBRARY}
-)
-target_link_libraries(syn3 ${ITK_LIBRARIES})
+# target_link_libraries(snr
+#   ${ITK_LIBRARIES}
+#   ${QT_LIBRARIES}
+#   ${Boost_PROGRAM_OPTIONS_LIBRARY}
+#   ${Boost_FILESYSTEM_LIBRARY}
+#   ${Boost_SYSTEM_LIBRARY}
+# )
+# target_link_libraries(local_snr
+#   ${ITK_LIBRARIES}
+#   ${QT_LIBRARIES}
+#   ${Boost_PROGRAM_OPTIONS_LIBRARY}
+#   ${Boost_FILESYSTEM_LIBRARY}
+#   ${Boost_SYSTEM_LIBRARY}
+# )
+# target_link_libraries(syn3 ${ITK_LIBRARIES})
 
 # target_link_libraries(batch_resample
 #   ${ITK_LIBRARIES}

@@ -301,7 +301,8 @@ void Viewer::UpdateSnakesJunctions(int index) {
   }
   if (junctions_shown_) {
     this->RemoveJunctions();
-    this->SetupJunctions(junctions_sequence_[index]);
+    if (!junctions_sequence_.empty())
+      this->SetupJunctions(junctions_sequence_[index]);
   }
   this->Render();
 }

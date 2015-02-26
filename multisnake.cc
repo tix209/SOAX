@@ -1324,9 +1324,11 @@ void Multisnake::SaveSnakesSequence(const std::string &filename) const {
       }
       snake_index++;
     }
-    for (PointContainer::const_iterator it = junctions_sequence_[i].begin();
-         it != junctions_sequence_[i].end(); ++it) {
-      outfile << *it << std::endl;
+    if (!junctions_sequence_.empty()) {
+      for (PointContainer::const_iterator it = junctions_sequence_[i].begin();
+           it != junctions_sequence_[i].end(); ++it) {
+        outfile << *it << std::endl;
+      }
     }
   }
   outfile << '$' << std::endl; // mark the end of sequence
@@ -1861,7 +1863,8 @@ void Multisnake::GenerateSyntheticTamara(double foreground, double background,
     }
   }
 
-  double variance[3] = {3.0, 3.0, 12.0};
+  // double variance[3] = {3.0, 3.0, 12.0};
+  double variance[3] = {2.0, 2.0, 2.0};
   typedef itk::DiscreteGaussianImageFilter<FloatImageType,
                                            FloatImageType> GaussianFilterType;
   GaussianFilterType::Pointer gaussian = GaussianFilterType::New();

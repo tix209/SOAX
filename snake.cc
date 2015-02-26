@@ -27,7 +27,8 @@ double Snake::grouping_distance_threshold_ = 4.0;
 unsigned Snake::grouping_delta_ = 8.0;
 double Snake::direction_threshold_ = 2.1;
 bool Snake::damp_z_ = false;
-double Snake::z_spacing_ = 2.88;
+// double Snake::z_spacing_ = 2.88;
+double Snake::z_spacing_ = 1;
 const double Snake::kBoundary = 0.5;
 
 

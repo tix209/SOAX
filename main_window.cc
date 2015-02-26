@@ -33,6 +33,10 @@ MainWindow::MainWindow() : message_timeout_(0) {
   this->CreateToolBar();
   this->CreateStatusBar();
   this->ResetActions();
+
+  allowed_format_ << "tif" << "tiff" << "mhd" << "mha" << "png" << "jpg"
+                  << "jpeg" << "bmp";
+
 }
 
 
@@ -600,7 +604,7 @@ void MainWindow::OpenImageSequence() {
   // QDir curr_dir(QFileInfo(image_filename_.c_str()).absolutePath());
   // curr_dir.setNameFilters(QStringList() << "*.mha");
   // curr_dir.setSorting(QDir::Name);
-  // QStringList entries = curr_dir.entryList();
+  // QStringList entries = SortFilenames(curr_dir.entryList());
   // QString item;
   // std::vector<std::string> names;
   // foreach (item, entries) {
@@ -871,7 +875,10 @@ void MainWindow::LoadJFilamentSnakes() {
   if (filename.isEmpty()) return;
   snake_filename_ = filename.toStdString();
 
-  multisnake_->LoadGroundTruthSnakes(snake_filename_);
+  // multisnake_->LoadGroundTruthSnakes(snake_filename_);
+  double coordinates_offset[3] = {40, 70, 40};
+  multisnake_->LoadCurves(snake_filename_.c_str(), coordinates_offset);
+
   unsigned num_snakes = multisnake_->GetNumberOfComparingSnakes1();
   QString msg = "Number of JFilament snakes loaded: " +
                 QString::number(num_snakes);
@@ -1271,6 +1278,7 @@ void MainWindow::DeformSnakesForSequence() {
 
 void MainWindow::FindCorrespondence() {
   viewer_->SolveCorrespondence();
+  statusBar()->showMessage(tr("Find correspondence done."));
 }
 
 void MainWindow::ViewSnakesSequence() {
@@ -1524,5 +1532,48 @@ void MainWindow::AboutSOAX() {
                         "in biomedical images."
                         "This work is supported by NIH grant R01GM098430."));
 }
+
+QStringList MainWindow::SortFilenames(const QStringList &filenames) const {
+  QMap<int, QString> map;
+  QStringList no_index_names;
+  foreach(const QString &name, filenames) {
+    if (allowed_format_.contains(QFileInfo(name).suffix().toLower())) {
+      int index = ExtractIndex(name);
+      if (index == -1) {
+        no_index_names << name;
+      } else {
+        map.insert(index, name);
+      }
+    }
+  }
+  return no_index_names << map.values();
+}
+
+int MainWindow::ExtractIndex(const QString &filename) const {
+  std::string s = filename.toStdString();
+
+  int start = -1;
+  int n = 0;
+  bool start_found = false;
+
+  for (int i = s.length() - 1; i >=0; i--) {
+    if (isdigit(s[i])) {
+      if (!start_found) {
+        start = i;
+        start_found = true;
+      }
+      n++;
+    } else {
+      if (start_found)
+        break;
+    }
+  }
+
+  if (start_found)
+    return std::stoi(s.substr(start - n + 1, n));
+  else
+    return -1;
+}
+
 
 } // namespace soax

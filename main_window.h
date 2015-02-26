@@ -2,6 +2,7 @@
 #define SOAX_MAINWINDOW_H_
 
 #include <QMainWindow>
+#include <QSet>
 #include "global.h"
 
 class QProgressBar;
@@ -98,6 +99,17 @@ class MainWindow : public QMainWindow {
   void SetupScrollBarConnections();
 
   void TearDownScrollBarConnections();
+
+  /*
+   * Returns a sorted list of filenames (natural sorting).
+   */
+  QStringList SortFilenames(const QStringList &filenames) const;
+
+  /*
+   * Returns the sequence index from the filename. The index is assumed to be
+   * the last numeric value appeared in the filename.
+   */
+  int ExtractIndex(const QString &filename) const;
 
 
   QWidget *central_widget_;
@@ -205,9 +217,11 @@ class MainWindow : public QMainWindow {
 
   Multisnake *multisnake_;
   Viewer *viewer_;
+  QSet<QString> allowed_format_;
 
   DISALLOW_COPY_AND_ASSIGN(MainWindow);
 };
+
 
 } // namespace soax
 

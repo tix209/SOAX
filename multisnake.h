@@ -35,7 +35,7 @@ class Multisnake : public QObject {
   Multisnake();
   ~Multisnake();
   void Reset();
-
+  void ResetContainers();
   /*
    * Load the image and set image_filename_.
    */
@@ -89,6 +89,8 @@ class Multisnake : public QObject {
   bool is_2d() const {return is_2d_;}
 
   SolverBank *solver_bank() const {return solver_bank_;}
+
+  void InvertImageIntensity();
 
   /*
    * Compute image gradient field for both snake initialization and

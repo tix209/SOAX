@@ -1,18 +1,18 @@
-/*
- * File: batch_soax.cc
+/**
+ * Copyright (c) 2015, Lehigh University
+ * All rights reserved.
+ * See COPYING for license.
  *
  * This file implements the batch processing of SOAX commandline
- * program.  The input images can be more than one, and the parameters
+ * program. The input images can be more than one, and the parameters
  * can vary.
- *
- * Copyright (C) 2014 Ting Xu, IDEA Lab, Lehigh University.
  */
 
 #include <sstream>
 #include <iomanip>
 #include "boost/program_options.hpp"
 #include "boost/filesystem.hpp"
-#include "multisnake.h"
+#include "./multisnake.h"
 
 std::string ConstructSnakeFilename(const std::string &image_path,
                                    double ridge_threshold, double stretch);
@@ -54,8 +54,8 @@ int main(int argc, char **argv) {
 
     if (vm.count("version")) {
       const std::string version_msg(
-          "SOAX Batch 3.5.4\n"
-          "Copyright (C) 2014 Ting Xu, IDEA Lab, Lehigh University.");
+          "SOAX Batch 3.5.5\n"
+          "Copyright (C) 2015, Lehigh University.");
       std::cout << version_msg << std::endl;
       return EXIT_SUCCESS;
     }
@@ -89,7 +89,8 @@ int main(int argc, char **argv) {
     try {
       soax::Multisnake multisnake;
       if (vm.count("ridge") && vm.count("stretch")) {
-        std::cout << "Varying ridge threshold and stretch factor." << std::endl;
+        std::cout << "Varying ridge threshold and stretch factor."
+                  << std::endl;
 
         if (fs::is_regular_file(image_path)) {
           std::cout << "Input is single image" << std::endl;
@@ -110,9 +111,10 @@ int main(int argc, char **argv) {
               std::string snake_name = ConstructSnakeFilename(
                   image_path.string(), ridge_threshold, stretch);
               fs::path output_snake_path(snake_path.string() + snake_name);
-              // std::cout << "output_snake_path: " << output_snake_path << std::endl;
+
               if (fs::exists(output_snake_path)) {
-                std::cout << snake_name << " existed. No extraction is performed."
+                std::cout << snake_name
+                          << " existed. No extraction is performed."
                           << std::endl;
               } else {
                 std::cout << "stretch is set to: " << stretch << std::endl;
@@ -134,8 +136,6 @@ int main(int argc, char **argv) {
                 multisnake.CutSnakesAtTJunctions();
                 multisnake.GroupSnakes();
 
-                // std::string snake_name = ConstructSnakeFilename(
-                //     image_path.string(), ridge_threshold, stretch);
                 std::cout << snake_name << std::endl;
                 multisnake.SaveSnakes(multisnake.converged_snakes(),
                                       snake_path.string() + snake_name);
@@ -148,20 +148,17 @@ int main(int argc, char **argv) {
             }
             ridge_threshold += ridge_range[1];
           }
-
         } else if (fs::is_directory(image_path)) {
           std::cout << "Input may contain multiple images." << std::endl;
 
           typedef std::vector<fs::path> Paths;
           Paths image_paths;
-          std::copy(fs::directory_iterator(image_path), fs::directory_iterator(),
+          std::copy(fs::directory_iterator(image_path),
+                    fs::directory_iterator(),
                     back_inserter(image_paths));
           std::sort(image_paths.begin(), image_paths.end());
           for (Paths::const_iterator image_it(image_paths.begin());
                image_it != image_paths.end(); ++image_it) {
-            // fs::directory_iterator image_end_it;
-            // for (fs::directory_iterator image_it(image_path);
-            //      image_it != image_end_it; ++image_it) {
             std::string suffix = GetImageSuffix(image_it->string());
             if (suffix != "mha" && suffix != "tif" && suffix != "TIF") {
               std::cout << "Unknown image type: " << suffix << std::endl;
@@ -234,9 +231,6 @@ int main(int argc, char **argv) {
           std::sort(image_paths.begin(), image_paths.end());
           for (Paths::const_iterator image_it(image_paths.begin());
                image_it != image_paths.end(); ++image_it) {
-            // fs::directory_iterator image_end_it;
-            // for (fs::directory_iterator image_it(image_path);
-            //      image_it != image_end_it; ++image_it) {
             std::string suffix = GetImageSuffix(image_it->string());
             if (suffix != "mha" && suffix != "tif" && suffix != "TIF") {
               std::cout << "Unknown image type: " << suffix << std::endl;
@@ -247,7 +241,8 @@ int main(int argc, char **argv) {
             multisnake.LoadParameters(parameter_path.string());
             multisnake.ComputeImageGradient();
 
-            std::cout << "\nSegmentation started on " << *image_it << std::endl;
+            std::cout << "\nSegmentation started on " << *image_it
+                      << std::endl;
             std::cout << "=========== Current Parameters ==========="
                       << std::endl;
             multisnake.WriteParameters(std::cout);
@@ -270,21 +265,22 @@ int main(int argc, char **argv) {
             std::string::size_type dot_pos = path_str.find_last_of(".");
             std::string extracted_name = path_str.substr(
                 slash_pos+1, dot_pos-slash_pos-1);
-            multisnake.SaveSnakes(multisnake.converged_snakes(),
-                                  snake_path.string() + extracted_name + ".txt");
+            multisnake.SaveSnakes(
+                multisnake.converged_snakes(),
+                snake_path.string() + extracted_name + ".txt");
 
             std::cout << "Segmentation completed (Evolution time: "
                       << time_elasped << "s)" << std::endl;
-            // multisnake.junctions().Reset();
             multisnake.Reset();
           }
         } else {
-          std::cout << image_path << " exists, but is neither a regular file nor a directory" << std::endl;
+          std::cout << image_path
+                    << " exists, but is not a regular file or a directory"
+                    << std::endl;
         }
       } else {
         std::cerr << "Cannot varing one parameter only." << std::endl;
       }
-
     } catch (const fs::filesystem_error &e) {
       std::cout << e.what() << std::endl;
       return EXIT_FAILURE;
@@ -305,11 +301,8 @@ std::string ConstructSnakeFilename(const std::string &image_path,
   std::string::size_type dot_pos = image_path.find_last_of(".");
   std::string extracted_name = image_path.substr(
       slash_pos+1, dot_pos-slash_pos-1);
-  // std::cout << "extracted name: " << extracted_name << std::endl;
   std::ostringstream buffer;
-  // std::cout << "default: " << buffer.precision() << std::endl;
   buffer.precision(4);
-  // std::cout << "current: " << buffer.precision() << std::endl;
   buffer << std::showpoint << extracted_name << "--ridge"
          << ridge_threshold << "--stretch" << stretch << ".txt";
   return buffer.str();
@@ -318,6 +311,5 @@ std::string ConstructSnakeFilename(const std::string &image_path,
 
 std::string GetImageSuffix(const std::string &image_path) {
   std::string::size_type dot_pos = image_path.find_last_of(".");
-  // std::cout << image_path.substr(dot_pos+1) << std::endl;
   return image_path.substr(dot_pos+1);
 }

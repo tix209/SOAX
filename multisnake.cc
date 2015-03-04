@@ -25,6 +25,7 @@
 #include "itkRescaleIntensityImageFilter.h"
 #include "itkNormalVariateGenerator.h"
 #include "itkMinimumMaximumImageCalculator.h"
+#include "itkInvertIntensityImageFilter.h"
 #include "./solver_bank.h"
 #include "./utility.h"
 
@@ -59,6 +60,13 @@ void Multisnake::Reset() {
   image_ = NULL;
   external_force_ = NULL;
   solver_bank_->Reset();
+}
+
+void Multisnake::ResetContainers() {
+  this->ClearSnakeContainer(initial_snakes_);
+  this->ClearSnakeContainer(converged_snakes_);
+  junctions_.Reset();
+  solver_bank_->Reset(false);
 }
 
 void Multisnake::LoadImage(const std::string &filename) {
@@ -272,6 +280,19 @@ std::ostream & Multisnake::WriteParameters(std::ostream &os) const {
   os << "damp-z \t" << Snake::damp_z() << std::endl;
   os << std::noboolalpha;
   return os;
+}
+
+void Multisnake::InvertImageIntensity() {
+  ImageType::PixelType maximum = this->GetMaxImageIntensity();
+  std::cout << "Previous Maximum intensity: " << maximum << std::endl;
+
+  typedef itk::InvertIntensityImageFilter<ImageType> FilterType;
+  FilterType::Pointer filter = FilterType::New();
+  filter->SetInput(image_);
+  filter->SetMaximum(maximum);
+  filter->Update();
+  image_ = filter->GetOutput();
+  interpolator_->SetInputImage(image_);
 }
 
 void Multisnake::ComputeImageGradient(bool reset) {

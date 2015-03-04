@@ -1,9 +1,19 @@
-#ifndef SOAX_SNAKETIPSET_H_
-#define SOAX_SNAKETIPSET_H_
+/**
+ * Copyright (c) 2015, Lehigh University
+ * All rights reserved.
+ * See COPYING for license.
+ *
+ * This file defines the SOAC tip set class for the network configuration
+ * procedure in SOAX.
+ */
+
+#ifndef SNAKE_TIP_SET_H_
+#define SNAKE_TIP_SET_H_
 
 #include <list>
-#include "snake_tip.h"
-#include "global.h"
+#include <vector>
+#include "./snake_tip.h"
+#include "./global.h"
 
 namespace soax {
 
@@ -12,7 +22,7 @@ class SnakeTipSet {
   typedef std::list<SnakeTip *> TipList;
   typedef std::vector<SnakeTip *> TipContainer;
 
-  SnakeTipSet(SnakeTip *t);
+  explicit SnakeTipSet(SnakeTip *t);
 
   /*
    * Get the average position of the tips in the set.
@@ -55,5 +65,5 @@ class SnakeTipSet {
   DISALLOW_COPY_AND_ASSIGN(SnakeTipSet);
 };
 
-} // namespace soax
-#endif // SOAX_SNAKETIPSET_H_
+}  // namespace soax
+#endif  // SNAKE_TIP_SET_H_

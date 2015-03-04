@@ -1,6 +1,15 @@
+/**
+ * Copyright (c) 2015, Lehigh University
+ * All rights reserved.
+ * See COPYING for license.
+ *
+ * This file implements the SOAC tip set class for the network configuration
+ * procedure in SOAX.
+ */
+
 #include <cassert>
-#include "snake_tip_set.h"
-#include "snake.h"
+#include "./snake_tip_set.h"
+#include "./snake.h"
 
 namespace soax {
 
@@ -129,4 +138,4 @@ double SnakeTipSet::ComputeTotalDistanceToOthers(SnakeTip *t) const {
   return total;
 }
 
-} // namespace soax
+}  // namespace soax

@@ -71,9 +71,29 @@ qt4_add_resources(rccs ${rcc_srcs})
 
 add_executable(soax soax.cc ${common_srcs} ${gui_srcs} ${mocs}
   ${rccs} ${multisnake_moc} multisnake.cc)
+add_executable(batch_soax batch_soax.cc ${common_srcs}
+  ${multisnake_moc} multisnake.cc multisnake.h)
+add_executable(best_snake best_snake.cc ${common_srcs}
+  ${multisnake_moc} multisnake.cc multisnake.h)
 
 target_link_libraries(soax
   ${QT_LIBRARIES}
   ${VTK_LIBRARIES}
   ${ITK_LIBRARIES}
+  )
+
+target_link_libraries(batch_soax
+  ${QT_LIBRARIES}
+  ${ITK_LIBRARIES}
+  ${Boost_PROGRAM_OPTIONS_LIBRARY}
+  ${Boost_FILESYSTEM_LIBRARY}
+  ${Boost_SYSTEM_LIBRARY}
+  )
+
+target_link_libraries(best_snake
+  ${QT_LIBRARIES}
+  ${ITK_LIBRARIES}
+  ${Boost_PROGRAM_OPTIONS_LIBRARY}
+  ${Boost_FILESYSTEM_LIBRARY}
+  ${Boost_SYSTEM_LIBRARY}
   )

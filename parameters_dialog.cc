@@ -1,8 +1,16 @@
+/**
+ * Copyright (c) 2015, Lehigh University
+ * All rights reserved.
+ * See COPYING for license.
+ *
+ * This file implements the parameter dialog for SOAX.
+ */
+
+#include "./parameters_dialog.h"
 #include <QtGui>
-#include "parameters_dialog.h"
-#include "multisnake.h"
-#include "snake.h"
-#include "solver_bank.h"
+#include "./multisnake.h"
+#include "./snake.h"
+#include "./solver_bank.h"
 
 namespace soax {
 ParametersDialog::ParametersDialog(QWidget *parent) : QDialog(parent) {
@@ -197,5 +205,4 @@ QGroupBox * ParametersDialog::CreateSnakeGroup() {
   return gp;
 }
 
-
-} // namespace soax
+}  // namespace soax

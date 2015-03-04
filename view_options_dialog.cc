@@ -1,5 +1,13 @@
+/**
+ * Copyright (c) 2015, Lehigh University
+ * All rights reserved.
+ * See COPYING for license.
+ *
+ * This file implements the view options dialog for SOAX.
+ */
+
+#include "./view_options_dialog.h"
 #include <QtGui>
-#include "view_options_dialog.h"
 
 namespace soax {
 
@@ -161,4 +169,4 @@ void ViewOptionsDialog::SetColorSegmentStep(unsigned step) {
   color_segment_step_edit_->setText(s);
 }
 
-} // namespace soax
+}  // namespace soax

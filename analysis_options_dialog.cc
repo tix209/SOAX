@@ -1,5 +1,13 @@
-#include <QtGui>
-#include "analysis_options_dialog.h"
+/**
+ * Copyright (c) 2015, Lehigh University
+ * All rights reserved.
+ * See COPYING for license.
+ *
+ * This file implements the analysis dialog for SOAX.
+ */
+
+#include "./analysis_options_dialog.h"
+#include <QtGui>  // NOLINT(build/include_order)
 
 namespace soax {
 AnalysisOptionsDialog::AnalysisOptionsDialog(QWidget *parent) :
@@ -55,7 +63,6 @@ QGroupBox * AnalysisOptionsDialog::CreatePointDensityGroup() {
   center_z_edit_ = new QLineEdit("0");
   radius_edit_ = new QLineEdit("100");
   pixel_size_edit_ = new QLineEdit("1.0");
-  type_edit_ = new QLineEdit("0");
 
   connect(center_x_edit_, SIGNAL(textChanged(const QString &)),
           this, SLOT(EnableOKButton()));
@@ -67,15 +74,10 @@ QGroupBox * AnalysisOptionsDialog::CreatePointDensityGroup() {
           this, SLOT(EnableOKButton()));
   connect(pixel_size_edit_, SIGNAL(textChanged(const QString &)),
           this, SLOT(EnableOKButton()));
-  connect(type_edit_, SIGNAL(textChanged(const QString &)),
-          this, SLOT(EnableOKButton()));
 
   QLabel *center_label = new QLabel(tr("Center (x, y, z)"));
-  // QLabel *center_y_label = new QLabel(tr("Center y"));
-  // QLabel *center_z_label = new QLabel(tr("Center z"));
   QLabel *radius_label = new QLabel(tr("Radius (pixel)"));
-  QLabel *pixel_size_label = new QLabel(tr("Resolution (um/pixel)"));
-  QLabel *type_label = new QLabel(tr("Type"));
+  QLabel *pixel_size_label = new QLabel(tr("Pixel size (um)"));
 
   QHBoxLayout *hlayout1 = new QHBoxLayout;
   hlayout1->addWidget(center_label);
@@ -83,27 +85,16 @@ QGroupBox * AnalysisOptionsDialog::CreatePointDensityGroup() {
   hlayout1->addWidget(center_y_edit_);
   hlayout1->addWidget(center_z_edit_);
   hlayout1->addStretch();
-  // QHBoxLayout *hlayout2 = new QHBoxLayout;
-  // hlayout2->addWidget(center_y_label);
-  // hlayout2->addWidget(center_y_edit_);
-
-  // QHBoxLayout *hlayout3 = new QHBoxLayout;
-  // hlayout3->addWidget(center_z_label);
-  // hlayout3->addWidget(center_z_edit_);
 
   QHBoxLayout *hlayout4 = new QHBoxLayout;
   hlayout4->addWidget(radius_label);
   hlayout4->addWidget(radius_edit_);
   hlayout4->addWidget(pixel_size_label);
   hlayout4->addWidget(pixel_size_edit_);
-  hlayout4->addWidget(type_label);
-  hlayout4->addWidget(type_edit_);
   hlayout4->addStretch();
 
   QVBoxLayout *vlayout  = new QVBoxLayout;
   vlayout->addLayout(hlayout1);
-  // vlayout->addLayout(hlayout2);
-  // vlayout->addLayout(hlayout3);
   vlayout->addLayout(hlayout4);
 
   gb->setLayout(vlayout);
@@ -160,8 +151,4 @@ double AnalysisOptionsDialog::GetPixelSize() const {
   return pixel_size_edit_->text().toDouble();
 }
 
-unsigned AnalysisOptionsDialog::GetType() const {
-  return type_edit_->text().toUInt();
-}
-
-} // namespace soax
+}  // namespace soax

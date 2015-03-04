@@ -1,8 +1,18 @@
-#ifndef SOAX_SOLVER_H_
-#define SOAX_SOLVER_H_
+/**
+ * Copyright (c) 2015, Lehigh University
+ * All rights reserved.
+ * See COPYING for license.
+ *
+ * This file defines the solvers for linear system for SOAX.
+ */
 
+
+#ifndef SOLVER_BANK_H_
+#define SOLVER_BANK_H_
+
+#include <vector>
 #include "itkFEMLinearSystemWrapperItpack.h"
-#include "global.h"
+#include "./global.h"
 
 namespace soax {
 
@@ -81,6 +91,6 @@ class SolverBank {
   DISALLOW_COPY_AND_ASSIGN(SolverBank);
 };
 
-} // namespace soax
+}  // namespace soax
 
-#endif // SOAX_SOLVER_H_
+#endif  // SOLVER_BANK_H_

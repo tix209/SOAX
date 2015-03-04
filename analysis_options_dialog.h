@@ -1,8 +1,16 @@
-#ifndef SOAX_ANALYSIS_OPTIONS_DIALOG_H_
-#define SOAX_ANALYSIS_OPTIONS_DIALOG_H_
+/**
+ * Copyright (c) 2015, Lehigh University
+ * All rights reserved.
+ * See COPYING for license.
+ *
+ * This file defines the analysis dialog for SOAX.
+ */
+
+#ifndef ANALYSIS_OPTIONS_DIALOG_H_
+#define ANALYSIS_OPTIONS_DIALOG_H_
 
 #include <QDialog>
-#include "global.h"
+#include "./global.h"
 class QLineEdit;
 class QGroupBox;
 class QDialogButtonBox;
@@ -13,7 +21,7 @@ class AnalysisOptionsDialog : public QDialog {
   Q_OBJECT
 
  public:
-  AnalysisOptionsDialog(QWidget * parent = NULL);
+  explicit AnalysisOptionsDialog(QWidget * parent = NULL);
 
   void SetImageCenter(const PointType &center);
   void GetImageCenter(PointType &center) const;
@@ -29,9 +37,8 @@ class AnalysisOptionsDialog : public QDialog {
 
   unsigned GetRadius() const;
   double GetPixelSize() const;
-  unsigned GetType() const;
 
- public slots:
+ public slots:  // NOLINT(whitespace/indent)
   void EnableOKButton();
   void DisableOKButton();
 
@@ -45,12 +52,11 @@ class AnalysisOptionsDialog : public QDialog {
   QLineEdit *center_z_edit_;
   QLineEdit *radius_edit_;
   QLineEdit *pixel_size_edit_;
-  QLineEdit *type_edit_;
   QDialogButtonBox *button_box_;
 
   DISALLOW_COPY_AND_ASSIGN(AnalysisOptionsDialog);
 };
 
-} // namespace soax
+}  // namespace soax
 
-#endif // SOAX_ANALYSIS_OPTIONS_DIALOG_H_
+#endif  // ANALYSIS_OPTIONS_DIALOG_H_

@@ -1,8 +1,18 @@
-#ifndef SOAX_GLOBAL_H_
-#define SOAX_GLOBAL_H_
+/**
+ * Copyright (c) 2015, Lehigh University
+ * All rights reserved.
+ * See COPYING for license.
+ *
+ * This file defines global types and constants for SOAX.
+ */
+
+#ifndef GLOBAL_H_
+#define GLOBAL_H_
 
 #include <limits>
 #include <deque>
+#include <vector>
+#include <set>
 #include "itkImage.h"
 #include "itkLinearInterpolateImageFunction.h"
 #include "itkVectorLinearInterpolateImageFunction.h"
@@ -39,7 +49,6 @@ typedef SnakeContainer::iterator SnakeIterator;
 typedef SnakeContainer::const_iterator SnakeConstIterator;
 
 typedef itk::LinearInterpolateImageFunction<ImageType> InterpolatorType;
-// typedef itk::NearestNeighborInterpolateImageFunction<ImageType> InterpolatorType;
 typedef itk::VectorLinearInterpolateImageFunction<VectorImageType>
 VectorInterpolatorType;
 typedef itk::VersorTransform<double> TransformType;
@@ -48,6 +57,6 @@ typedef itk::VersorTransform<double> TransformType;
 #define DISALLOW_COPY_AND_ASSIGN(TypeName) \
   TypeName(const TypeName&);               \
   void operator=(const TypeName&)
-} // namespace soax
+}  // namespace soax
 
-#endif // SOAX_GLOBAL_H_
+#endif  // GLOBAL_H_

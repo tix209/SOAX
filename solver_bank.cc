@@ -1,4 +1,12 @@
-#include "solver_bank.h"
+/**
+ * Copyright (c) 2015, Lehigh University
+ * All rights reserved.
+ * See COPYING for license.
+ *
+ * This file implements the solvers for linear system for SOAX.
+ */
+
+#include "./solver_bank.h"
 
 namespace soax {
 
@@ -36,7 +44,6 @@ void SolverBank::ResetSolutionAndVector(SolverContainer &solvers) {
     if (*it) {
       (*it)->InitializeSolution(0);
       (*it)->InitializeVector(0);
-      // if (reset_matrix) (*it)->InitializeMatrix(0);
     }
   }
 }
@@ -55,24 +62,10 @@ void SolverBank::SolveSystem(const VectorContainer &vectors, unsigned dim,
     this->InitializeSolver(solvers[position], vectors.size(), open);
   }
 
-  // if (!solvers[position]->IsSolutionInitialized(0)) {
-  //   std::cout << "solution is not init!" << std::endl;
-  //   solvers[position]->SetNumberOfSolutions(1);
-  //   solvers[position]->InitializeSolution(0);
-  // }
-
   for (unsigned i = 0; i < vectors.size(); ++i) {
     solvers[position]->SetVectorValue(i, vectors[i][dim], 0);
-    // std::cout << solvers[position]->GetVectorValue(i, 0) << std::endl;
   }
-  // std::cout << solvers[position]->GetMatrixValue(5, 5, 0) << std::endl;
-  // for (unsigned i = 0; i < vectors.size(); ++i) {
-  //   std::cout << solvers[position]->GetSolutionValue(i, 0) << std::endl;
-  // }
   solvers[position]->Solve();
-  // for (unsigned i = 0; i < vectors.size(); ++i) {
-  //   std::cout << solvers[position]->GetSolutionValue(i, 0) << std::endl;
-  // }
 }
 
 void SolverBank::ExpandSolverContainer(SolverContainer &solvers,
@@ -111,20 +104,17 @@ void SolverBank::FillMatrixOpen(SolverType *solver, unsigned order) {
   solver->SetMatrixValue(1, 1, 2 * alpha_ + 5 * beta_ + gamma_, 0);
   for (unsigned i = 2; i < order - 2; i++)
     solver->SetMatrixValue(i, i, diag0, 0);
-  // solver->SetMatrixValue(order-2, order-2, alpha_+5*beta_+gamma_, 0);
-  // solver->SetMatrixValue(order-1, order-1, beta_+gamma_, 0);
-  solver->SetMatrixValue(order - 2, order - 2, 2 * alpha_ + 5 * beta_ + gamma_, 0);
+  solver->SetMatrixValue(order - 2, order - 2,
+                         2 * alpha_ + 5 * beta_ + gamma_, 0);
   solver->SetMatrixValue(order - 1, order - 1, alpha_ + beta_ + gamma_, 0);
 
   // +1/-1 diagonal
   solver->SetMatrixValue(0, 1, -alpha_ - 2 * beta_, 0);
   solver->SetMatrixValue(1, 0, -alpha_ - 2 * beta_, 0);
   for (unsigned i = 1; i < order - 2; i++) {
-    solver->SetMatrixValue(i, i+1, diag1, 0);
-    solver->SetMatrixValue(i+1, i, diag1, 0);
+    solver->SetMatrixValue(i, i + 1, diag1, 0);
+    solver->SetMatrixValue(i + 1, i, diag1, 0);
   }
-  // solver->SetMatrixValue(order-2, order-1, -2*beta_, 0);
-  // solver->SetMatrixValue(order-1, order-2, -2*beta_, 0);
   solver->SetMatrixValue(order - 2, order - 1, -alpha_ - 2 * beta_, 0);
   solver->SetMatrixValue(order - 1, order - 2, -alpha_ - 2 * beta_, 0);
 
@@ -153,4 +143,4 @@ double SolverBank::GetSolution(unsigned order, unsigned index, bool open) {
   return solvers[order - kMinimumEvolvingSize]->GetSolutionValue(index, 0);
 }
 
-} // namespace soax
+}  // namespace soax

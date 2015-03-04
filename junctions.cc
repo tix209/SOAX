@@ -1,8 +1,16 @@
+/**
+ * Copyright (c) 2015, Lehigh University
+ * All rights reserved.
+ * See COPYING for license.
+ *
+ * This file implements the network junctions class for SOAX.
+ */
+
 #include <cassert>
 #include <fstream>
 #include <algorithm>
-#include "junctions.h"
-#include "snake.h"
+#include "./junctions.h"
+#include "./snake.h"
 
 namespace soax {
 Junctions::Junctions() {}
@@ -224,23 +232,8 @@ void Junctions::ClearJunctionPoints() {
   junction_points_.clear();
 }
 
-// void Junctions::UpdateJunctionPoints(const PointContainer &tips) {
-//   if (junction_points_.empty())
-//     return;
-
-//   PointContainer new_junction_points;
-//   for (PointContainer::iterator it = junction_points_.begin();
-//        it != junction_points_.end(); ++it) {
-//     //PointContainer::const_iterator it_found = std::find(tips.begin(), tips.end(), *it);
-//     double dist = this->ComputeMinDistance(*it, tips);
-//     if (dist < 2.0) {
-//       new_junction_points.push_back(*it);
-//     }
-//   }
-//   junction_points_ = new_junction_points;
-// }
-
-double Junctions::ComputeMinDistance(const PointType &p, const PointContainer &pts) {
+double Junctions::ComputeMinDistance(const PointType &p,
+                                     const PointContainer &pts) {
   double min_d = p.EuclideanDistanceTo(pts.front());
   for (unsigned i = 1; i < pts.size(); ++i) {
     double d = p.EuclideanDistanceTo(pts.at(i));
@@ -250,4 +243,4 @@ double Junctions::ComputeMinDistance(const PointType &p, const PointContainer &p
   return min_d;
 }
 
-} // namespace soax
+}  // namespace soax

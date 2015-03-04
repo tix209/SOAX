@@ -1,4 +1,12 @@
-#include "viewer.h"
+/**
+ * Copyright (c) 2015, Lehigh University
+ * All rights reserved.
+ * See COPYING for license.
+ *
+ * This file implements the visulization class for SOAX.
+ */
+
+#include "./viewer.h"
 #include "QVTKWidget.h"
 #include "itkImageToVTKImageFilter.h"
 #include "vtkImageCast.h"
@@ -705,9 +713,7 @@ vtkPolyData * Viewer::MakeClippedPolyData(unsigned axis, double position) {
   cells->Delete();
 
   return curve;
-
 }
-
 
 void Viewer::ColorByAzimuthalAngle(bool state) {
   this->ColorSnakes(state, true);
@@ -1022,7 +1028,6 @@ void Viewer::TrimTip() {
   }
   this->SetupSnake(trimmed_snake_, 0);
   trim_tip_index_ = kBigNumber;
-  //trimmed_snake_ = NULL;
   trimmed_actor_ = NULL;
   renderer_->RemoveActor(on_snake_sphere1_);
 }
@@ -1107,7 +1112,6 @@ void Viewer::ExtendTip() {
   this->SetupSnake(trimmed_snake_, 0);
   inserted_point_.Fill(-1.0);
   trim_tip_index_ = kBigNumber;
-  //trimmed_snake_ = NULL;
   trimmed_actor_ = NULL;
   renderer_->RemoveActor(on_snake_sphere1_);
   renderer_->RemoveActor(off_snake_sphere_);
@@ -1258,7 +1262,6 @@ void Viewer::TrimBody() {
   this->SetupSnake(trimmed_snake_, 0);
   inserted_point_.Fill(-1.0);
   trim_body_index1_ = trim_body_index2_ = kBigNumber;
-  //trimmed_snake_ = NULL;
   trimmed_actor_ = NULL;
 
   renderer_->RemoveActor(on_snake_sphere1_);
@@ -1313,24 +1316,16 @@ void Viewer::DeselectJunction() {
   }
 }
 
-void Viewer::RemoveSelectedJunctions() {
+void Viewer::RemoveSelectedJunctions(Junctions &junctions) {
   if (selected_junctions_.empty()) return;
   for (ActorPointMap::iterator it = selected_junctions_.begin();
        it != selected_junctions_.end(); ++it) {
+    junctions.RemoveJunction(it->second);
     renderer_->RemoveActor(it->first);
     actor_junctions_.erase(it->first);
     it->first->Delete();
   }
   selected_junctions_.clear();
-}
-
-std::vector<PointType> Viewer::GetSelectedJunctions() const {
-  std::vector<PointType> pts;
-  for (ActorPointMap::const_iterator it = selected_junctions_.begin();
-       it != selected_junctions_.end(); ++it) {
-    pts.push_back(it->second);
-  }
-  return pts;
 }
 
 void Viewer::Render() {
@@ -1344,30 +1339,30 @@ void Viewer::ResetCamera() {
 void Viewer::LoadViewpoint(const std::string &filename) {
   std::ifstream infile(filename.c_str());
   std::string str;
-  double x,y,z;
+  double x, y, z;
 
-  infile>>str;
+  infile >> str;
   if (str == "ClippingRange") {
     infile >> x >> y;
     camera_->SetClippingRange(x, y);
   }
 
   infile >> str;
-  if (str=="CameraPosition") {
+  if (str == "CameraPosition") {
     infile >> x >> y >> z;
-    camera_->SetPosition(x,y,z);
+    camera_->SetPosition(x, y, z);
   }
 
   infile >> str;
-  if (str=="CameraFocalPoint") {
+  if (str == "CameraFocalPoint") {
     infile >> x >> y >> z;
-    camera_->SetFocalPoint(x,y,z);
+    camera_->SetFocalPoint(x, y, z);
   }
 
   infile >> str;
-  if (str=="CameraViewUp") {
+  if (str == "CameraViewUp") {
     infile >> x >> y >> z;
-    camera_->SetViewUp(x,y,z);
+    camera_->SetViewUp(x, y, z);
   }
 
   infile.close();
@@ -1446,4 +1441,4 @@ void Viewer::PrintScreenAsVectorImage(const std::string &filename) const {
   exp->Write();
 }
 
-} // namespace soax
+}  // namespace soax

@@ -1,10 +1,20 @@
-#ifndef SOAX_MULTISNAKE_H_
-#define SOAX_MULTISNAKE_H_
+/**
+ * Copyright (c) 2015, Lehigh University
+ * All rights reserved.
+ * See COPYING for license.
+ *
+ * This file defines the multiple SOACs (snakes) class for SOAX.
+ */
 
-#include <QObject>
-#include "global.h"
-#include "snake.h"
-#include "junctions.h"
+
+#ifndef MULTISNAKE_H_
+#define MULTISNAKE_H_
+
+#include <string>
+#include <QObject>  // NOLINT(build/include_order)
+#include "./global.h"
+#include "./snake.h"
+#include "./junctions.h"
 
 
 class QProgressBar;
@@ -22,11 +32,9 @@ class Multisnake : public QObject {
  public:
   typedef itk::Image<double, kDimension> FloatImageType;
 
-
   Multisnake();
   ~Multisnake();
   void Reset();
-  void ResetContainers();
 
   /*
    * Load the image and set image_filename_.
@@ -48,7 +56,7 @@ class Multisnake : public QObject {
   void LoadParameters(const std::string &filename);
   void UpdateSnakeParameters();
   void SaveParameters(const std::string &filename) const;
-  void WriteParameters(std::ostream &os) const;
+  std::ostream& WriteParameters(std::ostream &os) const;
 
   double intensity_scaling() const  {return intensity_scaling_;}
 
@@ -65,13 +73,13 @@ class Multisnake : public QObject {
     ridge_threshold_ = threshold;
   }
 
-  unsigned short foreground() const {return foreground_;}
-  void set_foreground(unsigned short foreground) {
+  unsigned foreground() const {return foreground_;}
+  void set_foreground(unsigned foreground) {
     foreground_ = foreground;
   }
 
-  unsigned short background() const {return background_;}
-  void set_background(unsigned short background) {
+  unsigned background() const {return background_;}
+  void set_background(unsigned background) {
     background_ = background;
   }
 
@@ -119,7 +127,6 @@ class Multisnake : public QObject {
     this->SaveJFilamentSnakes(converged_snakes_, filename);
   }
 
-  // void DeformSnakes(QProgressBar * progress_bar = NULL);
   void DeformSnakes();
   void CutSnakesAtTJunctions();
   void GroupSnakes();
@@ -158,7 +165,7 @@ class Multisnake : public QObject {
 
   void ComputePointDensityAndIntensity(const PointType &center,
                                        double max_radius, double pixel_size,
-                                       unsigned type, std::ostream & os) const;
+                                       std::ostream & os) const;
 
   void ComputeCurvature(int coarse_graining, std::ostream &os) const;
   void ComputeSphericalOrientation(const PointType &center,
@@ -195,14 +202,10 @@ class Multisnake : public QObject {
 
  signals:
   void ExtractionProgressed(int value);
-  void ExtractionCompleteForFrame(int frame_index);
 
  private:
   typedef itk::Vector<bool, kDimension> BoolVectorType;
   typedef itk::Image<BoolVectorType, kDimension> BoolVectorImageType;
-
-  ImageType::Pointer InterpolateImage(ImageType::Pointer img,
-                                      double z_spacing);
 
   /*
    * Initialize a new bool vector image used for snake initialization.
@@ -338,8 +341,8 @@ class Multisnake : public QObject {
    * stretch, voxels with intensity below background_ are not used as
    * samples.
    */
-  unsigned short foreground_;
-  unsigned short background_;
+  unsigned foreground_;
+  unsigned background_;
 
   /*
    * True if initialize snakes along z axis direction.
@@ -355,6 +358,6 @@ class Multisnake : public QObject {
   DISALLOW_COPY_AND_ASSIGN(Multisnake);
 };
 
-} // namespace soax
+}  // namespace soax
 
-#endif // SOAX_MULTISNAKE_H_
+#endif  // MULTISNAKE_H_

@@ -1,16 +1,23 @@
+/**
+ * Copyright (c) 2015, Lehigh University
+ * All rights reserved.
+ * See COPYING for license.
+ *
+ * This file implements the SOAC (snake) class for SOAX.
+ */
+
+
 #include <iomanip>
-#include "snake.h"
-#include "solver_bank.h"
-#include "utility.h"
+#include "./snake.h"
+#include "./solver_bank.h"
+#include "./utility.h"
 
 namespace soax {
 
-
-
 double Snake::intensity_scaling_ = 0.0;
-unsigned short Snake::foreground_ = 65535;
-unsigned short Snake::background_ = 1600;
-double Snake::desired_spacing_ = 1.0; // make sure this is 1.0
+unsigned Snake::foreground_ = 65535;
+unsigned Snake::background_ = 0;
+double Snake::desired_spacing_ = 1.0;
 double Snake::minimum_length_ = 10.0;
 unsigned Snake::max_iterations_ = 10000;
 double Snake::change_threshold_ = 0.1;
@@ -19,16 +26,15 @@ unsigned Snake::iterations_per_press_ = 100;
 double Snake::external_factor_ = 1.0;
 double Snake::stretch_factor_ = 0.3;
 int Snake::number_of_sectors_ = 8;
-int Snake::radial_near_ = 2;
-int Snake::radial_far_ = 4;
+int Snake::radial_near_ = 4;
+int Snake::radial_far_ = 8;
 unsigned Snake::delta_ = 4;
 double Snake::overlap_threshold_ = 1.0;
 double Snake::grouping_distance_threshold_ = 4.0;
 unsigned Snake::grouping_delta_ = 8.0;
 double Snake::direction_threshold_ = 2.1;
 bool Snake::damp_z_ = false;
-// double Snake::z_spacing_ = 2.88;
-double Snake::z_spacing_ = 1;
+double Snake::z_spacing_ = 1.0;
 const double Snake::kBoundary = 0.5;
 
 
@@ -188,7 +194,6 @@ bool Snake::IsConverged() {
     double d = vertices_.at(i).EuclideanDistanceTo(last_vertices_.at(i));
 
     if (d > change_threshold_) {
-      //std::cout << "d: " << d << std::endl;
       last_vertices_ = vertices_;
       return false;
     }
@@ -236,10 +241,8 @@ void Snake::TryInitializeFromPart(PointIterator it1, PointIterator it2,
   s->Resample();
   if (s->viable()) {
     subsnakes_.push_back(s);
-    // return s;
   } else {
     delete s;
-    //return NULL;
   }
 }
 
@@ -469,15 +472,6 @@ void Snake::UpdateTailTangent() {
 double Snake::ComputeLocalStretch(bool is_head, bool is_2d) {
   PointType &vertex = is_head ? vertices_.front() : vertices_.back();
   double fg = interpolator_->Evaluate(vertex);
-  // double fg = 0.0;
-  // Good for noisy images such as OCT vessels and microtubules,
-  // and actin rings.
-  // if (is_2d)
-  //   // fg = this->ComputeForegroundMeanIntensity2d(is_head);
-  //   fg = interpolator_->Evaluate(vertex);
-  // else
-  //   fg = this->ComputeForegroundMeanIntensity(is_head);
-
   if (fg < background_ + kEpsilon || fg > foreground_)
     return 0.0;
 
@@ -489,35 +483,7 @@ double Snake::ComputeLocalStretch(bool is_head, bool is_2d) {
 
   if (bg < 0.0)
     return 0.0;
-
-  // if (is_2d) // a symmetric definition, good for inverted intensity
-  //   return abs((fg - bg) / (fg + bg));
-
   return 1.0 - bg / fg;
-}
-
-double Snake::ComputeForegroundMeanIntensity(bool is_head) const {
-  assert(radial_near_ > 0);
-  const PointType &vertex = is_head ? vertices_.front() : vertices_.back();
-  DataContainer fgs;
-  fgs.push_back(interpolator_->Evaluate(vertex));
-
-  if (radial_near_ > 1) {
-    const VectorType &normal = is_head ? head_tangent_ : tail_tangent_;
-    VectorType radial;
-    this->GetStartingRadialDirection(radial, normal, vertex);
-
-    for (int s = 0; s < number_of_sectors_; s++) {
-      for (int d = 1; d < radial_near_; d++) {
-        PointType sample_point;
-        this->ComputeSamplePoint(sample_point, vertex, radial, normal, d, s);
-        if (this->IsInsideImage(sample_point)) {
-          fgs.push_back(interpolator_->Evaluate(sample_point));
-        }
-      }
-    }
-  }
-  return Mean(fgs);
 }
 
 double Snake::ComputeBackgroundMeanIntensity(bool is_head) const {
@@ -562,26 +528,10 @@ double Snake::ComputeBackgroundMeanIntensity(bool is_head) const {
   }
 
   if (bgs.empty()) {
-    return -1.0; // return a negative value intentionally
+    return -1.0;  // return a negative value intentionally
   } else {
     return Mean(bgs);
   }
-}
-
-double Snake::ComputeForegroundMeanIntensity2d(bool is_head) const {
-  DataContainer fgs;
-  const unsigned npts = 3;
-  for (unsigned i = 0; i < npts; i++) {
-    double intensity = 0.0;
-    if (is_head)
-      intensity = interpolator_->Evaluate(vertices_.at(i));
-    else
-      intensity = interpolator_->Evaluate(
-          vertices_.at(vertices_.size() - 1 - i));
-
-    fgs.push_back(intensity);
-  }
-  return Mean(fgs);
 }
 
 double Snake::ComputeBackgroundMeanIntensity2d(bool is_head) const {
@@ -595,9 +545,6 @@ double Snake::ComputeBackgroundMeanIntensity2d(bool is_head) const {
     pod[1] = this->ComputePodY(vertex[1], normal, d, false);
     pod[2] = vertex[2];
 
-    // if (!this->CheckOrthogonality(pod-vertex, normal))
-    //   std::cerr << "Pod is not orthogonal!" << std::endl;
-
     if (this->IsInsideImage(pod, 2)) {
       double intensity = interpolator_->Evaluate(pod);
       bgs.push_back(intensity);
@@ -606,9 +553,6 @@ double Snake::ComputeBackgroundMeanIntensity2d(bool is_head) const {
     pod[0] = this->ComputePodX(vertex[0], normal, d, false);
     pod[1] = this->ComputePodY(vertex[1], normal, d, true);
     pod[2] = vertex[2];
-
-    // if (!this->CheckOrthogonality(pod-vertex, normal))
-    //   std::cerr << "Pod is not orthogonal!" << std::endl;
 
     if (this->IsInsideImage(pod, 2)) {
       double intensity = interpolator_->Evaluate(pod);
@@ -735,10 +679,8 @@ void Snake::CheckBodyOverlap(const SnakeContainer &converged_snakes) {
     bool overlap = Snake::VertexOverlap(*it, converged_snakes);
     if (overlap && !last_is_overlap) {
       overlap_start = it;
-      //break;
     } else if (!overlap && last_is_overlap && it > overlap_start) {
       overlap_end = it;
-      // overlap_point = *it;
       break;
     }
     last_is_overlap = overlap;
@@ -755,21 +697,19 @@ void Snake::CheckBodyOverlap(const SnakeContainer &converged_snakes) {
 void Snake::PrintSelf() const {
   std::cout << "\n======== Snake Info ========" << std::endl;
   std::cout << "snake id: " << this << std::endl;
-  // std::cout << "viable: " << viable_ << std::endl;
+  std::cout << "viable: " << viable_ << std::endl;
   std::cout << "open: " << std::boolalpha << open_
             << std::endl << std::noboolalpha;
-  // std::cout << "converged: " << converged_ << std::endl;
-  // std::cout << "grouping: " << grouping_ << std::endl;
-  // std::cout << "iteration: " << iterations_ << std::endl;
+  std::cout << "iteration: " << iterations_ << std::endl;
   std::cout << "length: " << length_ << std::endl;
-  // std::cout << "size: " << this->GetSize() << std::endl;
+  std::cout << "size: " << this->GetSize() << std::endl;
   std::cout << "spacing: " << spacing_ << std::endl;
 
-  // std::cout << "intensity: " << this->ComputeIntensity() << std::endl;
-  // std::cout << "local snr: " << this->ComputeSNR() << std::endl;
+  std::cout << "intensity: " << this->ComputeIntensity() << std::endl;
+  std::cout << "local snr: " << this->ComputeSNR() << std::endl;
 
-  // std::cout << "fixed head: " << fixed_head_ << std::endl;
-  // std::cout << "fixed tail: " << fixed_tail_ << std::endl;
+  std::cout << "fixed head: " << fixed_head_ << std::endl;
+  std::cout << "fixed tail: " << fixed_tail_ << std::endl;
 
   const unsigned column_width = 15;
   std::cout << "#" << std::endl;
@@ -778,7 +718,8 @@ void Snake::PrintSelf() const {
     std::cout << std::setw(column_width) << this->GetX(j)
               << std::setw(column_width) << this->GetY(j)
               << std::setw(column_width) << this->GetZ(j)
-        // << std::setw(column_width) << interpolator_->Evaluate(this->GetPoint(j))
+              << std::setw(column_width)
+              << interpolator_->Evaluate(this->GetPoint(j))
               << std::endl;
   }
 }
@@ -903,68 +844,25 @@ const PointType &Snake::GetTip(bool is_head) const {
 bool Snake::ComputeLocalSNRAtIndex(unsigned index, int radial_near,
                                    int radial_far, double &local_snr) const {
   double foreground = interpolator_->Evaluate(this->GetPoint(index));
-  // double foreground = this->ComputeLocalForegroundMean(index, radial_near);
-
   double bg_mean(0.0), bg_std(0.0);
   bool local_bg_defined = this->ComputeLocalBackgroundMeanStd(
       index, radial_near, radial_far, bg_mean, bg_std);
 
-  // if (foreground < bg_mean) {
-  //   std::cout << this->GetPoint(index) << std::endl;
-  //   std::cout << "foreground: " << foreground << std::endl;
-  //   std::cout << "background mean: " << bg_mean << std::endl;
-  //   std::cout << "background std: " << bg_std << std::endl;
-  // }
-
   if (local_bg_defined) {
     if (bg_std < kEpsilon) {
-      // std::cerr << "local background std is zero!" << std::endl;
       if (foreground > bg_mean)
         local_snr = kPlusInfinity;
       else
         local_snr = 0.0;
     } else {
-      // std::cerr << "local background is not defined!" << std::endl;
       local_snr = (foreground - bg_mean) / bg_std;
     }
-    // std::cout << "local snr: " << local_snr << std::endl;
   }
 
   return local_bg_defined;
 }
 
-// double Snake::ComputeLocalForegroundMean(unsigned index, int radial_near) const {
-//   if (radial_near < 1) {
-//     std::cerr << "Fatal error: radial_near is less than 1!" << std::endl;
-//     return 0.0;
-//   }
-
-//   DataContainer fgs;
-//   fgs.push_back(interpolator_->Evaluate(this->GetPoint(index)));
-
-//   if (radial_near > 1) {
-//     const VectorType normal = this->ComputeUnitTangentVector(index);
-//     PointType vertex = vertices_.at(index);
-//     VectorType radial;
-//     this->GetStartingRadialDirection(radial, normal, vertex);
-//     // std::cout << "staring radial direction: " << radial << std::endl;
-//     const int number_of_sectors = 8;
-
-//     for (int s = 0; s < number_of_sectors; s++) {
-//       for (int d = 1; d < radial_near; d++) {
-//         PointType sample_point;
-//         this->ComputeSamplePoint(sample_point, vertex, radial, normal, d, s);
-//         // std::cout << "sample point: " << sample_point << std::endl;
-//         if (this->IsInsideImage(sample_point)) {
-//           fgs.push_back(interpolator_->Evaluate(sample_point));
-//         }
-//       }
-//     }
-//   }
-//   return Mean(fgs);
-// }
-
-bool Snake::ComputeLocalBackgroundMeanStd(unsigned index,int radial_near,
+bool Snake::ComputeLocalBackgroundMeanStd(unsigned index, int radial_near,
                                           int radial_far, double &mean,
                                           double &std) const {
   DataContainer bgs;
@@ -1005,21 +903,6 @@ bool Snake::ComputeLocalBackgroundMeanStd(unsigned index,int radial_near,
     }
   }
 
-  // VectorType radial;
-  // this->GetStartingRadialDirection(radial, normal, vertex);
-  // // std::cout << "staring radial direction: " << radial << std::endl;
-  // const int number_of_sectors = 8;
-
-  // for (int s = 0; s < number_of_sectors; s++) {
-  //   for (int d = radial_near; d < radial_far; d++) {
-  //     PointType sample_point;
-  //     this->ComputeSamplePoint(sample_point, vertex, radial, normal, d, s);
-  //     // std::cout << "sample point: " << sample_point << std::endl;
-  //     if (this->IsInsideImage(sample_point)) {
-  //       bgs.push_back(interpolator_->Evaluate(sample_point));
-  //     }
-  //   }
-  // }
   bool local_bg_defined = bgs.size() > number_of_sectors / 2;
   if (local_bg_defined) {
     mean = Mean(bgs);
@@ -1033,7 +916,8 @@ VectorType Snake::ComputeUnitTangentVector(unsigned index) const {
   if (index == 0)
     tangent = vertices_.at(0) - vertices_.at(1);
   else if (index == vertices_.size() - 1)
-    tangent = vertices_.at(vertices_.size()-2) - vertices_.at(vertices_.size()-1);
+    tangent = vertices_.at(vertices_.size()-2) -
+        vertices_.at(vertices_.size()-1);
   else
     tangent = vertices_.at(index-1) - vertices_.at(index+1);
   tangent.Normalize();
@@ -1076,7 +960,8 @@ double Snake::ComputeSNR() const {
   unsigned cnt = 0;
   for (unsigned i = 0; i < vertices_.size(); i++) {
     double snr = 0.0;
-    bool bg_exist = this->ComputeLocalSNRAtIndex(i, radial_near_, radial_far_, snr);
+    bool bg_exist = this->ComputeLocalSNRAtIndex(
+        i, radial_near_, radial_far_, snr);
     if (bg_exist) {
       sum += snr;
       cnt++;
@@ -1089,4 +974,4 @@ double Snake::ComputeSNR() const {
     return 0.0;
 }
 
-} // namespace soax
+}  // namespace soax

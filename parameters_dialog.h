@@ -1,12 +1,21 @@
-#ifndef SOAX_PARAMETERSDIALOG_H_
-#define SOAX_PARAMETERSDIALOG_H_
+/**
+ * Copyright (c) 2015, Lehigh University
+ * All rights reserved.
+ * See COPYING for license.
+ *
+ * This file defines the parameter dialog for SOAX.
+ */
+
+
+#ifndef PARAMETERS_DIALOG_H_
+#define PARAMETERS_DIALOG_H_
 
 
 #include <QDialog>
 #include <QDialogButtonBox>
 #include <QLineEdit>
 #include <QCheckBox>
-#include "global.h"
+#include "./global.h"
 class QGroupBox;
 
 namespace soax {
@@ -18,7 +27,7 @@ class ParametersDialog : public QDialog {
   Q_OBJECT
 
  public:
-  ParametersDialog(QWidget *parent = NULL);
+  explicit ParametersDialog(QWidget *parent = NULL);
 
   double GetIntensityScaling() {
     return intensity_scaling_edit_->text().toDouble();
@@ -27,8 +36,8 @@ class ParametersDialog : public QDialog {
   double GetRidgeThreshold() {
     return ridge_threshold_edit_->text().toDouble();
   }
-  unsigned short GetForeground() {return foreground_edit_->text().toUShort();}
-  unsigned short GetBackground() {return background_edit_->text().toUShort();}
+  unsigned GetForeground() {return foreground_edit_->text().toUInt();}
+  unsigned GetBackground() {return background_edit_->text().toUInt();}
   double GetSpacing() {return spacing_edit_->text().toDouble();}
   bool InitializeZ() {return initialize_z_check_->isChecked();}
   unsigned GetMinSnakeLength() {
@@ -71,7 +80,7 @@ class ParametersDialog : public QDialog {
 
   void SetCurrentParameters(Multisnake *ms);
 
- public slots:
+ public slots:  // NOLINT(whitespace/indent)
   void EnableOKButton();
   void DisableOKButton();
 
@@ -111,6 +120,7 @@ class ParametersDialog : public QDialog {
 
   DISALLOW_COPY_AND_ASSIGN(ParametersDialog);
 };
-} // namespace soax
 
-#endif //SOAX_PARAMETERSDIALOG_H_
+}  // namespace soax
+
+#endif  // PARAMETERS_DIALOG_H_

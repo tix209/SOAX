@@ -1,7 +1,16 @@
-#ifndef SOAX_SNAKE_TIP_H_
-#define SOAX_SNAKE_TIP_H_
+/**
+ * Copyright (c) 2015, Lehigh University
+ * All rights reserved.
+ * See COPYING for license.
+ *
+ * This file defines the SOAC tip class for the network configuration
+ * procedure in SOAX.
+ */
 
-#include "global.h"
+#ifndef SNAKE_TIP_H_
+#define SNAKE_TIP_H_
+
+#include "./global.h"
 
 namespace soax {
 
@@ -33,5 +42,5 @@ class SnakeTip {
 
   DISALLOW_COPY_AND_ASSIGN(SnakeTip);
 };
-} // namespace soax
-#endif //SOAX_SNAKE_TIP_H_
+}  // namespace soax
+#endif  // SNAKE_TIP_H_

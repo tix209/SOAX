@@ -1,8 +1,18 @@
-#ifndef SOAX_JUNCTIONS_H_
-#define SOAX_JUNCTIONS_H_
+/**
+ * Copyright (c) 2015, Lehigh University
+ * All rights reserved.
+ * See COPYING for license.
+ *
+ * This file defines the network junctions class for SOAX.
+ */
 
-#include "global.h"
-#include "snake_tip_set.h"
+#ifndef JUNCTIONS_H_
+#define JUNCTIONS_H_
+
+#include <string>
+#include <vector>
+#include "./global.h"
+#include "./snake_tip_set.h"
 
 namespace soax {
 
@@ -78,5 +88,5 @@ class Junctions {
   DISALLOW_COPY_AND_ASSIGN(Junctions);
 };
 
-} // namespace soax
-#endif //SOAX_JUNCTIONS_H_
+}  // namespace soax
+#endif  // JUNCTIONS_H_

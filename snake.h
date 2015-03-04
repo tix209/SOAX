@@ -1,7 +1,19 @@
-#ifndef SOAX_SNAKE_H_
-#define SOAX_SNAKE_H_
+/**
+ * Copyright (c) 2015, Lehigh University
+ * All rights reserved.
+ * See COPYING for license.
+ *
+ * This file defines the SOAC (snake) class for SOAX.
+ */
 
-#include "global.h"
+
+#ifndef SNAKE_H_
+#define SNAKE_H_
+
+#include <utility>
+#include <vector>
+#include <set>
+#include "./global.h"
 
 namespace soax {
 
@@ -58,13 +70,13 @@ class Snake {
     intensity_scaling_ = scale;
   }
 
-  static unsigned short foreground() {return foreground_;}
-  static void set_foreground(unsigned short foreground) {
+  static unsigned foreground() {return foreground_;}
+  static void set_foreground(unsigned foreground) {
     foreground_ = foreground;
   }
 
-  static unsigned short background() {return background_;}
-  static void set_background(unsigned short background) {
+  static unsigned background() {return background_;}
+  static void set_background(unsigned background) {
     background_ = background;
   }
 
@@ -229,15 +241,11 @@ class Snake {
   double ComputeLocalStretch(bool is_head, bool is_2d);
 
   /*
-   * Compute the mean foreground and background intensity around the
-   * tips. The sample points are on a orthogonal plane at tips. For
-   * foreground intensity (is_fg = true), the sampling region is a
-   * circle; for background intensity, the sampling region is a
-   * annulus defined by "radial_near_" and "radial_far_".
+   * Compute the mean background intensity around the tips. The sample points
+   * are on a orthogonal plane at tips. The sampling region is a annulus
+   * defined by "radial_near_" and "radial_far_".
    */
-  double ComputeForegroundMeanIntensity(bool is_head) const;
   double ComputeBackgroundMeanIntensity(bool is_head) const;
-  double ComputeForegroundMeanIntensity2d(bool is_head) const;
   double ComputeBackgroundMeanIntensity2d(bool is_head) const;
 
   double ComputePodX(double x, const VectorType &tvec,
@@ -264,7 +272,8 @@ class Snake {
   void AddJunctionIndex(unsigned index);
 
   double ComputeLocalForegroundMean(unsigned index, int radial_near) const;
-  bool ComputeLocalBackgroundMeanStd(unsigned index,int radial_near, int radial_far,
+  bool ComputeLocalBackgroundMeanStd(unsigned index,
+                                     int radial_near, int radial_far,
                                      double &mean, double &std) const;
   VectorType ComputeUnitTangentVector(unsigned index) const;
 
@@ -319,8 +328,8 @@ class Snake {
   // static SolverBank *solver_bank_;
 
   static double intensity_scaling_;
-  static unsigned short foreground_;
-  static unsigned short background_;
+  static unsigned foreground_;
+  static unsigned background_;
 
   static double desired_spacing_;
 
@@ -415,6 +424,6 @@ class Snake {
   DISALLOW_COPY_AND_ASSIGN(Snake);
 };
 
-} // namespace soax
+}  // namespace soax
 
-#endif // SOAX_SNAKE_H_
+#endif  // SNAKE_H_

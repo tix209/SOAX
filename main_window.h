@@ -3,7 +3,7 @@
  * All rights reserved.
  * See COPYING for license.
  *
- * This file is defines the main window class for SOAX.
+ * This file defines the main window class for SOAX.
  */
 
 
@@ -16,7 +16,7 @@
 
 class QProgressBar;
 class QActionGroup;
-class QScrollBar;
+
 
 namespace soax {
 
@@ -25,7 +25,6 @@ class Viewer;
 class ParametersDialog;
 class AnalysisOptionsDialog;
 class ViewOptionsDialog;
-
 
 class MainWindow : public QMainWindow {
   Q_OBJECT
@@ -91,7 +90,6 @@ class MainWindow : public QMainWindow {
   void ResetActions();
   QString GetLastDirectory(const std::string &filename) const;
   void SetParameters();
-
 
   QWidget *central_widget_;
   ParametersDialog *parameters_dialog_;

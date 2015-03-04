@@ -1,7 +1,16 @@
-#include <cmath>
-#include "snake_tip.h"
-#include "snake.h"
+/**
+ * Copyright (c) 2015, Lehigh University
+ * All rights reserved.
+ * See COPYING for license.
+ *
+ * This file implements the SOAC tip class for the network configuration
+ * procedure in SOAX.
+ */
 
+
+#include <cmath>
+#include "./snake_tip.h"
+#include "./snake.h"
 
 namespace soax {
 
@@ -47,4 +56,4 @@ void SnakeTip::PrintSelf() const {
   std::cout << neighbor_ << std::endl;
 }
 
-} // namespace soax
+}  // namespace soax

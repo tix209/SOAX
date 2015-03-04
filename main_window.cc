@@ -3,7 +3,7 @@
  * All rights reserved.
  * See COPYING for license.
  *
- * This file is implements the main window class for SOAX.
+ * This file implements the main window class for SOAX.
  */
 
 #include <QtGui>
@@ -785,9 +785,7 @@ void MainWindow::EditSnake() {
   } else if (toggle_trim_body_->isChecked()) {
     viewer_->TrimBody();
   } else if (toggle_delete_junction_->isChecked()) {
-    viewer_->RemoveSelectedJunctions();
-    multisnake_->junctions().RemoveJunctions(
-        viewer_->GetSelectedJunctions());
+    viewer_->RemoveSelectedJunctions(multisnake_->junctions());
   }
   viewer_->Render();
   deform_one_snake_->setEnabled(true);
@@ -1083,7 +1081,6 @@ void MainWindow::ComputePointDensity() {
   double max_radius = analysis_options_dialog_->GetRadius() *
       inside_percentage;
   double pixel_size = analysis_options_dialog_->GetPixelSize();
-  unsigned type = analysis_options_dialog_->GetType();
 
   std::ofstream outfile;
   outfile.open(analysis_filename_.c_str());
@@ -1096,7 +1093,7 @@ void MainWindow::ComputePointDensity() {
   }
 
   multisnake_->ComputePointDensityAndIntensity(center, max_radius,
-                                               pixel_size, type, outfile);
+                                               pixel_size, outfile);
   statusBar()->showMessage(tr("SOAC point density/intensity file saved."));
   outfile.close();
 }

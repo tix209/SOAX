@@ -1,8 +1,16 @@
-#ifndef SOAX_UTILITY_H_
-#define SOAX_UTILITY_H_
+/**
+ * Copyright (c) 2015, Lehigh University
+ * All rights reserved.
+ * See COPYING for license.
+ *
+ * This file defines utility functions for SOAX.
+ */
+
+#ifndef UTILITY_H_
+#define UTILITY_H_
 
 #include <string>
-#include "global.h"
+#include "./global.h"
 
 namespace soax {
 
@@ -22,6 +30,6 @@ double Maximum(const DataContainer &data);
 std::string GetImageName(const std::string &snake_path);
 
 void PrintDataContainer(const DataContainer &data);
-} // namespace soax
+}  // namespace soax
 
-#endif // SOAX_UTILITY_H_
+#endif  // UTILITY_H_

@@ -1,7 +1,15 @@
+/**
+ * Copyright (c) 2015, Lehigh University
+ * All rights reserved.
+ * See COPYING for license.
+ *
+ * This file implements utility functions for SOAX.
+ */
+
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#include "utility.h"
+#include "./utility.h"
 
 namespace soax {
 
@@ -140,4 +148,4 @@ void PrintDataContainer(const DataContainer &data) {
   std::cout << "\n====================" << std::endl;
 }
 
-} // namespace soax
+}  // namespace soax

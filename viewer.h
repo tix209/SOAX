@@ -3,7 +3,7 @@
  * All rights reserved.
  * See COPYING for license.
  *
- * This file is defines the visulization class for SOAX.
+ * This file defines the visulization class for SOAX.
  */
 
 
@@ -77,7 +77,6 @@ class Viewer : public QObject {
 
   void SetupSnakesAsOneActor(const SnakeContainer &snakes);
   void SetupSnakes(const SnakeContainer &snakes, unsigned category = 0);
-
   void SetupSnake(Snake *snake, unsigned category);
   void ChangeSnakeColor(Snake *s, double *color);
   void RemoveSnakes();
@@ -109,8 +108,7 @@ class Viewer : public QObject {
   void TrimTip();
   void ExtendTip();
   void TrimBody();
-  void RemoveSelectedJunctions();
-  std::vector<PointType> GetSelectedJunctions() const;
+  void RemoveSelectedJunctions(Junctions &junctions);
 
   static double *Gray() {return kGray;}
   static double *Red() {return kRed;}
@@ -165,35 +163,29 @@ class Viewer : public QObject {
 
   void SetupSlicePlanes(vtkImageData *data);
   void SetupMIPRendering(vtkImageData *data);
-
   void SetupOrientationMarker();
   void SetupUpperLeftCornerText(unsigned min_intensity,
                                 unsigned max_intensity);
   void SetupBoundingBox(vtkSmartPointer<vtkVolume> volume);
   void SetupCubeAxes(vtkSmartPointer<vtkImageData> image);
 
-  void SetupDispalyRange(ImageType::Pointer image);
   void UpdateJunctionRadius(ImageType::Pointer image);
 
   vtkActor * ActSnake(Snake *snake);
   vtkActor * ActSnakeSegments(Snake *snake, unsigned start, unsigned end);
-  vtkPolyData * MakePolyDataForMultipleSnakes(
-      const SnakeContainer &snakes);
+  vtkPolyData * MakePolyDataForMultipleSnakes(const SnakeContainer &snakes);
   vtkPolyData * MakePolyData(Snake *snake, unsigned start, unsigned end);
   void SetupEvolvingActorProperty(vtkActor *actor);
   void SetupComparingActorProperty(vtkActor *actor);
   void SetupAnotherComparingActorProperty(vtkActor *actor);
-  void SetupSphere(const PointType &point,
-                   vtkActor *sphere, double *color);
+  void SetupSphere(const PointType &point, vtkActor *sphere, double *color);
 
   vtkPolyData * MakeClippedPolyData(unsigned axis, double position);
 
   void ColorSnakes(bool state, bool azimuthal);
   void SetupColorSegments(bool azimuthal);
-  void ComputeColor(const VectorType &vector,
-                    bool azimuthal, double *color);
-  void ComputeThetaPhi(const VectorType &vector,
-                       double *theta, double *phi);
+  void ComputeColor(const VectorType &vector, bool azimuthal, double *color);
+  void ComputeThetaPhi(const VectorType &vector, double *theta, double *phi);
   void ComputeRGBFromHue(double hue, double *color);
   void RemoveColorSegments();
 

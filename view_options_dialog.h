@@ -1,8 +1,16 @@
-#ifndef SOAX_VIEW_OPTIONS_DIALOG_H_
-#define SOAX_VIEW_OPTIONS_DIALOG_H_
+/**
+ * Copyright (c) 2015, Lehigh University
+ * All rights reserved.
+ * See COPYING for license.
+ *
+ * This file defines the view options dialog for SOAX.
+ */
+
+#ifndef VIEW_OPTIONS_DIALOG_H_
+#define VIEW_OPTIONS_DIALOG_H_
 
 #include <QDialog>
-#include "global.h"
+#include "./global.h"
 
 class QLineEdit;
 class QGroupBox;
@@ -14,7 +22,7 @@ class ViewOptionsDialog : public QDialog {
   Q_OBJECT
 
  public:
-  ViewOptionsDialog(QWidget * parent = NULL);
+  explicit ViewOptionsDialog(QWidget * parent = NULL);
 
   double GetWindow() const;
   double GetLevel() const;
@@ -34,7 +42,7 @@ class ViewOptionsDialog : public QDialog {
   unsigned GetColorSegmentStep() const;
   void SetColorSegmentStep(unsigned step);
 
- public slots:
+ public slots:  // NOLINT(whitespace/indent)
   void EnableOKButton();
   void DisableOKButton();
 
@@ -56,5 +64,6 @@ class ViewOptionsDialog : public QDialog {
   DISALLOW_COPY_AND_ASSIGN(ViewOptionsDialog);
 };
 
-} // namespace soax
-#endif // SOAX_VIEW_OPTIONS_DIALOG_H_
+}  // namespace soax
+
+#endif  // VIEW_OPTIONS_DIALOG_H_

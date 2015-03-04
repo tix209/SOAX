@@ -1,3 +1,12 @@
+/**
+ * Copyright (c) 2015, Lehigh University
+ * All rights reserved.
+ * See COPYING for license.
+ *
+ * This file implements the multiple SOACs (snakes) class for SOAX.
+ */
+
+
 #include "./multisnake.h"
 #include <fstream>
 #include <iomanip>
@@ -35,31 +44,21 @@ Multisnake::Multisnake() : image_(NULL), external_force_(NULL),
 Multisnake::~Multisnake() {
   this->ClearSnakeContainer(initial_snakes_);
   this->ClearSnakeContainer(converged_snakes_);
-  // converged_snakes_.clear();
   this->ClearSnakeContainer(comparing_snakes1_);
   this->ClearSnakeContainer(comparing_snakes2_);
-
   delete solver_bank_;
 }
 
 void Multisnake::Reset() {
   this->ClearSnakeContainer(initial_snakes_);
-  converged_snakes_.clear();
+  this->ClearSnakeContainer(converged_snakes_);
   this->ClearSnakeContainer(comparing_snakes1_);
   this->ClearSnakeContainer(comparing_snakes2_);
-
   junctions_.Reset();
   image_filename_ = "";
   image_ = NULL;
   external_force_ = NULL;
   solver_bank_->Reset();
-}
-
-void Multisnake::ResetContainers() {
-  this->ClearSnakeContainer(initial_snakes_);
-  this->ClearSnakeContainer(converged_snakes_);
-  junctions_.Reset();
-  solver_bank_->Reset(false);
 }
 
 void Multisnake::LoadImage(const std::string &filename) {
@@ -109,42 +108,6 @@ PointType Multisnake::GetImageCenter() const {
   }
   return center;
 }
-
-ImageType::Pointer Multisnake::InterpolateImage(ImageType::Pointer img,
-                                                double z_spacing) {
-  typedef itk::BSplineInterpolateImageFunction<ImageType, double, double>
-      InterpolatorType;
-  InterpolatorType::Pointer interp = InterpolatorType::New();
-  interp->SetSplineOrder(3);
-  typedef itk::ResampleImageFilter<ImageType, ImageType> ResamplerType;
-  ResamplerType::Pointer resampler = ResamplerType::New();
-  resampler->SetInterpolator(interp);
-  resampler->SetOutputOrigin(img->GetOrigin());
-  resampler->SetOutputDirection(img->GetDirection());
-
-  ImageType::SpacingType input_spacing;
-  input_spacing.Fill(1.0);
-  input_spacing[2] = z_spacing;
-  img->SetSpacing(input_spacing);
-
-  const ImageType::SizeType &input_size =
-      img->GetLargestPossibleRegion().GetSize();
-  ImageType::SpacingType output_spacing;
-  output_spacing.Fill(1.0);
-  ImageType::SizeType output_size;
-  for (unsigned i = 0; i < kDimension; ++i) {
-    output_size[i] = static_cast<ImageType::SizeValueType>(
-        input_size[i] * input_spacing[i]);
-  }
-
-  resampler->SetOutputSpacing(output_spacing);
-  resampler->SetSize(output_size);
-  resampler->SetDefaultPixelValue(0.0);
-  resampler->SetInput(img);
-  resampler->Update();
-  return resampler->GetOutput();
-}
-
 
 void Multisnake::SaveAsIsotropicImage(const std::string &filename,
                                       double z_spacing) {
@@ -279,7 +242,7 @@ void Multisnake::SaveParameters(const std::string &filename) const {
   outfile.close();
 }
 
-void Multisnake::WriteParameters(std::ostream &os) const {
+std::ostream & Multisnake::WriteParameters(std::ostream &os) const {
   os << std::boolalpha;
   os << "intensity-scaling\t" << intensity_scaling_ << std::endl;
   os << "smoothing\t" << sigma_ << std::endl;
@@ -308,6 +271,7 @@ void Multisnake::WriteParameters(std::ostream &os) const {
   os << "direction-threshold \t" << Snake::direction_threshold() << std::endl;
   os << "damp-z \t" << Snake::damp_z() << std::endl;
   os << std::noboolalpha;
+  return os;
 }
 
 void Multisnake::ComputeImageGradient(bool reset) {
@@ -342,8 +306,7 @@ void Multisnake::ComputeImageGradient(bool reset) {
     external_force_->DisconnectPipeline();
   } else {
     typedef itk::GradientRecursiveGaussianImageFilter<
-      InternalImageType,
-      VectorImageType> FilterType;
+      InternalImageType, VectorImageType> FilterType;
     FilterType::Pointer filter = FilterType::New();
     filter->SetSigma(sigma_);
     // filter->SetInput(image_);
@@ -529,7 +492,7 @@ void Multisnake::LinkFromIndex(
     BoolVectorImageType::PixelType pixel_value;
     pixel_value[0] = pixel_value[1] = pixel_value[2] = false;
     candidate_image->SetPixel(index, pixel_value);
-    //candidate_image->GetPixel(index)[direction] = false;
+    // candidate_image->GetPixel(index)[direction] = false;
 
     bool next_found = FindNextCandidate(candidate_image, index, direction);
     if (!next_found) break;
@@ -591,14 +554,11 @@ bool Multisnake::FindNextCandidate(
   return false;
 }
 
-// void Multisnake::DeformSnakes(QProgressBar * progress_bar) {
 void Multisnake::DeformSnakes() {
   unsigned ncompleted = 0;
   std::cout << "# initial snakes: " << initial_snakes_.size() << std::endl;
-  // this->ClearSnakeContainer(converged_snakes_);
-  converged_snakes_.clear();
-  assert(converged_snakes_.empty());
-  // std::ofstream outfile("initial-intensities.txt");
+  this->ClearSnakeContainer(converged_snakes_);
+
   while (!initial_snakes_.empty()) {
     Snake *snake = initial_snakes_.back();
     initial_snakes_.pop_back();
@@ -620,7 +580,8 @@ void Multisnake::DeformSnakes() {
     std::cout << "\rRemaining: " << std::setw(6)
               << initial_snakes_.size() << std::flush;
   }
-  std::cout << "\n# Converged snakes: " << converged_snakes_.size() << std::endl;
+  std::cout << "\n# Converged snakes: " << converged_snakes_.size()
+            << std::endl;
 }
 
 void Multisnake::CutSnakesAtTJunctions() {
@@ -647,7 +608,6 @@ void Multisnake::ClearSnakeContainer(SnakeContainer &snakes) {
   if (snakes.empty()) return;
   for (SnakeContainer::iterator it = snakes.begin();
        it != snakes.end(); ++it) {
-    // std::cout << "Deleting snakes ..." << std::endl;
     delete *it;
   }
   snakes.clear();
@@ -722,7 +682,7 @@ void Multisnake::LinkFromSegmentTip(SnakeTip *neighbor, PointContainer &pc,
                                             neighbor->snake());
     if (it != seg.end())
       seg.erase(it);
-    //seg.remove(neighbor->snake());
+
     log.insert(neighbor->snake());
     delete neighbor->snake();
     SnakeTip * t = junctions_.FindSnakeTip(neighbor->snake(),
@@ -766,8 +726,6 @@ void Multisnake::UpdateJunctions() {
 
 unsigned Multisnake::GetNumberOfSnakesCloseToPoint(const PointType &p) {
   unsigned num = 0;
-  // TODO: improve this dist_threshold
-  // const double dist_threshold = grouping_distance_threshold_/2;
   const double dist_threshold = Snake::grouping_distance_threshold();
   for (SnakeContainer::const_iterator it = converged_snakes_.begin();
        it != converged_snakes_.end(); ++it) {
@@ -863,7 +821,7 @@ void Multisnake::LoadJFilamentSnakes(const std::string &filename,
         std::istringstream  stream(line);
         double zero, index, x, y, z;
         stream >> zero >> index >> x >> y >> z;
-        //std::cout << x << " " << y << " " << z << std::endl;
+
         PointType  snake_point;
         snake_point[0] = x;
         snake_point[1] = y;
@@ -1028,9 +986,9 @@ void Multisnake::ComputeRadialOrientation(const PointType &center,
 
   const unsigned width = 16;
   os << "Image file\t" << image_filename_ << "\n"
-          << "Image center\t" << center << "\n"
-          << std::setw(width) << "radius (um)"
-          << std::setw(width) << "theta" << std::endl;
+     << "Image center\t" << center << "\n"
+     << std::setw(width) << "radius (um)"
+     << std::setw(width) << "theta" << std::endl;
 
   for (SnakeConstIterator it = converged_snakes_.begin();
        it != converged_snakes_.end(); ++it) {
@@ -1039,7 +997,7 @@ void Multisnake::ComputeRadialOrientation(const PointType &center,
       this->ComputeRTheta((*it)->GetPoint(i), (*it)->GetPoint(i+1),
                           center, r, theta);
       os << std::setw(width) << r * pixel_size
-              << std::setw(width) << theta << std::endl;
+         << std::setw(width) << theta << std::endl;
     }
   }
 }
@@ -1063,7 +1021,6 @@ void Multisnake::ComputeRTheta(const PointType &point1,
 void Multisnake::ComputePointDensityAndIntensity(const PointType &center,
                                                  double max_radius,
                                                  double pixel_size,
-                                                 unsigned type,
                                                  std::ostream & os) const {
   if (converged_snakes_.empty()) return;
 
@@ -1073,7 +1030,6 @@ void Multisnake::ComputePointDensityAndIntensity(const PointType &center,
   os << "Image file\t" << image_filename_
      << "\nImage center\t" << center
      << "\nMax radius\t" << max_r
-     << "\nType\t" << type << "\n"
      << std::setw(width) << "radius (pixel)"
      << std::setw(width) << "radius (um)"
      << std::setw(width) << "soac density"
@@ -1134,7 +1090,7 @@ void Multisnake::ComputePointDensityAndIntensity(const PointType &center,
 
 void Multisnake::ComputeCurvature(int coarse_graining, std::ostream &os) const {
   os << "Image file\t" << image_filename_ << "\n"
-          << "Coarse graining\t" << coarse_graining << std::endl;
+     << "Coarse graining\t" << coarse_graining << std::endl;
 
   for (SnakeConstIterator it = converged_snakes_.begin();
        it != converged_snakes_.end(); ++it) {
@@ -1154,8 +1110,8 @@ void Multisnake::ComputeCurvature(int coarse_graining, std::ostream &os) const {
   }
 }
 
-void Multisnake::ComputeSphericalOrientation(const PointType &center,
-                                             double max_r, std::ostream &os) const {
+void Multisnake::ComputeSphericalOrientation(
+    const PointType &center, double max_r, std::ostream &os) const {
   os << "Polar,Azimuthal" << std::endl;
   for (SnakeConstIterator it = converged_snakes_.begin();
        it != converged_snakes_.end(); ++it) {
@@ -1416,4 +1372,4 @@ ImageType::PixelType Multisnake::GetMaxImageIntensity() const {
 }
 
 
-} // namespace soax
+}  // namespace soax

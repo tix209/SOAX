@@ -4,7 +4,6 @@
 #include <limits>
 #include <deque>
 #include "itkImage.h"
-// #include "itkNearestNeighborInterpolateImageFunction.h"
 #include "itkLinearInterpolateImageFunction.h"
 #include "itkVectorLinearInterpolateImageFunction.h"
 #include "itkVersorTransform.h"

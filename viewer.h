@@ -1,12 +1,22 @@
-#ifndef SOAX_VIEWER_H_
-#define SOAX_VIEWER_H_
+/**
+ * Copyright (c) 2015, Lehigh University
+ * All rights reserved.
+ * See COPYING for license.
+ *
+ * This file is defines the visulization class for SOAX.
+ */
 
-#include <unordered_map>
-#include <QObject>
+
+#ifndef VIEWER_H_
+#define VIEWER_H_
+
+#include <string>
+#include <vector>
+#include <map>
+#include <QObject>  // NOLINT(build/include_order)
 #include "vtkSmartPointer.h"
-#include "global.h"
-#include "junctions.h"
-#include "munkres.h"
+#include "./global.h"
+#include "./junctions.h"
 
 
 class QVTKWidget;
@@ -30,19 +40,12 @@ class Viewer : public QObject {
   Q_OBJECT
 
  public:
-  typedef std::vector< std::vector<int> > IntMatrix;
-  typedef std::vector< std::vector<double> > FloatMatrix;
-
   Viewer();
   ~Viewer();
   void Reset();
   QVTKWidget *qvtk() const {return qvtk_;}
 
   void SetupImage(ImageType::Pointer image);
-
-  void SetupImageSequence(const std::vector<ImageType::Pointer> &images);
-
-  int frame_index() const {return frame_index_;}
 
   double window() const {return window_;}
   void set_window(double window) {window_ = window;}
@@ -51,10 +54,14 @@ class Viewer : public QObject {
   void set_level(double level) {level_ = level;}
 
   double mip_min_intensity() const {return mip_min_intensity_;}
-  void set_mip_min_intensity(double mip_min) {mip_min_intensity_ = mip_min;}
+  void set_mip_min_intensity(double mip_min) {
+    mip_min_intensity_ = mip_min;
+  }
 
   double mip_max_intensity() const {return mip_max_intensity_;}
-  void set_mip_max_intensity(double mip_max) {mip_max_intensity_ = mip_max;}
+  void set_mip_max_intensity(double mip_max) {
+    mip_max_intensity_ = mip_max;
+  }
 
   double clip_span() const {return clip_span_;}
   void set_clip_span(double span) {clip_span_ = span;}
@@ -70,8 +77,6 @@ class Viewer : public QObject {
 
   void SetupSnakesAsOneActor(const SnakeContainer &snakes);
   void SetupSnakes(const SnakeContainer &snakes, unsigned category = 0);
-  // void SetupSnakesSequence(const std::vector<SnakeContainer> &snakes_sequence,
-  //                          unsigned category = 0);
 
   void SetupSnake(Snake *snake, unsigned category);
   void ChangeSnakeColor(Snake *s, double *color);
@@ -104,18 +109,8 @@ class Viewer : public QObject {
   void TrimTip();
   void ExtendTip();
   void TrimBody();
-  void RemoveSelectedJunctions(Junctions &junctions);
-
-  void set_snakes_sequence(const std::vector<SnakeContainer> &snakes_sequence) {
-    snakes_sequence_ = snakes_sequence;
-  }
-
-  void set_junctions_sequence(const std::vector<PointContainer> &junctions_sequence) {
-    junctions_sequence_ = junctions_sequence;
-  }
-
-  void SolveCorrespondence();
-
+  void RemoveSelectedJunctions();
+  std::vector<PointType> GetSelectedJunctions() const;
 
   static double *Gray() {return kGray;}
   static double *Red() {return kRed;}
@@ -125,7 +120,7 @@ class Viewer : public QObject {
   static double *Cyan() {return kCyan;}
   static double *Blue() {return kBlue;}
 
- public slots:
+ public slots:  // NOLINT(whitespace/indent)
   void ToggleSlicePlanes(bool state);
   void ToggleMIPRendering(bool state);
   void ToggleOrientationMarker(bool state);
@@ -145,14 +140,7 @@ class Viewer : public QObject {
   void ToggleTrimBody(bool state);
   void ToggleDeleteJunction(bool state);
 
-  void UpdateFrameRendering(int index);
-  void UpdateFrameIndex(int index) {frame_index_ = index;}
-
-  void UpdateSnakesJunctions(int index);
-  void UpdateLeftCornerText(int index);
-  void HighlightCorrespondingSnake(int index);
-
- private slots:
+ private slots:  // NOLINT(whitespace/indent)
   void SetupClippedSnakes(vtkObject *obj);
   void SelectSnakeForView();
   void DeselectSnakeForView();
@@ -170,16 +158,14 @@ class Viewer : public QObject {
   void DeselectJunction();
 
  private:
-  typedef std::unordered_map<vtkActor *, Snake *> ActorSnakeMap;
-  typedef std::unordered_map<Snake *, vtkActor *> SnakeActorMap;
-  typedef std::unordered_map<vtkActor *, PointType> ActorPointMap;
+  typedef std::map<vtkActor *, Snake *> ActorSnakeMap;
+  typedef std::map<Snake *, vtkActor *> SnakeActorMap;
+  typedef std::map<vtkActor *, PointType> ActorPointMap;
   typedef std::vector<vtkActor *> ActorContainer;
-  typedef std::unordered_map<Snake*, Snake*> CorrespondenceMap;
 
   void SetupSlicePlanes(vtkImageData *data);
   void SetupMIPRendering(vtkImageData *data);
-  // void SetupSingleImage(ImageType::Pointer image);
-  void SetupVolumeSequence(vtkSmartPointer<vtkImageData> data, int index);
+
   void SetupOrientationMarker();
   void SetupUpperLeftCornerText(unsigned min_intensity,
                                 unsigned max_intensity);
@@ -191,51 +177,29 @@ class Viewer : public QObject {
 
   vtkActor * ActSnake(Snake *snake);
   vtkActor * ActSnakeSegments(Snake *snake, unsigned start, unsigned end);
-  vtkPolyData * MakePolyDataForMultipleSnakes(const SnakeContainer &snakes);
-  vtkPolyData * MakePolyData(Snake *snake,unsigned start, unsigned end);
+  vtkPolyData * MakePolyDataForMultipleSnakes(
+      const SnakeContainer &snakes);
+  vtkPolyData * MakePolyData(Snake *snake, unsigned start, unsigned end);
   void SetupEvolvingActorProperty(vtkActor *actor);
   void SetupComparingActorProperty(vtkActor *actor);
   void SetupAnotherComparingActorProperty(vtkActor *actor);
-  void SetupSphere(const PointType &point, vtkActor *sphere, double *color);
+  void SetupSphere(const PointType &point,
+                   vtkActor *sphere, double *color);
 
   vtkPolyData * MakeClippedPolyData(unsigned axis, double position);
 
   void ColorSnakes(bool state, bool azimuthal);
   void SetupColorSegments(bool azimuthal);
-  void ComputeColor(VectorType &vector, bool azimuthal, double *color);
-  void ComputeThetaPhi(VectorType &vector, double &theta, double &phi);
-  void ComputeRGBFromHue(double hue, double &red,
-                         double &green, double &blue);
+  void ComputeColor(const VectorType &vector,
+                    bool azimuthal, double *color);
+  void ComputeThetaPhi(const VectorType &vector,
+                       double *theta, double *phi);
+  void ComputeRGBFromHue(double hue, double *color);
   void RemoveColorSegments();
 
   void ResetTrimTip();
   void ResetExtendTip();
   void ResetTrimBody();
-
-  void ConvertImageSequence(const std::vector<ImageType::Pointer> &images);
-  void UpdateSlicePlanes(int index);
-
-  void ComputeSequenceIntensityRange(const std::vector<ImageType::Pointer> &images);
-
-  /** Update the CORRESPONDING_SNAKE_FORWARD_ and
-   * CORRESPONDING_SNAKE_BACKWARD_ based on the current
-   * SELECTED_SNAKE_ using ASSIGNMENT_MATRIX_.
-   */
-  void UpdateCorrespondingSnakes();
-
-  /** Initialize the ALL_SNAKES_ and SNAKE_QUANTITY_PARTIAL_SUMS_.
-   */
-  void GetAllSnakes();
-
-  void ComputeDistanceMatrix(Matrix<double> &distance_matrix);
-  void ComputeCorrespondenceMap(const IntMatrix &assignment);
-
-  bool HasNoEdge(int i, int j);
-  double ComputeDistance(Snake *si, Snake *sj);
-
-  void PrintMatrix(const Matrix<double> m, std::ostream &os = std::cout);
-  double ComputeShortestDistance(const PointType &p, Snake *s);
-
 
 
   QVTKWidget *qvtk_;
@@ -243,8 +207,6 @@ class Viewer : public QObject {
   vtkSmartPointer<vtkCamera> camera_;
   vtkImagePlaneWidget *slice_planes_[kDimension];
   vtkSmartPointer<vtkVolume> volume_;
-  std::vector<vtkSmartPointer<vtkImageData> > image_sequence_;
-  std::vector<vtkSmartPointer<vtkVolume> > volume_sequence_;
   vtkSmartPointer<vtkOrientationMarkerWidget> orientation_marker_;
   vtkSmartPointer<vtkCornerAnnotation> corner_text_;
   vtkSmartPointer<vtkCubeAxesActor> cube_axes_;
@@ -261,25 +223,11 @@ class Viewer : public QObject {
   double clip_span_;
   unsigned color_segment_step_;
 
-  /* Current frame index */
-  int frame_index_;
-  std::vector<unsigned> sequence_min_intensity_;
-  std::vector<unsigned> sequence_max_intensity_;
-
   ActorSnakeMap actor_snake_map_;
   SnakeActorMap snake_actor_map_;
   ActorPointMap actor_junctions_;
   SnakeSet selected_snakes_;
   ActorPointMap selected_junctions_;
-
-  std::vector<SnakeContainer> snakes_sequence_;
-  std::vector<PointContainer> junctions_sequence_;
-  SnakeContainer all_snakes_;
-
-  std::vector<int> snake_quantity_partial_sums_;
-
-  CorrespondenceMap forward_correspondence_;
-  CorrespondenceMap backward_correspondence_;
 
   vtkActor *snakes_actor_;
   vtkActor *on_snake_sphere1_;
@@ -287,8 +235,6 @@ class Viewer : public QObject {
   vtkActor *off_snake_sphere_;
   vtkActor *trimmed_actor_;
   Snake *selected_snake_;
-  Snake *corresponding_snake_forward_;
-  Snake *corresponding_snake_backward_;
   Snake *trimmed_snake_;
   unsigned trim_tip_index_;
   unsigned trim_body_index1_;
@@ -318,10 +264,6 @@ class Viewer : public QObject {
   std::string comparing_snake_filename1_;
   std::string comparing_snake_filename2_;
 
-  bool volume_shown_;
-  bool snakes_shown_;
-  bool junctions_shown_;
-
   static double kWhite[3];
   static double kGray[3];
   static double kRed[3];
@@ -334,6 +276,6 @@ class Viewer : public QObject {
   DISALLOW_COPY_AND_ASSIGN(Viewer);
 };
 
-} // namespace soax
+}  // namespace soax
 
-#endif // SOAX_VIEWER_H_
+#endif  // VIEWER_H_

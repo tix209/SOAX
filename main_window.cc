@@ -1,12 +1,20 @@
+/**
+ * Copyright (c) 2015, Lehigh University
+ * All rights reserved.
+ * See COPYING for license.
+ *
+ * This file is implements the main window class for SOAX.
+ */
+
 #include <QtGui>
 #include "QVTKWidget.h"
-#include "main_window.h"
-#include "multisnake.h"
-#include "viewer.h"
-#include "parameters_dialog.h"
-#include "view_options_dialog.h"
-#include "solver_bank.h"
-#include "analysis_options_dialog.h"
+#include "./main_window.h"
+#include "./multisnake.h"
+#include "./viewer.h"
+#include "./parameters_dialog.h"
+#include "./view_options_dialog.h"
+#include "./solver_bank.h"
+#include "./analysis_options_dialog.h"
 
 namespace soax {
 
@@ -17,12 +25,9 @@ MainWindow::MainWindow() : message_timeout_(0) {
   parameters_dialog_ = new ParametersDialog(this);
   view_options_dialog_ = new ViewOptionsDialog(this);
   analysis_options_dialog_ = new AnalysisOptionsDialog(this);
-  scroll_bar_ = new QScrollBar(Qt::Horizontal, this);
-  scroll_bar_->setFocusPolicy(Qt::StrongFocus);
 
   QVBoxLayout* layout = new QVBoxLayout;
   layout->addWidget(viewer_->qvtk());
-  layout->addWidget(scroll_bar_);
   central_widget_->setLayout(layout);
   setCentralWidget(central_widget_);
   setWindowIcon(QIcon(":/icon/letter-x.png"));
@@ -33,10 +38,6 @@ MainWindow::MainWindow() : message_timeout_(0) {
   this->CreateToolBar();
   this->CreateStatusBar();
   this->ResetActions();
-
-  allowed_format_ << "tif" << "tiff" << "mhd" << "mha" << "png" << "jpg"
-                  << "jpeg" << "bmp";
-
 }
 
 
@@ -62,17 +63,10 @@ void MainWindow::CreateFileMenuActions() {
   connect(open_image_, SIGNAL(triggered()),
           this, SLOT(OpenImage()));
 
-  open_image_sequence_ = new QAction(tr("Open Image Sequence"), this);
-  connect(open_image_sequence_, SIGNAL(triggered()),
-          this, SLOT(OpenImageSequence()));
-
-  save_as_isotropic_image_ = new QAction(tr("Save as Isotropic Image"), this);
+  save_as_isotropic_image_ = new QAction(tr("Save as Isotropic Image"),
+                                         this);
   connect(save_as_isotropic_image_, SIGNAL(triggered()),
           this, SLOT(SaveAsIsotropicImage()));
-
-  save_as_isotropic_sequence_ = new QAction(tr("Save as Isotropic Sequence"), this);
-  connect(save_as_isotropic_sequence_, SIGNAL(triggered()),
-          this, SLOT(SaveAsIsotropicSequence()));
 
   load_parameters_ = new QAction(tr("Load Pa&rameters"), this);
   load_parameters_->setShortcut(Qt::CTRL + Qt::Key_R);
@@ -88,16 +82,10 @@ void MainWindow::CreateFileMenuActions() {
   load_snakes_->setShortcut(Qt::CTRL + Qt::Key_L);
   connect(load_snakes_, SIGNAL(triggered()), this, SLOT(LoadSnakes()));
 
-  load_snakes_sequence_ = new QAction(tr("Load Snakes Sequence"), this);
-  connect(load_snakes_sequence_, SIGNAL(triggered()), this, SLOT(LoadSnakesSequence()));
-
   save_snakes_ = new QAction(tr("Save Snakes"), this);
   save_snakes_->setShortcut(QKeySequence::Save);
   save_snakes_->setIcon(QIcon(":/icon/Save.png"));
   connect(save_snakes_, SIGNAL(triggered()), this, SLOT(SaveSnakes()));
-
-  save_snakes_sequence_ = new QAction(tr("Save Snakes Sequence"), this);
-  connect(save_snakes_sequence_, SIGNAL(triggered()), this, SLOT(SaveSnakesSequence()));
 
   load_jfilament_snakes_ = new QAction(tr("Load JFilament Snakes"), this);
   connect(load_jfilament_snakes_, SIGNAL(triggered()),
@@ -109,7 +97,8 @@ void MainWindow::CreateFileMenuActions() {
 
   compare_snakes_ = new QAction(tr("Compare Snakes"), this);
   compare_snakes_->setShortcut(Qt::CTRL + Qt::Key_C);
-  connect(compare_snakes_, SIGNAL(triggered()), this, SLOT(CompareSnakes()));
+  connect(compare_snakes_, SIGNAL(triggered()),
+          this, SLOT(CompareSnakes()));
 
   compare_another_snakes_ = new QAction(tr("Compare Another Snakes"), this);
   connect(compare_another_snakes_, SIGNAL(triggered()),
@@ -227,23 +216,17 @@ void MainWindow::CreateViewMenuActions() {
   toggle_clip_->setIcon(QIcon(":/icon/Search.png"));
   connect(toggle_clip_, SIGNAL(toggled(bool)),
           viewer_, SLOT(ToggleClipSnakes(bool)));
-  // connect(toggle_clip_, SIGNAL(toggled(bool)),
-  //         this, SLOT(ToggleSnakeDisplay(bool)));
 
   toggle_color_azimuthal_ = new QAction(
       tr("Color Snakes by Azimuthal Angle"), this);
   toggle_color_azimuthal_->setCheckable(true);
   connect(toggle_color_azimuthal_, SIGNAL(toggled(bool)),
           viewer_, SLOT(ColorByAzimuthalAngle(bool)));
-  // connect(toggle_color_azimuthal_, SIGNAL(toggled(bool)),
-  //         this, SLOT(ToggleSnakeDisplay(bool)));
 
   toggle_color_polar_ = new QAction(tr("Color Snakes by Polar Angle"), this);
   toggle_color_polar_->setCheckable(true);
   connect(toggle_color_polar_, SIGNAL(toggled(bool)),
           viewer_, SLOT(ColorByPolarAngle(bool)));
-  // connect(toggle_color_polar_, SIGNAL(toggled(bool)),
-  //         this, SLOT(ToggleSnakeDisplay(bool)));
 
   show_view_options_ = new QAction(tr("Options"), this);
   connect(show_view_options_, SIGNAL(triggered()),
@@ -264,11 +247,6 @@ void MainWindow::CreateProcessMenuActions() {
   connect(initialize_snakes_, SIGNAL(triggered()),
           this, SLOT(InitializeSnakes()));
 
-  initialize_snakes_for_sequence_ = new QAction(tr("Initialize Snakes for Sequence"),
-                                                this);
-  connect(initialize_snakes_for_sequence_, SIGNAL(triggered()),
-          this, SLOT(InitializeSnakesForSequence()));
-
   deform_snakes_ = new QAction(tr("Deform Snakes"), this);
   deform_snakes_->setIcon(QIcon(":/icon/Play.png"));
   deform_snakes_->setShortcut(Qt::CTRL + Qt::Key_D);
@@ -285,10 +263,6 @@ void MainWindow::CreateProcessMenuActions() {
   connect(deform_one_snake_, SIGNAL(triggered()),
           this, SLOT(DeformOneSnake()));
 
-  deform_snakes_for_sequence_ = new QAction(tr("Deform Snakes for Sequence"), this);
-  connect(deform_snakes_for_sequence_, SIGNAL(triggered()),
-          this, SLOT(DeformSnakesForSequence()));
-
   cut_snakes_ = new QAction(tr("Cut Snakes at Junctions"), this);
   cut_snakes_->setIcon(QIcon(":/icon/Cut.png"));
   connect(cut_snakes_, SIGNAL(triggered()), this, SLOT(CutSnakes()));
@@ -296,9 +270,6 @@ void MainWindow::CreateProcessMenuActions() {
   group_snakes_ = new QAction(tr("Group Snakes"), this);
   group_snakes_->setIcon(QIcon(":/icon/Favorites.png"));
   connect(group_snakes_, SIGNAL(triggered()), this, SLOT(GroupSnakes()));
-
-  find_correspondence_ = new QAction(tr("Find Correspondence for Sequence"), this);
-  connect(find_correspondence_, SIGNAL(triggered()), this, SLOT(FindCorrespondence()));
 }
 
 void MainWindow::CreateAnalysisMenuActions() {
@@ -333,10 +304,12 @@ void MainWindow::CreateToolsMenuActions() {
           this, SLOT(ShowParametersDialog()));
 
   load_viewpoint_ = new QAction(tr("Load Viewpoint"), this);
-  connect(load_viewpoint_, SIGNAL(triggered()), this, SLOT(LoadViewpoint()));
+  connect(load_viewpoint_, SIGNAL(triggered()),
+          this, SLOT(LoadViewpoint()));
 
   save_viewpoint_ = new QAction(tr("Save Viewpoint"), this);
-  connect(save_viewpoint_, SIGNAL(triggered()), this, SLOT(SaveViewpoint()));
+  connect(save_viewpoint_, SIGNAL(triggered()),
+          this, SLOT(SaveViewpoint()));
 
   save_snapshot_ = new QAction(tr("Save Snapshot"), this);
   connect(save_snapshot_, SIGNAL(triggered()), this, SLOT(SaveSnapshot()));
@@ -355,15 +328,11 @@ void MainWindow::CreateHelpMenuActions() {
 void MainWindow::CreateMenus() {
   file_ = menuBar()->addMenu(tr("&File"));
   file_->addAction(open_image_);
-  file_->addAction(open_image_sequence_);
   file_->addAction(save_as_isotropic_image_);
-  file_->addAction(save_as_isotropic_sequence_);
   file_->addAction(load_parameters_);
   file_->addAction(save_parameters_);
   file_->addAction(load_snakes_);
-  file_->addAction(load_snakes_sequence_);
   file_->addAction(save_snakes_);
-  file_->addAction(save_snakes_sequence_);
   file_->addAction(load_jfilament_snakes_);
   file_->addAction(save_jfilament_snakes_);
   file_->addAction(compare_snakes_);
@@ -397,14 +366,11 @@ void MainWindow::CreateMenus() {
 
   process_ = menuBar()->addMenu(tr("&Process"));
   process_->addAction(initialize_snakes_);
-  process_->addAction(initialize_snakes_for_sequence_);
   process_->addAction(deform_snakes_);
   process_->addAction(deform_snakes_in_action_);
   process_->addAction(deform_one_snake_);
-  process_->addAction(deform_snakes_for_sequence_);
   process_->addAction(cut_snakes_);
   process_->addAction(group_snakes_);
-  process_->addAction(find_correspondence_);
 
   analysis_ = menuBar()->addMenu(tr("&Analysis"));
   analysis_->addAction(compute_spherical_orientation_);
@@ -425,8 +391,7 @@ void MainWindow::CreateMenus() {
 }
 
 void MainWindow::CreateToolBar() {
-  toolbar_ = new QToolBar(tr("shortcuts"), this);
-  addToolBar(toolbar_);
+  toolbar_ = addToolBar(tr("shortcuts"));
   toolbar_->addAction(open_image_);
   toolbar_->addAction(load_parameters_);
   toolbar_->addAction(save_snakes_);
@@ -469,11 +434,8 @@ void MainWindow::CreateStatusBar() {
 
 void MainWindow::ResetActions() {
   save_as_isotropic_image_->setEnabled(false);
-  save_as_isotropic_sequence_->setEnabled(false);
   load_snakes_->setEnabled(false);
-  load_snakes_sequence_->setEnabled(false);
   save_snakes_->setEnabled(false);
-  save_snakes_sequence_->setEnabled(false);
   load_jfilament_snakes_->setEnabled(false);
   save_jfilament_snakes_->setEnabled(false);
   compare_snakes_->setEnabled(false);
@@ -501,14 +463,11 @@ void MainWindow::ResetActions() {
   show_view_options_->setEnabled(false);
 
   initialize_snakes_->setEnabled(false);
-  initialize_snakes_for_sequence_->setEnabled(false);
   deform_snakes_->setEnabled(false);
   deform_snakes_in_action_->setEnabled(false);
   deform_one_snake_->setEnabled(false);
-  deform_snakes_for_sequence_->setEnabled(false);
   cut_snakes_->setEnabled(false);
   group_snakes_->setEnabled(false);
-  find_correspondence_->setEnabled(false);
 
   compute_spherical_orientation_->setEnabled(false);
   compute_radial_orientation_->setEnabled(false);
@@ -522,21 +481,12 @@ void MainWindow::ResetActions() {
   save_snapshot_->setEnabled(false);
 }
 
-QString MainWindow::GetLastDirectory(const std::string &filename) const {
-  QString dir = "..";
-  if (!filename.empty()) { // extract the last directory
-    std::string::size_type pos = filename.find_last_of("/\\");
-    dir = QString(filename.substr(0, pos).c_str());
-  }
-  return dir;
-}
-
 void MainWindow::OpenImage() {
   QString dir = this->GetLastDirectory(image_filename_);
   QString filename = QFileDialog::getOpenFileName(
       this, tr("Open Image"), dir,
       tr("Image Files (*.tif *.tiff *.mhd *.mha *.png *.jpg *.bmp)"));
-  // if (image_filename_.empty()) return;
+
   if (filename.isEmpty()) return;
   image_filename_ = filename.toStdString();
   this->setWindowTitle(filename.prepend("SOAX - "));
@@ -560,9 +510,6 @@ void MainWindow::OpenImage() {
 
   analysis_options_dialog_->SetImageCenter(multisnake_->GetImageCenter());
 
-  // bool invert_intensity = false;
-  // if (invert_intensity) multisnake_->InvertImageIntensity();
-
   open_image_->setEnabled(false);
   save_as_isotropic_image_->setEnabled(true);
   load_snakes_->setEnabled(true);
@@ -583,108 +530,6 @@ void MainWindow::OpenImage() {
   save_snapshot_->setEnabled(true);
 }
 
-void MainWindow::OpenImageSequence() {
-  QString dir = this->GetLastDirectory(image_filename_);
-  QString filename = QFileDialog::getOpenFileName(
-      this, tr("Open Image Sequence"), dir,
-      tr("Image Files (*.tif *.tiff *.mhd *.mha)"));
-  if (filename.isEmpty()) return;
-
-  // Get number of slices per frame (1: 2D sequence; >1: 3D sequence)
-  bool ok;
-  double nslices = QInputDialog::getInt(
-      this, tr("Set Slices"), tr("# slices per frame"),
-      1, 1, std::numeric_limits<int>::max(), 1, &ok);
-  if (!ok) return;
-
-  image_filename_ = filename.toStdString();
-  this->setWindowTitle(filename.prepend("SOAX - "));
-
-  multisnake_->LoadImageSequence(image_filename_, nslices);
-  // QDir curr_dir(QFileInfo(image_filename_.c_str()).absolutePath());
-  // curr_dir.setNameFilters(QStringList() << "*.mha");
-  // curr_dir.setSorting(QDir::Name);
-  // QStringList entries = SortFilenames(curr_dir.entryList());
-  // QString item;
-  // std::vector<std::string> names;
-  // foreach (item, entries) {
-  //   std::cout << curr_dir.filePath(item).toStdString() << std::endl;
-  //   names.push_back(curr_dir.filePath(item).toStdString());
-  // }
-  // multisnake_->LoadImageSequence2(names);
-
-  scroll_bar_->setMinimum(0);
-  scroll_bar_->setMaximum(multisnake_->image_sequence().size()-1);
-  viewer_->SetupImageSequence(multisnake_->image_sequence());
-  this->SetupScrollBarConnections();
-  toggle_planes_->setChecked(true);
-  toggle_mip_->setChecked(true);
-  toggle_orientation_marker_->setChecked(true);
-  toggle_corner_text_->setChecked(true);
-  toggle_bounding_box_->setChecked(true);
-  toggle_cube_axes_->setChecked(false);
-  statusBar()->showMessage(tr("Image Sequence loaded."), message_timeout_);
-
-  view_options_dialog_->SetWindow(viewer_->window());
-  view_options_dialog_->SetLevel(viewer_->level());
-  view_options_dialog_->SetMinIntensity(viewer_->mip_min_intensity());
-  view_options_dialog_->SetMaxIntensity(viewer_->mip_max_intensity());
-  view_options_dialog_->SetClipSpan(viewer_->clip_span());
-  view_options_dialog_->SetColorSegmentStep(viewer_->color_segment_step());
-  open_image_sequence_->setEnabled(false);
-  save_as_isotropic_sequence_->setEnabled(true);
-  load_snakes_sequence_->setEnabled(true);
-  // load_jfilament_snakes_->setEnabled(true);
-  // compare_snakes_->setEnabled(true);
-  close_session_->setEnabled(true);
-  toggle_planes_->setEnabled(true);
-  toggle_mip_->setEnabled(true);
-  toggle_orientation_marker_->setEnabled(true);
-  toggle_corner_text_->setEnabled(true);
-  toggle_bounding_box_->setEnabled(true);
-  toggle_cube_axes_->setEnabled(true);
-  show_view_options_->setEnabled(true);
-  initialize_snakes_for_sequence_->setEnabled(true);
-  show_parameters_->setEnabled(true);
-  load_viewpoint_->setEnabled(true);
-  save_viewpoint_->setEnabled(true);
-  save_snapshot_->setEnabled(true);
-}
-
-void MainWindow::SetupScrollBarConnections() {
-  connect(scroll_bar_, SIGNAL(valueChanged(int)),
-          viewer_, SLOT(UpdateFrameRendering(int)));
-  connect(scroll_bar_, SIGNAL(valueChanged(int)),
-          viewer_, SLOT(UpdateLeftCornerText(int)));
-  connect(scroll_bar_, SIGNAL(valueChanged(int)),
-          viewer_, SLOT(UpdateSnakesJunctions(int)));
-  connect(scroll_bar_, SIGNAL(valueChanged(int)),
-          viewer_, SLOT(HighlightCorrespondingSnake(int)));
-  connect(scroll_bar_, SIGNAL(valueChanged(int)),
-          viewer_, SLOT(UpdateFrameIndex(int)));
-  connect(scroll_bar_, SIGNAL(valueChanged(int)), this, SLOT(ShowFrameNumber(int)));
-}
-
-void MainWindow::TearDownScrollBarConnections() {
-  disconnect(scroll_bar_, SIGNAL(valueChanged(int)), this, SLOT(ShowFrameNumber(int)));
-  disconnect(scroll_bar_, SIGNAL(valueChanged(int)),
-             viewer_, SLOT(UpdateFrameIndex(int)));
-  disconnect(scroll_bar_, SIGNAL(valueChanged(int)),
-             viewer_, SLOT(HighlightCorrespondingSnake(int)));
-  disconnect(scroll_bar_, SIGNAL(valueChanged(int)),
-             viewer_, SLOT(UpdateSnakesJunctions(int)));
-  disconnect(scroll_bar_, SIGNAL(valueChanged(int)),
-             viewer_, SLOT(UpdateLeftCornerText(int)));
-  disconnect(scroll_bar_, SIGNAL(valueChanged(int)),
-             viewer_, SLOT(UpdateFrameRendering(int)));
-}
-
-void MainWindow::ShowFrameNumber(int frame_number) {
-  QString msg = QString("Frame ") + QString::number(frame_number);
-  statusBar()->showMessage(msg, message_timeout_);
-}
-
-
 void MainWindow::SaveAsIsotropicImage() {
   bool ok;
   double z_spacing = QInputDialog::getDouble(
@@ -704,29 +549,6 @@ void MainWindow::SaveAsIsotropicImage() {
                              message_timeout_);
   } else {
     statusBar()->showMessage(tr("Image is already isotropic! Abort."),
-                             message_timeout_);
-  }
-}
-
-void MainWindow::SaveAsIsotropicSequence() {
-  bool ok;
-  double z_spacing = QInputDialog::getDouble(
-      this, tr("Set Z spacing"), tr("Z Spacing (relative to X/Y)"),
-      1.0, 0.1, 10, 4, &ok);
-  if (!ok) return;
-
-  if (std::fabs(z_spacing - 1) > kEpsilon) {
-    QString dir = this->GetLastDirectory(image_filename_);
-    QString filename = QFileDialog::getSaveFileName(
-        this, tr("Save as Isotropic Sequence"), dir);
-    if (filename.isEmpty()) return;
-    image_filename_ = filename.toStdString();
-
-    multisnake_->SaveAsIsotropicSequence(image_filename_, z_spacing);
-    statusBar()->showMessage(tr("Sequence has been resampled and saved."),
-                             message_timeout_);
-  } else {
-    statusBar()->showMessage(tr("Sequence is already isotropic! Abort."),
                              message_timeout_);
   }
 }
@@ -764,7 +586,7 @@ void MainWindow::LoadSnakes() {
   unsigned num_snakes = multisnake_->GetNumberOfConvergedSnakes();
   QString msg = "Number of snakes loaded: " + QString::number(num_snakes);
   statusBar()->showMessage(msg, message_timeout_);
-  // multisnake_->PrintSnakes(multisnake_->converged_snakes());
+
   viewer_->RemoveJunctions();
   viewer_->RemoveSnakes();
   viewer_->SetupSnakes(multisnake_->converged_snakes());
@@ -801,47 +623,6 @@ void MainWindow::LoadSnakes() {
   show_analysis_options_->setEnabled(true);
 }
 
-void MainWindow::LoadSnakesSequence() {
-  QString dir = this->GetLastDirectory(snake_filename_);
-  QString filename = QFileDialog::getOpenFileName(
-      this, tr("Load Snakes Sequence"), dir, tr("Text Files (*.txt)"));
-  if (filename.isEmpty()) return;
-  snake_filename_ = filename.toStdString();
-
-  multisnake_->LoadSnakesSequence(snake_filename_);
-  // unsigned num_snakes = multisnake_->GetNumberOfConvergedSnakes();
-  QString msg = "Snakes sequence loaded.";
-  statusBar()->showMessage(msg, message_timeout_);
-  this->ViewSnakesSequence();
-
-  save_snakes_sequence_->setEnabled(true);
-  viewer_->set_snake_filename(snake_filename_);
-  viewer_->SetupUpperRightCornerText();
-  toggle_corner_text_->setChecked(true);
-  find_correspondence_->setEnabled(true);
-  // save_jfilament_snakes_->setEnabled(true);
-  // compare_snakes_->setEnabled(true);
-  // toggle_delete_snake_->setEnabled(true);
-  // toggle_trim_tip_->setEnabled(true);
-  // toggle_extend_tip_->setEnabled(true);
-  // toggle_trim_body_->setEnabled(true);
-  // toggle_delete_junction_->setEnabled(true);
-  // edit_snake_->setEnabled(true);
-  // initialize_snakes_->setEnabled(false);
-  // deform_one_snake_->setEnabled(false);
-  // toggle_snakes_->setEnabled(true);
-  // toggle_junctions_->setEnabled(true);
-  // toggle_clip_->setEnabled(true);
-  // toggle_color_azimuthal_->setEnabled(true);
-  // toggle_color_polar_->setEnabled(true);
-  // compute_spherical_orientation_->setEnabled(true);
-  // compute_radial_orientation_->setEnabled(true);
-  // compute_point_density_->setEnabled(true);
-  // compute_curvature_->setEnabled(true);
-  // show_analysis_options_->setEnabled(true);
-}
-
-
 void MainWindow::SaveSnakes() {
   QString dir = this->GetLastDirectory(snake_filename_);
   QString filename = QFileDialog::getSaveFileName(
@@ -851,21 +632,7 @@ void MainWindow::SaveSnakes() {
 
   multisnake_->SaveSnakes(multisnake_->converged_snakes(),
                           snake_filename_);
-  // multisnake_->SaveSnakes(multisnake_->comparing_snakes1(),
-  //                         snake_filename_);
   statusBar()->showMessage(tr("Snakes are saved."), message_timeout_);
-}
-
-void MainWindow::SaveSnakesSequence() {
-  std::cout << "Saving snake sequence ..." << std::endl;
-  QString dir = this->GetLastDirectory(snake_filename_);
-  QString filename = QFileDialog::getSaveFileName(
-      this, tr("Save Snakes Sequence"), dir, tr("Text Files (*.txt)"));
-  if (filename.isEmpty()) return;
-  snake_filename_ = filename.toStdString();
-
-  multisnake_->SaveSnakesSequence(snake_filename_);
-  statusBar()->showMessage(tr("Snake sequence is saved."), message_timeout_);
 }
 
 void MainWindow::LoadJFilamentSnakes() {
@@ -875,17 +642,14 @@ void MainWindow::LoadJFilamentSnakes() {
   if (filename.isEmpty()) return;
   snake_filename_ = filename.toStdString();
 
-  // multisnake_->LoadGroundTruthSnakes(snake_filename_);
-  double coordinates_offset[3] = {40, 70, 40};
-  multisnake_->LoadCurves(snake_filename_.c_str(), coordinates_offset);
-
+  multisnake_->LoadGroundTruthSnakes(snake_filename_);
   unsigned num_snakes = multisnake_->GetNumberOfComparingSnakes1();
-  QString msg = "Number of JFilament snakes loaded: " +
-                QString::number(num_snakes);
+  QString msg = "# JFilament snakes loaded: " +
+      QString::number(num_snakes);
   statusBar()->showMessage(msg, message_timeout_);
   viewer_->RemoveSnakes();
   viewer_->SetupSnakes(multisnake_->converged_snakes());
-  // multisnake_->PrintSnakes(multisnake_->comparing_snakes1());
+
   viewer_->SetupSnakes(multisnake_->comparing_snakes1(), 1);
   viewer_->SetupSnakes(multisnake_->comparing_snakes2(), 2);
   toggle_snakes_->setChecked(true);
@@ -936,7 +700,7 @@ void MainWindow::CompareSnakes() {
   multisnake_->LoadComparingSnakes1(snake_filename_);
   unsigned num_snakes = multisnake_->GetNumberOfComparingSnakes1();
   QString msg = "Number of comparing snakes loaded: " +
-                QString::number(num_snakes);
+      QString::number(num_snakes);
   statusBar()->showMessage(msg, message_timeout_);
   viewer_->RemoveSnakes();
   viewer_->SetupSnakes(multisnake_->converged_snakes());
@@ -971,7 +735,7 @@ void MainWindow::CompareAnotherSnakes() {
   multisnake_->LoadComparingSnakes2(snake_filename_);
   unsigned num_snakes = multisnake_->GetNumberOfComparingSnakes2();
   QString msg = "Number of other comparing snakes loaded: " +
-                QString::number(num_snakes);
+      QString::number(num_snakes);
   statusBar()->showMessage(msg, message_timeout_);
   viewer_->RemoveSnakes();
   viewer_->SetupSnakes(multisnake_->converged_snakes());
@@ -1004,15 +768,9 @@ void MainWindow::CloseSession() {
   viewer_->Reset();
   viewer_->Render();
   multisnake_->Reset();
-  disconnect(multisnake_, SIGNAL(ExtractionCompleteForFrame(int)),
-             progress_bar_, SLOT(setValue(int)));
-  disconnect(multisnake_, SIGNAL(ExtractionCompleteForFrame(int)),
-             progress_bar_, SLOT(setValue(int)));
 
-  this->TearDownScrollBarConnections();
   this->ResetActions();
   open_image_->setEnabled(true);
-  open_image_sequence_->setEnabled(true);
   setWindowTitle("SOAX");
 }
 
@@ -1027,25 +785,21 @@ void MainWindow::EditSnake() {
   } else if (toggle_trim_body_->isChecked()) {
     viewer_->TrimBody();
   } else if (toggle_delete_junction_->isChecked()) {
-    viewer_->RemoveSelectedJunctions(multisnake_->junctions());
+    viewer_->RemoveSelectedJunctions();
+    multisnake_->junctions().RemoveJunctions(
+        viewer_->GetSelectedJunctions());
   }
   viewer_->Render();
   deform_one_snake_->setEnabled(true);
 }
 
-// void MainWindow::ToggleSnakeDisplay(bool state) {
-//   toggle_snakes_->setChecked(!state);
-// }
-
 void MainWindow::ShowViewOptions() {
   if (view_options_dialog_->exec()) {
     double window = view_options_dialog_->GetWindow();
     double level = view_options_dialog_->GetLevel();
-    //std::cout << window << "\t" << level << std::endl;
     viewer_->UpdateWindowLevel(window, level);
     double min_intensity = view_options_dialog_->GetMinIntensity();
     double max_intensity = view_options_dialog_->GetMaxIntensity();
-    //std::cout << min_intensity << "\t" << max_intensity << std::endl;
     viewer_->UpdateMIPIntensityRange(min_intensity, max_intensity);
     viewer_->set_clip_span(view_options_dialog_->GetClipSpan());
 
@@ -1069,12 +823,12 @@ void MainWindow::InitializeSnakes() {
 
   multisnake_->InitializeSnakes();
   QString msg = QString::number(multisnake_->GetNumberOfInitialSnakes()) +
-                " snakes initialized.";
+      " snakes initialized.";
   statusBar()->showMessage(msg, message_timeout_);
 
   viewer_->RemoveSnakes();
-  // viewer_->SetupSnakes(multisnake_->initial_snakes());
-  viewer_->SetupSnakesAsOneActor(multisnake_->initial_snakes());
+  viewer_->SetupSnakes(multisnake_->initial_snakes());
+  // viewer_->SetupSnakesAsOneActor(multisnake_->initial_snakes());
   toggle_snakes_->setChecked(true);
   viewer_->Render();
 
@@ -1084,31 +838,7 @@ void MainWindow::InitializeSnakes() {
   toggle_clip_->setEnabled(true);
   deform_snakes_->setEnabled(true);
   deform_snakes_in_action_->setEnabled(true);
-
-  // toggle_delete_snake_->setEnabled(true);
-  // toggle_trim_tip_->setEnabled(true);
-  // toggle_extend_tip_->setEnabled(true);
-  // toggle_trim_body_->setEnabled(true);
-  // toggle_delete_junction_->setEnabled(true);
-  // edit_snake_->setEnabled(true);
 }
-
-void MainWindow::InitializeSnakesForSequence() {
-  multisnake_->ComputeImageGradientForSequence(0);
-  multisnake_->InitializeSnakes();
-  QString msg = QString::number(multisnake_->GetNumberOfInitialSnakes()) +
-                " snakes initialized.";
-  statusBar()->showMessage(msg, message_timeout_);
-  viewer_->RemoveSnakes();
-  viewer_->SetupSnakes(multisnake_->initial_snakes());
-  // viewer_->SetupSnakesAsOneActor(multisnake_->initial_snakes());
-  toggle_snakes_->setChecked(true);
-  viewer_->Render();
-  toggle_snakes_->setEnabled(true);
-  toggle_clip_->setEnabled(true);
-  deform_snakes_for_sequence_->setEnabled(true);
-}
-
 
 void MainWindow::DeformSnakes() {
   std::cout << "============ Parameters ============" << std::endl;
@@ -1118,7 +848,6 @@ void MainWindow::DeformSnakes() {
   progress_bar_->setMaximum(multisnake_->GetNumberOfInitialSnakes());
   connect(multisnake_, SIGNAL(ExtractionProgressed(int)),
           progress_bar_, SLOT(setValue(int)));
-  // multisnake_->DeformSnakes(progress_bar_);
 
   time_t start, end;
   time(&start);
@@ -1128,7 +857,7 @@ void MainWindow::DeformSnakes() {
   std::cout << "Extraction complete. Evolution time: "
             << time_elasped << "m" << std::endl;
   unsigned num_snakes = multisnake_->GetNumberOfConvergedSnakes();
-  QString msg = "Number of converged snakes: " + QString::number(num_snakes);
+  QString msg = "# converged snakes: " + QString::number(num_snakes);
   statusBar()->showMessage(msg, message_timeout_);
 
   viewer_->RemoveSnakes();
@@ -1244,55 +973,6 @@ void MainWindow::DeformOneSnake() {
   }
 }
 
-void MainWindow::DeformSnakesForSequence() {
-  progress_bar_->setMaximum(multisnake_->GetNumberOfFrames());
-  connect(multisnake_, SIGNAL(ExtractionCompleteForFrame(int)),
-          progress_bar_, SLOT(setValue(int)));
-  multisnake_->DeformSnakesForSequence();
-  this->ViewSnakesSequence();
-  initialize_snakes_for_sequence_->setEnabled(false);
-  save_snakes_sequence_->setEnabled(true);
-  find_correspondence_->setEnabled(true);
-  // deform_snakes_->setEnabled(false);
-  // save_snakes_->setEnabled(true);
-  // save_jfilament_snakes_->setEnabled(true);
-  // compare_snakes_->setEnabled(true);
-  // toggle_snakes_->setEnabled(true);
-  // toggle_clip_->setEnabled(true);
-  // toggle_color_azimuthal_->setEnabled(true);
-  // toggle_color_polar_->setEnabled(true);
-
-  // toggle_delete_snake_->setEnabled(true);
-  // toggle_trim_tip_->setEnabled(true);
-  // toggle_extend_tip_->setEnabled(true);
-  // toggle_trim_body_->setEnabled(true);
-  // edit_snake_->setEnabled(true);
-
-  // cut_snakes_->setEnabled(true);
-  // compute_spherical_orientation_->setEnabled(true);
-  // compute_radial_orientation_->setEnabled(true);
-  // compute_point_density_->setEnabled(true);
-  // compute_curvature_->setEnabled(true);
-  // show_analysis_options_->setEnabled(true);
-}
-
-void MainWindow::FindCorrespondence() {
-  viewer_->SolveCorrespondence();
-  statusBar()->showMessage(tr("Find correspondence done."));
-}
-
-void MainWindow::ViewSnakesSequence() {
-  viewer_->set_snakes_sequence(multisnake_->converged_snakes_sequence());
-  viewer_->set_junctions_sequence(multisnake_->junctions_sequence());
-  toggle_snakes_->setChecked(true);
-  toggle_junctions_->setChecked(true);
-  viewer_->UpdateSnakesJunctions(0);
-  toggle_snakes_->setEnabled(true);
-  toggle_junctions_->setEnabled(true);
-  toggle_delete_junction_->setEnabled(true);
-  toggle_clip_->setEnabled(true);
-}
-
 void MainWindow::CutSnakes() {
   multisnake_->CutSnakesAtTJunctions();
   viewer_->RemoveSnakes();
@@ -1339,7 +1019,8 @@ void MainWindow::GroupSnakes() {
 void MainWindow::ComputeSphericalOrientation() {
   QString dir = this->GetLastDirectory(analysis_filename_);
   QString filename = QFileDialog::getSaveFileName(
-      this, tr("Save spherical orientation"), dir, tr("CSV files (*.csv)"));
+      this, tr("Save spherical orientation"),
+      dir, tr("CSV files (*.csv)"));
   if (filename.isEmpty()) return;
   analysis_filename_ = filename.toStdString();
 
@@ -1355,7 +1036,8 @@ void MainWindow::ComputeSphericalOrientation() {
 
   PointType center;
   analysis_options_dialog_->GetImageCenter(center);
-  double max_r = 0.9 * analysis_options_dialog_->GetRadius();;
+  double inside_percentage = 0.9;
+  double max_r = inside_percentage * analysis_options_dialog_->GetRadius();;
   multisnake_->ComputeSphericalOrientation(center, max_r, outfile);
   statusBar()->showMessage(tr("Spherical orientation file saved."));
   outfile.close();
@@ -1390,13 +1072,16 @@ void MainWindow::ComputeRadialOrientation() {
 void MainWindow::ComputePointDensity() {
   QString dir = this->GetLastDirectory(analysis_filename_);
   QString filename = QFileDialog::getSaveFileName(
-      this, tr("Save SOAC point density/intensity"), dir, tr("Text files (*.txt)"));
+      this, tr("Save SOAC point density/intensity"), dir,
+      tr("Text files (*.txt)"));
   if (filename.isEmpty()) return;
   analysis_filename_ = filename.toStdString();
 
   PointType center;
   analysis_options_dialog_->GetImageCenter(center);
-  double max_radius = analysis_options_dialog_->GetRadius() * 1.1;
+  double inside_percentage = 1.1;
+  double max_radius = analysis_options_dialog_->GetRadius() *
+      inside_percentage;
   double pixel_size = analysis_options_dialog_->GetPixelSize();
   unsigned type = analysis_options_dialog_->GetType();
 
@@ -1473,7 +1158,6 @@ void MainWindow::SetParameters() {
   multisnake_->solver_bank()->set_alpha(parameters_dialog_->GetAlpha());
   multisnake_->solver_bank()->set_beta(parameters_dialog_->GetBeta());
   multisnake_->solver_bank()->set_gamma(parameters_dialog_->GetGamma());
-  // Snake::set_gamma(multisnake_->solver_bank()->gamma());
   Snake::set_external_factor(parameters_dialog_->GetExternalFactor());
   Snake::set_stretch_factor(parameters_dialog_->GetStretchFactor());
   Snake::set_number_of_sectors(parameters_dialog_->GetNumberOfSectors());
@@ -1518,62 +1202,26 @@ void MainWindow::SaveSnapshot() {
   snapshot_filename_ = filename.toStdString();
 
   viewer_->PrintScreenAsPNGImage(snapshot_filename_);
-  viewer_->PrintScreenAsTIFFImage(snapshot_filename_);
-  // viewer_->PrintScreenAsVectorImage(snapshot_filename_);
   statusBar()->showMessage("Snapshots saved.", message_timeout_);
 }
 
 void MainWindow::AboutSOAX() {
-  QMessageBox::about(this, tr("About SOAX"),
-                     tr("<h3>SOAX 3.5.4</h3>"
-                        "<p>Copyright &copy; 2014 Ting Xu, IDEA Lab, "
-                        "Lehigh University "
-                        "<p>SOAX extracts curvilinear network structure "
-                        "in biomedical images."
-                        "This work is supported by NIH grant R01GM098430."));
+  QMessageBox::about(
+      this, tr("About SOAX"),
+      tr("<h3>SOAX 3.5.5</h3>"
+         "<p>Copyright &copy; Lehigh University"
+         "<p>SOAX extracts curvilinear networks from 2D/3D images."
+         "This work is supported by NIH grant R01GM098430."));
 }
 
-QStringList MainWindow::SortFilenames(const QStringList &filenames) const {
-  QMap<int, QString> map;
-  QStringList no_index_names;
-  foreach(const QString &name, filenames) {
-    if (allowed_format_.contains(QFileInfo(name).suffix().toLower())) {
-      int index = ExtractIndex(name);
-      if (index == -1) {
-        no_index_names << name;
-      } else {
-        map.insert(index, name);
-      }
-    }
+QString MainWindow::GetLastDirectory(const std::string &filename) const {
+  QString dir = "..";
+  if (!filename.empty()) {  // extract the last directory
+    std::string::size_type pos = filename.find_last_of("/\\");
+    dir = QString(filename.substr(0, pos).c_str());
   }
-  return no_index_names << map.values();
-}
-
-int MainWindow::ExtractIndex(const QString &filename) const {
-  std::string s = filename.toStdString();
-
-  int start = -1;
-  int n = 0;
-  bool start_found = false;
-
-  for (int i = s.length() - 1; i >=0; i--) {
-    if (isdigit(s[i])) {
-      if (!start_found) {
-        start = i;
-        start_found = true;
-      }
-      n++;
-    } else {
-      if (start_found)
-        break;
-    }
-  }
-
-  if (start_found)
-    return std::stoi(s.substr(start - n + 1, n));
-  else
-    return -1;
+  return dir;
 }
 
 
-} // namespace soax
+}  // namespace soax

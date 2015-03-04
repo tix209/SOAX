@@ -214,6 +214,12 @@ void Junctions::RemoveJunction(const PointType &p) {
                                    p));
 }
 
+void Junctions::RemoveJunctions(const std::vector<PointType> &pts) {
+  for (int i = 0; i < pts.size(); i++) {
+    RemoveJunction(pts[i]);
+  }
+}
+
 void Junctions::ClearJunctionPoints() {
   junction_points_.clear();
 }

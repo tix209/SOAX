@@ -1,9 +1,18 @@
-#ifndef SOAX_MAINWINDOW_H_
-#define SOAX_MAINWINDOW_H_
+/**
+ * Copyright (c) 2015, Lehigh University
+ * All rights reserved.
+ * See COPYING for license.
+ *
+ * This file is defines the main window class for SOAX.
+ */
+
+
+#ifndef MAIN_WINDOW_H_
+#define MAIN_WINDOW_H_
 
 #include <QMainWindow>
-#include <QSet>
-#include "global.h"
+#include <string>
+#include "./global.h"
 
 class QProgressBar;
 class QActionGroup;
@@ -17,9 +26,7 @@ class ParametersDialog;
 class AnalysisOptionsDialog;
 class ViewOptionsDialog;
 
-/*
- * SOAX GUI main window.
- */
+
 class MainWindow : public QMainWindow {
   Q_OBJECT
 
@@ -30,17 +37,13 @@ class MainWindow : public QMainWindow {
   // Disable right click on the toolbar
   virtual QMenu *createPopupMenu() {return NULL;}
 
- private slots:
+ private slots:  // NOLINT(whitespace/indent)
   void OpenImage();
-  void OpenImageSequence();
   void SaveAsIsotropicImage();
-  void SaveAsIsotropicSequence();
   void LoadParameters();
   void SaveParameters();
   void LoadSnakes();
-  void LoadSnakesSequence();
   void SaveSnakes();
-  void SaveSnakesSequence();
   void CompareSnakes();
   void CompareAnotherSnakes();
   void LoadJFilamentSnakes();
@@ -49,18 +52,14 @@ class MainWindow : public QMainWindow {
 
   void EditSnake();
 
-  // void ToggleSnakeDisplay(bool state);
   void ShowViewOptions();
 
   void InitializeSnakes();
-  void InitializeSnakesForSequence();
   void DeformSnakes();
   void DeformSnakesInAction();
   void DeformOneSnake();
-  void DeformSnakesForSequence();
   void CutSnakes();
   void GroupSnakes();
-  void FindCorrespondence();
 
   void ComputeSphericalOrientation();
   void ComputeRadialOrientation();
@@ -74,8 +73,6 @@ class MainWindow : public QMainWindow {
   void SaveSnapshot();
 
   void AboutSOAX();
-
-  void ShowFrameNumber(int frame_number);
 
  private:
   void CreateActions();
@@ -94,22 +91,6 @@ class MainWindow : public QMainWindow {
   void ResetActions();
   QString GetLastDirectory(const std::string &filename) const;
   void SetParameters();
-  void ViewSnakesSequence();
-
-  void SetupScrollBarConnections();
-
-  void TearDownScrollBarConnections();
-
-  /*
-   * Returns a sorted list of filenames (natural sorting).
-   */
-  QStringList SortFilenames(const QStringList &filenames) const;
-
-  /*
-   * Returns the sequence index from the filename. The index is assumed to be
-   * the last numeric value appeared in the filename.
-   */
-  int ExtractIndex(const QString &filename) const;
 
 
   QWidget *central_widget_;
@@ -119,15 +100,11 @@ class MainWindow : public QMainWindow {
 
   // Actions in File menu
   QAction *open_image_;
-  QAction *open_image_sequence_;
   QAction *save_as_isotropic_image_;
-  QAction *save_as_isotropic_sequence_;
   QAction *load_parameters_;
   QAction *save_parameters_;
   QAction *load_snakes_;
-  QAction *load_snakes_sequence_;
   QAction *save_snakes_;
-  QAction *save_snakes_sequence_;
   QAction *load_jfilament_snakes_;
   QAction *save_jfilament_snakes_;
   QAction *compare_snakes_;
@@ -162,14 +139,11 @@ class MainWindow : public QMainWindow {
 
   // Actions in Process menu
   QAction *initialize_snakes_;
-  QAction *initialize_snakes_for_sequence_;
   QAction *deform_snakes_;
   QAction *deform_snakes_in_action_;
   QAction *deform_one_snake_;
-  QAction *deform_snakes_for_sequence_;
   QAction *cut_snakes_;
   QAction *group_snakes_;
-  QAction *find_correspondence_;
 
   // Actions in Analysis menu
   QAction *compute_spherical_orientation_;
@@ -195,17 +169,12 @@ class MainWindow : public QMainWindow {
   QMenu *view_;
   QMenu *process_;
   QMenu *analysis_;
-  // QMenu *actin_cable_submenu_;
-  // QMenu *contractile_ring_submenu_;
-  // QMenu *fibrin_submenu_;
-  // QMenu *droplet_submenu_;
   QMenu *tools_;
   QMenu *help_;
 
   QToolBar *toolbar_;
   QProgressBar *progress_bar_;
-  QScrollBar *scroll_bar_;
-  int message_timeout_; // in milliseconds
+  int message_timeout_;  // in milliseconds
 
   // Complete image file path and name
   std::string image_filename_;
@@ -217,12 +186,11 @@ class MainWindow : public QMainWindow {
 
   Multisnake *multisnake_;
   Viewer *viewer_;
-  QSet<QString> allowed_format_;
 
   DISALLOW_COPY_AND_ASSIGN(MainWindow);
 };
 
 
-} // namespace soax
+}  // namespace soax
 
-#endif // SOAX_MAINWINDOW_H_
+#endif  // MAIN_WINDOW_H_

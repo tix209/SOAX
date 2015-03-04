@@ -33,11 +33,6 @@ class Multisnake : public QObject {
    */
   void LoadImage(const std::string &filename);
 
-  /** Load a single file of image sequence.
-   */
-  void LoadImageSequence(const std::string &filename, int nslices);
-  void LoadImageSequence2(const std::vector<std::string> &names);
-
   std::string GetImageName(bool suffix = true) const;
 
   PointType GetImageCenter() const;
@@ -46,12 +41,8 @@ class Multisnake : public QObject {
    * Resample and save as an isotropic 16-bit image.
    */
   void SaveAsIsotropicImage(const std::string &filename, double z_spacing);
-  void SaveAsIsotropicSequence(const std::string &filename, double z_spacing);
 
   ImageType::Pointer image() const {return image_;}
-  const std::vector<ImageType::Pointer> &image_sequence() const {
-    return image_sequence_;
-  }
   VectorImageType::Pointer external_force() const {return external_force_;}
 
   void LoadParameters(const std::string &filename);
@@ -92,18 +83,10 @@ class Multisnake : public QObject {
   SolverBank *solver_bank() const {return solver_bank_;}
 
   /*
-   * Invert image intensity by subtracting from the maximum intensity.
-   */
-  void InvertImageIntensity();
-
-  int GetNumberOfFrames() const {return image_sequence_.size();}
-
-  /*
    * Compute image gradient field for both snake initialization and
    * evolution. If reset is true, the external_force_ is recomputed.
    */
   void ComputeImageGradient(bool reset = true);
-  void ComputeImageGradientForSequence(int index);
 
   void InitializeSnakes();
 
@@ -130,13 +113,6 @@ class Multisnake : public QObject {
   const SnakeContainer &comparing_snakes2() const {
     return comparing_snakes2_;
   }
-  const std::vector<SnakeContainer> &converged_snakes_sequence() const {
-    return converged_snakes_sequence_;
-  }
-
-  const std::vector<PointContainer> &junctions_sequence() const {
-    return junctions_sequence_;
-  }
 
   void SaveConvergedSnakesAsJFilamentFormat(
       const std::string &filename) const {
@@ -145,7 +121,6 @@ class Multisnake : public QObject {
 
   // void DeformSnakes(QProgressBar * progress_bar = NULL);
   void DeformSnakes();
-  void DeformSnakesForSequence();
   void CutSnakesAtTJunctions();
   void GroupSnakes();
 
@@ -170,19 +145,10 @@ class Multisnake : public QObject {
     this->LoadSnakes(filename, comparing_snakes2_);
   }
 
-  void LoadSnakesSequence(const std::string &filename);
-
   void PrintSnakes(const SnakeContainer &snakes) const;
 
   void SaveSnakes(const SnakeContainer &snakes,
                   const std::string &filename) const;
-  void SaveSnakesSequence(const std::string &filename) const;
-  // void EvaluateByVertexErrorHausdorffDistance(
-  //     const std::string &snake_path, const std::string &filename) const;
-  // void EvaluateByFFunction(double threshold, double penalizer,
-  //                          int radial_near, int radial_far,
-  //                          const std::string &snake_path,
-  //                          const std::string &filename) const;
 
   void PrintGroundTruthLocalSNRValues(int radial_near, int radial_far) const;
 
@@ -206,22 +172,6 @@ class Multisnake : public QObject {
   void AddConvergedSnake(Snake *s) {converged_snakes_.push_back(s);}
   void AddSubsnakesToInitialSnakes(Snake *s);
 
-  /*
-   * Estimate image SNR using Otsu's method.
-   */
-  // double ComputeImageSNR(const std::string &binary_filename = "") const;
-  // double ComputeImageSNR2(const std::string &filename = "") const;
-  // double ComputeForegroundSNR() const;
-
-  // double ComputeGroundTruthFValue(double snr_threshold,
-  //                                 double penalizer,
-  //                                 int radial_near,
-  //                                 int radial_far) const {
-  //   return this->ComputeFValue(comparing_snakes1_,
-  //                              snr_threshold, penalizer,
-  //                              radial_near, radial_far);
-  // }
-
   void ComputeGroundTruthLocalSNRs(int radial_near, int radial_far,
                                    DataContainer &snrs) const;
   void ComputeResultSnakesLocalSNRs(int radial_near, int radial_far,
@@ -234,15 +184,6 @@ class Multisnake : public QObject {
   double ComputeFValue(const DataContainer &snrs,
                        double threshold, double penalizer) const;
 
-  // double ComputeResultSnakesFValue(double snr_threshold,
-  //                                  double penalizer,
-  //                                  int radial_near,
-  //                                  int radial_far) const {
-  //   return this->ComputeFValue(converged_snakes_,
-  //                              snr_threshold, penalizer,
-  //                              radial_near, radial_far);
-  // }
-
   void ComputeResultSnakesVertexErrorHausdorffDistance(
       double &vertex_error, double &hausdorff) const;
 
@@ -250,21 +191,7 @@ class Multisnake : public QObject {
                               unsigned background,
                               double sigma,
                               const std::string &filename) const;
-  void GenerateSyntheticRealImage(double ratio, double sigma,
-                                  const std::string &filename) const;
 
-  void GenerateSyntheticTamara(double foreground, double background,
-                               const char *filename) const;
-  void GenerateSyntheticImageShotNoise(unsigned foreground, unsigned background, unsigned offset,
-                                       double scaling, const std::string &filename) const;
-  void LoadCurves(const char *filename, double *offset);
-
-  double ComputeDropletMeanIntensity(PointType center, double radius) const;
-
-  void ComputeSOACPointsFraction(const PointType &center,
-                                 double radius,
-                                 unsigned binning,
-                                 DataContainer &fractions) const;
 
  signals:
   void ExtractionProgressed(int value);
@@ -273,8 +200,6 @@ class Multisnake : public QObject {
  private:
   typedef itk::Vector<bool, kDimension> BoolVectorType;
   typedef itk::Image<BoolVectorType, kDimension> BoolVectorImageType;
-
-  void SetImage(int index);
 
   ImageType::Pointer InterpolateImage(ImageType::Pointer img,
                                       double z_spacing);
@@ -330,8 +255,6 @@ class Multisnake : public QObject {
 
   void CutSnakes(SnakeContainer &seg);
   void ClearSnakeContainer(SnakeContainer &snakes);
-  void ClearSnakeContainerSequence(std::vector<SnakeContainer> &snakes_sequence);
-
 
   void LinkSegments(SnakeContainer &seg);
   void LinkFromSegment(Snake *s, SnakeContainer &seg,
@@ -368,25 +291,14 @@ class Multisnake : public QObject {
                         int radial_near, int radial_far,
                         DataContainer &snrs) const;
 
-  void ComputeHistogram(std::vector<unsigned> &hist, int threshold) const;
-
-
-  double ComputeOtsuThreshold(const std::vector<unsigned> &hist) const;
-
   void PrintCandidatePoints(BoolVectorImageType::Pointer image,
                             std::ostream &os, unsigned direction) const;
 
-  unsigned GetNumberOfSOACPoints(const SnakeContainer &snakes) const;
-
-  bool IsInsideSphere(const PointType &center, double r, const PointType p) const;
-
-  /** Use non smoothed image gradient as external force.
-   */
-  void UpdateExternalForce();
+  bool IsInsideSphere(const PointType &center,
+                      double r, const PointType p) const;
 
   std::string image_filename_;
   ImageType::Pointer image_;
-  std::vector<ImageType::Pointer> image_sequence_;
   VectorImageType::Pointer external_force_;
 
   InterpolatorType::Pointer interpolator_;
@@ -396,13 +308,10 @@ class Multisnake : public QObject {
 
   SnakeContainer initial_snakes_;
   SnakeContainer converged_snakes_;
-  std::vector<SnakeContainer> converged_snakes_sequence_;
-  std::vector<PointContainer> junctions_sequence_;
   SnakeContainer comparing_snakes1_;
   SnakeContainer comparing_snakes2_;
 
   Junctions junctions_;
-
 
 
   /*
@@ -442,11 +351,6 @@ class Multisnake : public QObject {
    * 2D. The output SOACs z coordinates is 0.
    */
   bool is_2d_;
-
-  // /*
-  //  * True if the intensity of input image needs to be inverted.
-  //  */
-  // bool invert_intensity_;
 
   DISALLOW_COPY_AND_ASSIGN(Multisnake);
 };

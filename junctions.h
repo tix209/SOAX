@@ -31,6 +31,7 @@ class Junctions {
    * junction_points_ are changed.
    */
   void RemoveJunction(const PointType &p);
+  void RemoveJunctions(const std::vector<PointType> &pts);
 
   void ClearJunctionPoints();
 

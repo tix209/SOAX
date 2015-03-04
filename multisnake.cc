@@ -1,6 +1,6 @@
+#include "./multisnake.h"
 #include <fstream>
 #include <iomanip>
-#include "multisnake.h"
 #include "itkImageFileReader.h"
 #include "itkImageFileWriter.h"
 #include "itkBSplineInterpolateImageFunction.h"
@@ -13,28 +13,18 @@
 #include "itkGradientRecursiveGaussianImageFilter.h"
 #include "itkImageRegionIteratorWithIndex.h"
 #include "itkImageRegionIterator.h"
-#include "itkOtsuThresholdImageFilter.h"
-#include "itkOtsuMultipleThresholdsImageFilter.h"
 #include "itkRescaleIntensityImageFilter.h"
 #include "itkNormalVariateGenerator.h"
 #include "itkMinimumMaximumImageCalculator.h"
-#include "itkInvertIntensityImageFilter.h"
-#include "itkRegionOfInterestImageFilter.h"
-#include "itkPasteImageFilter.h"
-#include "itkStatisticsImageFilter.h"
-#include "itkImageDuplicator.h"
-#include "itkAbsoluteValueDifferenceImageFilter.h"
-#include "itkSquaredDifferenceImageFilter.h"
-#include "itkSquareImageFilter.h"
-#include "solver_bank.h"
-#include "utility.h"
+#include "./solver_bank.h"
+#include "./utility.h"
 
 namespace soax {
 
 Multisnake::Multisnake() : image_(NULL), external_force_(NULL),
-                           intensity_scaling_(0.0), sigma_(0.5),
+                           intensity_scaling_(0.0), sigma_(0.0),
                            ridge_threshold_(0.01), foreground_(65535),
-                           background_(1600), initialize_z_(false),
+                           background_(0), initialize_z_(false),
                            is_2d_(false) {
   interpolator_ = InterpolatorType::New();
   vector_interpolator_ = VectorInterpolatorType::New();
@@ -44,29 +34,19 @@ Multisnake::Multisnake() : image_(NULL), external_force_(NULL),
 
 Multisnake::~Multisnake() {
   this->ClearSnakeContainer(initial_snakes_);
-  // this->ClearSnakeContainer(converged_snakes_);
-  converged_snakes_.clear();
+  this->ClearSnakeContainer(converged_snakes_);
+  // converged_snakes_.clear();
   this->ClearSnakeContainer(comparing_snakes1_);
   this->ClearSnakeContainer(comparing_snakes2_);
-  this->ClearSnakeContainerSequence(converged_snakes_sequence_);
-  image_sequence_.clear();
-  converged_snakes_sequence_.clear();
-  junctions_sequence_.clear();
+
   delete solver_bank_;
 }
 
 void Multisnake::Reset() {
   this->ClearSnakeContainer(initial_snakes_);
-  if (converged_snakes_sequence_.empty()) {
-    this->ClearSnakeContainer(converged_snakes_);
-  } else {
-    converged_snakes_.clear();
-  }
+  converged_snakes_.clear();
   this->ClearSnakeContainer(comparing_snakes1_);
   this->ClearSnakeContainer(comparing_snakes2_);
-  this->ClearSnakeContainerSequence(converged_snakes_sequence_);
-  image_sequence_.clear();
-  converged_snakes_sequence_.clear();
 
   junctions_.Reset();
   image_filename_ = "";
@@ -84,27 +64,6 @@ void Multisnake::ResetContainers() {
 
 void Multisnake::LoadImage(const std::string &filename) {
   image_filename_ = filename;
-
-  // // Find out the pixel type of the image in file
-  // typedef itk::ImageIOBase::IOComponentType  ScalarPixelType;
-
-  // itk::ImageIOBase::Pointer io = itk::ImageIOFactory::CreateImageIO(
-  //     filename.c_str(), itk::ImageIOFactory::ReadMode);
-
-  // if( !io ) {
-  //   std::cerr << "NO IMAGEIO WAS FOUND" << std::endl;
-  //   return;
-  // }
-
-  // // Now that we found the appropriate ImageIO class, ask it to
-  // // read the meta data from the image file.
-  // io->SetFileName(filename);
-  // io->ReadImageInformation();
-  // ScalarPixelType pixel_type = io->GetComponentType();
-  // std::cout << itk::ImageIOBase::GetComponentTypeAsString(pixel_type) << std::endl;
-  // unsigned num_dimensions = io->GetNumberOfDimensions();
-  // std::cout << num_dimensions << std::endl;
-
   typedef itk::ImageFileReader<ImageType> ReaderType;
   ReaderType::Pointer reader = ReaderType::New();
   reader->SetFileName(filename);
@@ -127,66 +86,6 @@ void Multisnake::LoadImage(const std::string &filename) {
   interpolator_->SetInputImage(image_);
 
   this->set_intensity_scaling(intensity_scaling_);
-}
-
-void Multisnake::LoadImageSequence2(const std::vector<std::string> &names) {
-  typedef itk::ImageFileReader<ImageType> ReaderType;
-
-  for (int i = 0; i < names.size(); ++i) {
-    ReaderType::Pointer reader = ReaderType::New();
-    reader->SetFileName(names[i]);
-    reader->Update();
-    image_sequence_.push_back(reader->GetOutput());
-  }
-  image_filename_ = names.front();
-  this->SetImage(0);
-  interpolator_->SetInputImage(image_);
-  this->set_intensity_scaling(intensity_scaling_);
-}
-
-void Multisnake::LoadImageSequence(const std::string &filename, int nslices) {
-  typedef itk::ImageFileReader<ImageType> ReaderType;
-  typedef itk::RegionOfInterestImageFilter<ImageType, ImageType>
-      ExtractorType;
-  ReaderType::Pointer reader = ReaderType::New();
-
-  reader->SetFileName(filename);
-  reader->Update();
-  ImageType::SizeType input_size =
-      reader->GetOutput()->GetLargestPossibleRegion().GetSize();
-  ImageType::SizeType frame_size;
-  frame_size[0] = input_size[0];
-  frame_size[1] = input_size[1];
-  frame_size[2] = nslices;
-  ImageType::IndexType frame_index =
-      reader->GetOutput()->GetLargestPossibleRegion().GetIndex();
-
-  ImageType::PointType origin;
-  origin.Fill(0.0);
-
-  for (int i = 0; i < input_size[2]; i += nslices) {
-    frame_index[2] = i;
-    ImageType::RegionType frame_region;
-    frame_region.SetSize(frame_size);
-    frame_region.SetIndex(frame_index);
-    ExtractorType::Pointer extractor = ExtractorType::New();
-    extractor->SetInput(reader->GetOutput());
-    extractor->SetRegionOfInterest(frame_region);
-    extractor->Update();
-    extractor->GetOutput()->SetOrigin(origin);
-    image_sequence_.push_back(extractor->GetOutput());
-  }
-  image_filename_ = filename;
-  this->SetImage(0);
-  interpolator_->SetInputImage(image_);
-  this->set_intensity_scaling(intensity_scaling_);
-}
-
-void Multisnake::SetImage(int index) {
-  if (image_sequence_.empty()) return;
-  image_ = image_sequence_[index];
-  this->set_intensity_scaling(0.0);
-  interpolator_->SetInputImage(image_);
 }
 
 std::string Multisnake::GetImageName(bool suffix) const {
@@ -223,7 +122,6 @@ ImageType::Pointer Multisnake::InterpolateImage(ImageType::Pointer img,
   resampler->SetOutputOrigin(img->GetOrigin());
   resampler->SetOutputDirection(img->GetDirection());
 
-  // const ImageType::SpacingType &input_spacing = img->GetSpacing();
   ImageType::SpacingType input_spacing;
   input_spacing.Fill(1.0);
   input_spacing[2] = z_spacing;
@@ -260,7 +158,6 @@ void Multisnake::SaveAsIsotropicImage(const std::string &filename,
   resampler->SetOutputOrigin(image_->GetOrigin());
   resampler->SetOutputDirection(image_->GetDirection());
 
-  // const ImageType::SpacingType &input_spacing = image_->GetSpacing();
   ImageType::SpacingType input_spacing;
   input_spacing.Fill(1.0);
   input_spacing[2] = z_spacing;
@@ -290,50 +187,6 @@ void Multisnake::SaveAsIsotropicImage(const std::string &filename,
     writer->Update();
   } catch( itk::ExceptionObject & exp ) {
     std::cerr << "Exception caught when write an image!" << std::endl;
-    std::cerr << exp << std::endl;
-  }
-}
-
-void Multisnake::SaveAsIsotropicSequence(const std::string &filename, double z_spacing) {
-  for (int i = 0; i < image_sequence_.size(); i++) {
-    std::cout << "Interpolating frame #" << i+1 << " ..." << std::endl;
-    image_sequence_[i] = this->InterpolateImage(image_sequence_[i], z_spacing);
-  }
-  ImageType::Pointer result = ImageType::New();
-  ImageType::IndexType start;
-  start.Fill(0);
-  ImageType::SizeType size = image_sequence_.back()->GetLargestPossibleRegion().GetSize();
-  size[2] *= image_sequence_.size();
-
-  ImageType::RegionType region;
-  region.SetSize(size);
-  region.SetIndex(start);
-  result->SetRegions(region);
-  result->Allocate();
-
-  typedef itk::PasteImageFilter<ImageType, ImageType> PasterType;
-  PasterType::Pointer paster = PasterType::New();
-
-  for (int i = 0; i < image_sequence_.size(); i++) {
-    paster->SetDestinationImage(result);
-    paster->SetSourceImage(image_sequence_[i]);
-    paster->SetSourceRegion(image_sequence_[i]->GetLargestPossibleRegion());
-    ImageType::IndexType dest_index = start;
-    dest_index[2] = i * image_sequence_[i]->GetLargestPossibleRegion().GetSize()[2];
-    paster->SetDestinationIndex(dest_index);
-    paster->Update();
-    result = paster->GetOutput();
-  }
-  typedef itk::ImageFileWriter<ImageType> WriterType;
-  WriterType::Pointer writer = WriterType::New();
-  writer->SetFileName(filename);
-  result->SetRegions(region);
-  writer->SetInput(result);
-
-  try {
-    writer->Update();
-  } catch( itk::ExceptionObject & exp ) {
-    std::cerr << "Exception caught when write an sequence!" << std::endl;
     std::cerr << exp << std::endl;
   }
 }
@@ -389,7 +242,6 @@ void Multisnake::AssignParameters(const std::string &name,
     solver_bank_->set_beta(String2Double(value));
   } else if (name == "gamma") {
     solver_bank_->set_gamma(String2Double(value));
-    // Snake::set_gamma(solver_bank_->gamma());
   } else if (name == "weight") {
     Snake::set_external_factor(String2Double(value));
   } else if (name == "stretch") {
@@ -458,45 +310,20 @@ void Multisnake::WriteParameters(std::ostream &os) const {
   os << std::noboolalpha;
 }
 
-void Multisnake::InvertImageIntensity() {
-  ImageType::PixelType maximum = this->GetMaxImageIntensity();
-  std::cout << "Previous Maximum intensity: " << maximum << std::endl;
-
-  typedef itk::InvertIntensityImageFilter<ImageType> FilterType;
-  FilterType::Pointer filter = FilterType::New();
-  filter->SetInput(image_);
-  filter->SetMaximum(maximum);
-
-  // typedef itk::RescaleIntensityImageFilter<ImageType, ImageType>
-  //     RescalerType;
-  // RescalerType::Pointer rescaler = RescalerType::New();
-  // rescaler->SetInput(filter->GetOutput());
-  // rescaler->SetOutputMinimum(0);
-  // rescaler->SetOutputMaximum(255);
-  // rescaler->Update();
-  // image_ = rescaler->GetOutput();
-  // std::cout << "maximum: " << filter->GetMaximum() << std::endl;
-  filter->Update();
-  image_ = filter->GetOutput();
-  interpolator_->SetInputImage(image_);
-  maximum = this->GetMaxImageIntensity();
-  std::cout << "Current Maximum intensity: " << maximum << std::endl;
-}
-
 void Multisnake::ComputeImageGradient(bool reset) {
   if (!reset && external_force_) return;
   external_force_ = NULL;
 
   typedef itk::Image<double, kDimension> InternalImageType;
-  typedef itk::ShiftScaleImageFilter<ImageType, InternalImageType> ScalerType;
+  typedef itk::ShiftScaleImageFilter<ImageType,
+                                     InternalImageType> ScalerType;
   ScalerType::Pointer scaler = ScalerType::New();
   scaler->SetInput(image_);
   scaler->SetScale(intensity_scaling_);
   scaler->SetShift(0.0);
   scaler->Update();
 
-  if (is_2d_ || sigma_ < 0.01) { // no smoothing, needs to be fixed
-                                 // for 2d image
+  if (is_2d_ || sigma_ < 0.01) {
     typedef itk::GradientImageFilter<InternalImageType> FilterType;
     FilterType::Pointer filter = FilterType::New();
     // filter->SetInput(image_);
@@ -514,8 +341,9 @@ void Multisnake::ComputeImageGradient(bool reset) {
     external_force_ = caster->GetOutput();
     external_force_->DisconnectPipeline();
   } else {
-    typedef itk::GradientRecursiveGaussianImageFilter<InternalImageType,
-                                                      VectorImageType> FilterType;
+    typedef itk::GradientRecursiveGaussianImageFilter<
+      InternalImageType,
+      VectorImageType> FilterType;
     FilterType::Pointer filter = FilterType::New();
     filter->SetSigma(sigma_);
     // filter->SetInput(image_);
@@ -532,47 +360,15 @@ void Multisnake::ComputeImageGradient(bool reset) {
   vector_interpolator_->SetInputImage(external_force_);
 }
 
-void Multisnake::ComputeImageGradientForSequence(int index) {
-  this->SetImage(index);
-  this->ComputeImageGradient();
-}
-
-void Multisnake::UpdateExternalForce() {
-  typedef itk::Image<double, kDimension> InternalImageType;
-  typedef itk::ShiftScaleImageFilter<ImageType, InternalImageType> ScalerType;
-  ScalerType::Pointer scaler = ScalerType::New();
-  scaler->SetInput(image_);
-  scaler->SetScale(intensity_scaling_);
-  scaler->SetShift(0.0);
-  scaler->Update();
-
-  typedef itk::GradientImageFilter<InternalImageType> FilterType;
-  FilterType::Pointer filter = FilterType::New();
-  filter->SetInput(scaler->GetOutput());
-  typedef itk::VectorCastImageFilter<FilterType::OutputImageType,
-                                     VectorImageType> CasterType;
-  CasterType::Pointer caster = CasterType::New();
-  caster->SetInput(filter->GetOutput());
-  try {
-    caster->Update();
-  } catch(itk::ExceptionObject & e) {
-    std::cerr << "Exception caught when updating external force!\n"
-              << e << std::endl;
-  }
-  external_force_ = caster->GetOutput();
-  external_force_->DisconnectPipeline();
-  vector_interpolator_->SetInputImage(external_force_);
-}
-
 void Multisnake::InitializeSnakes() {
   this->ClearSnakeContainer(initial_snakes_);
   BoolVectorImageType::Pointer ridge_image =
       InitializeBoolVectorImage();
   this->ScanGradient(ridge_image);
-  // this->UpdateExternalForce();
+
   unsigned num_directions = 2;
   if (!is_2d_ && initialize_z_) num_directions = 3;
-  // unsigned num_directions = 1; // for blood vessels
+
   BoolVectorImageType::Pointer candidate_image =
       InitializeBoolVectorImage();
 
@@ -580,16 +376,10 @@ void Multisnake::InitializeSnakes() {
     this->GenerateCandidates(ridge_image, candidate_image, d);
   }
 
-  // std::ofstream ofs("x-ridges.txt");
-  // this->PrintCandidatePoints(ridge_image, ofs, 0);
-
   for (unsigned d = 0; d < num_directions; ++d) {
     this->LinkCandidates(candidate_image, d);
   }
   std::sort(initial_snakes_.begin(), initial_snakes_.end(), IsShorter);
-  // std::sort(initial_snakes_.begin(), initial_snakes_.end(), IsDarker);
-  // std::sort(initial_snakes_.begin(), initial_snakes_.end(), IsBrighter);
-  // this->PrintSnakes(initial_snakes_);
 }
 
 Multisnake::BoolVectorImageType::Pointer
@@ -833,33 +623,6 @@ void Multisnake::DeformSnakes() {
   std::cout << "\n# Converged snakes: " << converged_snakes_.size() << std::endl;
 }
 
-void Multisnake::DeformSnakesForSequence() {
-  std::cout << "============ Parameters for Sequence ============" << std::endl;
-  this->WriteParameters(std::cout);
-  std::cout << "=================================================" << std::endl;
-
-  converged_snakes_sequence_.reserve(image_sequence_.size());
-
-  for (int i = 0; i < image_sequence_.size(); i++) {
-    this->SetImage(i);
-    std::cout << "Frame #" << i << "\tintensity-scaling: " << intensity_scaling_
-              << std::endl;
-
-    if (i) {
-      this->ComputeImageGradientForSequence(i);
-      this->InitializeSnakes();
-    }
-    this->DeformSnakes();
-    this->CutSnakesAtTJunctions();
-    this->GroupSnakes();
-
-    converged_snakes_sequence_.push_back(converged_snakes_);
-    junctions_sequence_.push_back(junctions_.junction_points());
-    junctions_.Reset();
-    emit ExtractionCompleteForFrame(i+1);
-  }
-}
-
 void Multisnake::CutSnakesAtTJunctions() {
   SnakeContainer segments;
   this->CutSnakes(segments);
@@ -888,13 +651,6 @@ void Multisnake::ClearSnakeContainer(SnakeContainer &snakes) {
     delete *it;
   }
   snakes.clear();
-}
-
-void Multisnake::ClearSnakeContainerSequence(std::vector<SnakeContainer>
-                                             &snakes_sequence) {
-  for (int i = 0; i < snakes_sequence.size(); i++) {
-    this->ClearSnakeContainer(snakes_sequence[i]);
-  }
 }
 
 void Multisnake::GroupSnakes() {
@@ -1021,56 +777,12 @@ unsigned Multisnake::GetNumberOfSnakesCloseToPoint(const PointType &p) {
   return num;
 }
 
-void Multisnake::LoadCurves(const char *filename, double *offset) {
-  this->ClearSnakeContainer(comparing_snakes1_);
-  std::ifstream infile(filename);
-  if (!infile.is_open()) {
-    std::cerr << "LoadCurves: couldn't open file: " << filename << std::endl;
-    return;
-  }
-  std::string line;
-  unsigned new_curve_id = 0;
-  unsigned old_curve_id = 0;
-  PointContainer points;
-  unsigned point_id = 0;
-
-  while (std::getline(infile, line)) {
-    std::istringstream buffer(line);
-    double x, y, z;
-    buffer >> new_curve_id >> point_id >> x >> y >> z;
-    if (new_curve_id != old_curve_id) {
-      if (points.size() > 1) {
-        Snake *s = new Snake(points, true, false, image_, external_force_,
-                             interpolator_, vector_interpolator_, transform_);
-        comparing_snakes1_.push_back(s);
-        s->Resample();
-        points.clear();
-      }
-      old_curve_id = new_curve_id;
-    }
-    PointType p;
-    p[0] = x + offset[0];
-    p[1] = y + offset[1];
-    p[2] = z + offset[2];
-    points.push_back(p);
-  }
-  infile.close();
-  if (points.size() > 1) {
-    Snake *s = new Snake(points, true, false, image_, external_force_,
-                         interpolator_, vector_interpolator_, transform_);
-    comparing_snakes1_.push_back(s);
-    s->Resample();
-    points.clear();
-  }
-}
-
-
 void Multisnake::LoadSnakes(const std::string &filename,
                             SnakeContainer &snakes) {
   this->ClearSnakeContainer(snakes);
   std::ifstream infile(filename.c_str());
   if (!infile.is_open()) {
-    std::cerr << "LoadSnakes: couldn't open file: " << filename << std::endl;
+    std::cerr << "LoadSnakes: couldn't open: " << filename << std::endl;
     return;
   }
   std::string line, name, value;
@@ -1116,75 +828,6 @@ void Multisnake::LoadSnakes(const std::string &filename,
   }
   junctions_.set_junction_points(junction_points);
 }
-
-void Multisnake::LoadSnakesSequence(const std::string &filename) {
-  std::ifstream infile(filename.c_str());
-  if (!infile.is_open()) {
-    std::cerr << "LoadSnakesSequence: couldn't open file: " << filename << std::endl;
-    return;
-  }
-  SnakeContainer snakes;
-
-  std::string line, name, value;
-  PointContainer points;
-  bool is_open = true;
-  PointContainer junction_points;
-  int frames_done = 0;
-
-  while (std::getline(infile, line)) {
-    if (isalpha(line[0])) {
-      std::stringstream converter;
-      converter << line;
-      converter >> name >> value;
-      this->AssignParameters(name, value);
-    } else if (line[0] == '$') {
-      if (frames_done) {
-        if (points.size() > 1) {
-          Snake *s = new Snake(points, is_open, false, image_, external_force_,
-                               interpolator_, vector_interpolator_, transform_);
-          snakes.push_back(s);
-          s->Resample();
-          points.clear();
-        }
-        converged_snakes_sequence_.push_back(snakes);
-        snakes.clear();
-        junctions_sequence_.push_back(junction_points);
-        junction_points.clear();
-      }
-      frames_done++;
-    } else if (line[0] == '#') {
-      if (points.size() > 1) {
-        Snake *s = new Snake(points, is_open, false, image_, external_force_,
-                             interpolator_, vector_interpolator_, transform_);
-        snakes.push_back(s);
-        s->Resample();
-      }
-      is_open = (line[1] != '0');
-      points.clear();
-    } else if (line[0] == '[') {
-      this->LoadPoint(line, junction_points);
-    } else {
-      std::istringstream stream(line);
-      double snake_index, point_index, x, y, z;
-      stream >> snake_index >> point_index >> x >> y >> z;
-      PointType  snake_point;
-      snake_point[0] = x;
-      snake_point[1] = y;
-      snake_point[2] = z;
-      points.push_back(snake_point);
-    }
-  }
-  infile.close();
-  // // test code
-  // for (int i = 0; i < converged_snakes_sequence_.size(); i++) {
-  //   std::cout << "\nFrame #" << i << std::endl;
-  //   this->PrintSnakes(converged_snakes_sequence_[i]);
-  //   for (int j = 0; j < junctions_sequence_[i].size(); j++) {
-  //     std::cout << junctions_sequence_[i][j] << "\t";
-  //   }
-  // }
-}
-
 
 void Multisnake::LoadJFilamentSnakes(const std::string &filename,
                                      SnakeContainer &snakes) {
@@ -1288,50 +931,6 @@ void Multisnake::SaveSnakes(const SnakeContainer &snakes,
   }
 
   junctions_.PrintJunctionPoints(filename);
-  outfile.close();
-}
-
-void Multisnake::SaveSnakesSequence(const std::string &filename) const {
-  std::ofstream outfile;
-  outfile.open(filename.c_str());
-  if (!outfile.is_open()) {
-    std::cerr << "SaveSnakesSequence: Couldn't open file: " << outfile << std::endl;
-    return;
-  }
-
-  const unsigned column_width = 16;
-  outfile << "image\t" << image_filename_ << std::endl;
-  this->WriteParameters(outfile);
-
-  if (converged_snakes_sequence_.empty()) {
-    std::cout << "No snakes to save!" << std::endl;
-    return;
-  }
-
-  for (int i = 0; i < converged_snakes_sequence_.size(); i++) {
-    outfile << "$" << i << std::endl;
-    unsigned snake_index = 0;
-    for (SnakeConstIterator it = converged_snakes_sequence_[i].begin();
-         it != converged_snakes_sequence_[i].end(); ++it) {
-      outfile << "#" << (*it)->open() << std::endl;
-      for (unsigned j = 0; j != (*it)->GetSize(); ++j) {
-        double intensity = interpolator_->Evaluate((*it)->GetPoint(j));
-        outfile << snake_index << std::setw(12) << j
-                << std::setw(column_width) << (*it)->GetX(j)
-                << std::setw(column_width) << (*it)->GetY(j)
-                << std::setw(column_width) << (*it)->GetZ(j)
-                << std::setw(20) << intensity << std::endl;
-      }
-      snake_index++;
-    }
-    if (!junctions_sequence_.empty()) {
-      for (PointContainer::const_iterator it = junctions_sequence_[i].begin();
-           it != junctions_sequence_[i].end(); ++it) {
-        outfile << *it << std::endl;
-      }
-    }
-  }
-  outfile << '$' << std::endl; // mark the end of sequence
   outfile.close();
 }
 
@@ -1713,200 +1312,6 @@ void Multisnake::ComputeResultSnakesVertexErrorHausdorffDistance(
   // std::cout << "hausdorff: " << hausdorff << std::endl;
 }
 
-void Multisnake::GenerateSyntheticImageShotNoise(unsigned foreground, unsigned background,
-                                                 unsigned offset, double scaling,
-                                                 const std::string &filename) const {
-  if (!image_ || comparing_snakes1_.empty()) return;
-
-  FloatImageType::Pointer img = FloatImageType::New();
-  img->SetRegions(image_->GetLargestPossibleRegion());
-  img->Allocate();
-  img->FillBuffer(background);
-
-  // Assign centerline intensities
-  for (SnakeConstIterator it = comparing_snakes1_.begin();
-       it != comparing_snakes1_.end(); ++it) {
-    for (unsigned i = 0; i < (*it)->GetSize(); ++i) {
-      FloatImageType::IndexType index;
-      img->TransformPhysicalPointToIndex((*it)->GetPoint(i), index);
-      // img->SetPixel(index, img->GetPixel(index) + foreground);
-      img->SetPixel(index, foreground);
-    }
-  }
-
-  // apply PSF
-  double variance[3] = {3.0, 3.0, 3*2.88*2.88};
-  typedef itk::DiscreteGaussianImageFilter<FloatImageType, FloatImageType> GaussianFilterType;
-  GaussianFilterType::Pointer gaussian = GaussianFilterType::New();
-  gaussian->SetInput(img);
-  gaussian->SetVariance(variance);
-
-  // rescale the intensity back to foreground
-  typedef itk::RescaleIntensityImageFilter<FloatImageType, FloatImageType> RescalerType;
-  RescalerType::Pointer rescaler = RescalerType::New();
-  rescaler->SetInput(gaussian->GetOutput());
-  rescaler->SetOutputMinimum(background);
-  rescaler->SetOutputMaximum(foreground);
-  rescaler->Update();
-  img = rescaler->GetOutput();
-
-  typedef itk::ImageDuplicator<FloatImageType> DuplicatorType;
-  DuplicatorType::Pointer duplicator = DuplicatorType::New();
-  duplicator->SetInputImage(img);
-  duplicator->Update();
-  FloatImageType::Pointer clean_img = duplicator->GetOutput();
-
-  // apply shot noise
-  typedef itk::ImageRegionIterator<FloatImageType> IteratorType;
-  IteratorType iter(img, img->GetLargestPossibleRegion());
-  std::mt19937 generator(2003);
-  for (iter.GoToBegin(); !iter.IsAtEnd(); ++iter) {
-    std::poisson_distribution<> distribution(iter.Get() * scaling);
-    double intensity = distribution(generator) / scaling + offset;
-    double assigned_intensity = intensity > std::numeric_limits<unsigned short>::max()?
-        std::numeric_limits<unsigned short>::max() : intensity;
-    iter.Set(assigned_intensity);
-  }
-
-  // compute image snr
-  // typedef itk::SquareImageFilter <FloatImageType, FloatImageType> SquareImageFilterType;
-  // SquareImageFilterType::Pointer square = SquareImageFilterType::New();
-  // square->SetInput(clean_img);
-  // square->Update();
-  // typedef itk::SquaredDifferenceImageFilter<FloatImageType,
-  //                                           FloatImageType,
-  //                                           FloatImageType> SquaredDifferenceImageFilterType;
-  // SquaredDifferenceImageFilterType::Pointer squared_differ = SquaredDifferenceImageFilterType::New();
-  // squared_differ->SetInput1(img);
-  // squared_differ->SetInput2(clean_img);
-  // squared_differ->Update();
-
-  typedef itk::StatisticsImageFilter<FloatImageType> StatisticsImageFilterType;
-  StatisticsImageFilterType::Pointer stat1 = StatisticsImageFilterType::New();
-  stat1->SetInput(clean_img);
-  stat1->Update();
-  // StatisticsImageFilterType::Pointer stat2 = StatisticsImageFilterType::New();
-  // stat2->SetInput(squared_differ->GetOutput());
-  // stat2->Update();
-  double mean_intensity = stat1->GetMean();
-  std::cout << "Mean: " << mean_intensity << std::endl;
-  // double snr = std::sqrt(mean_intensity * scaling);
-  double snr = (mean_intensity - background) * std::sqrt(scaling / background);
-  std::cout << "SNR: " << snr << std::endl;
-
-
-
-  // compute the difference image
-  // typedef itk::AbsoluteValueDifferenceImageFilter <FloatImageType,
-  //                                                  FloatImageType,
-  //                                                  FloatImageType> DifferenceImageFilterType;
-
-  // DifferenceImageFilterType::Pointer differ = DifferenceImageFilterType::New();
-  // differ->SetInput1(img);
-  // differ->SetInput2(clean_img);
-  // differ->Update();
-  // FloatImageType::Pointer diff_img = differ->GetOutput();
-
-  typedef itk::CastImageFilter<FloatImageType, ImageType> CasterType;
-  CasterType::Pointer caster = CasterType::New();
-  caster->SetInput(img);
-
-  typedef itk::ImageFileWriter<ImageType> WriterType;
-  WriterType::Pointer writer = WriterType::New();
-  writer->SetFileName(filename);
-  writer->SetInput(caster->GetOutput());
-  try {
-    writer->Update();
-  } catch(itk::ExceptionObject &e) {
-    std::cerr << "Multisnake::GenerateSyntheticImageShotNoise: Exception caught!\n"
-              << e << std::endl;
-  }
-
-  CasterType::Pointer caster2 = CasterType::New();
-  // caster2->SetInput(diff_img);
-  // const std::string label("-diff");
-  caster2->SetInput(clean_img);
-  const std::string label("-clean");
-  std::string diff_filename = filename;
-  diff_filename.insert(diff_filename.begin() + diff_filename.find_last_of('.'),
-                       label.begin(), label.end());
-  WriterType::Pointer writer2 = WriterType::New();
-  writer2->SetFileName(diff_filename);
-  writer2->SetInput(caster2->GetOutput());
-  writer2->Update();
-}
-
-
-void Multisnake::GenerateSyntheticTamara(double foreground, double background,
-                                         const char *filename) const {
-  if (comparing_snakes1_.empty()) return;
-  FloatImageType::Pointer img = FloatImageType::New();
-  FloatImageType::IndexType start;
-  start.Fill(0);
-  FloatImageType::SizeType size;
-  size[0] = 80;
-  size[1] = 150;
-  size[2] = 80;
-  FloatImageType::RegionType region;
-  region.SetSize(size);
-  region.SetIndex(start);
-  img->SetRegions(region);
-  img->Allocate();
-  img->FillBuffer(0.0);
-
-  for (SnakeConstIterator it = comparing_snakes1_.begin();
-       it != comparing_snakes1_.end(); ++it) {
-    for (unsigned i = 0; i < (*it)->GetSize(); ++i) {
-      FloatImageType::IndexType index;
-      img->TransformPhysicalPointToIndex((*it)->GetPoint(i), index);
-      img->SetPixel(index, foreground);
-    }
-  }
-
-  // double variance[3] = {3.0, 3.0, 12.0};
-  double variance[3] = {2.0, 2.0, 2.0};
-  typedef itk::DiscreteGaussianImageFilter<FloatImageType,
-                                           FloatImageType> GaussianFilterType;
-  GaussianFilterType::Pointer gaussian = GaussianFilterType::New();
-  gaussian->SetInput(img);
-  gaussian->SetVariance(variance);
-
-  // rescale the intensity back to foreground
-  typedef itk::RescaleIntensityImageFilter<FloatImageType, FloatImageType> RescalerType;
-  RescalerType::Pointer rescaler = RescalerType::New();
-  rescaler->SetInput(gaussian->GetOutput());
-  rescaler->SetOutputMinimum(0.0);
-  rescaler->SetOutputMaximum(foreground);
-  rescaler->Update();
-  img = rescaler->GetOutput();
-
-  double sigma = 1.0;
-  typedef itk::ImageRegionIterator<FloatImageType> IteratorType;
-  IteratorType iter(img, img->GetLargestPossibleRegion());
-
-  typedef itk::Statistics::NormalVariateGenerator GeneratorType;
-  GeneratorType::Pointer generator = GeneratorType::New();
-  generator->Initialize(2003);
-
-  for (iter.GoToBegin(); !iter.IsAtEnd(); ++iter) {
-    iter.Value() += background + sigma * generator->GetVariate();
-  }
-
-  typedef itk::CastImageFilter<FloatImageType, ImageType> CasterType;
-  CasterType::Pointer caster = CasterType::New();
-  caster->SetInput(img);
-
-  typedef itk::ImageFileWriter<ImageType> WriterType;
-  WriterType::Pointer writer = WriterType::New();
-  writer->SetFileName(filename);
-  writer->SetInput(caster->GetOutput());
-  try {
-    writer->Update();
-  } catch(itk::ExceptionObject &e) {
-    std::cerr << "Exception caught!\n" << e << std::endl;
-  }
-}
-
 void Multisnake::GenerateSyntheticImage(unsigned foreground,
                                         unsigned background,
                                         double sigma,
@@ -1993,87 +1398,6 @@ void Multisnake::GenerateSyntheticImage(unsigned foreground,
   return;
 }
 
-void Multisnake::GenerateSyntheticRealImage(
-    double ratio, double sigma, const std::string &filename) const {
-  if (!image_ || comparing_snakes1_.empty()) return;
-
-  const double background = 230.0;
-  FloatImageType::Pointer img = FloatImageType::New();
-  img->SetRegions(image_->GetLargestPossibleRegion());
-  img->Allocate();
-  if (sigma <= 0.0)
-    img->FillBuffer(background);
-  else
-    img->FillBuffer(0.0);
-
-  // Assign centerline intensities
-  double max_intensity = .0;
-  for (SnakeConstIterator it = comparing_snakes1_.begin();
-       it != comparing_snakes1_.end(); ++it) {
-    for (unsigned i = 0; i < (*it)->GetSize(); ++i) {
-      double intensity = interpolator_->Evaluate((*it)->GetPoint(i));
-      FloatImageType::IndexType index;
-      img->TransformPhysicalPointToIndex((*it)->GetPoint(i), index);
-      img->SetPixel(index, img->GetPixel(index) + intensity);
-      if (intensity > max_intensity)
-        max_intensity = intensity;
-    }
-  }
-
-  // apply PSF
-  double variance[3] = {3.0, 3.0, 3*2.88*2.88};
-  typedef itk::DiscreteGaussianImageFilter<
-    FloatImageType, FloatImageType> GaussianFilterType;
-  GaussianFilterType::Pointer gaussian = GaussianFilterType::New();
-  gaussian->SetInput(img);
-  gaussian->SetVariance(variance);
-
-  const double foreground = ratio * (max_intensity - background);
-  // rescale the intensity back to foreground
-  typedef itk::RescaleIntensityImageFilter<
-    FloatImageType, FloatImageType> RescalerType;
-  RescalerType::Pointer rescaler = RescalerType::New();
-  rescaler->SetInput(gaussian->GetOutput());
-  if (sigma <= 0.0) {
-    rescaler->SetOutputMinimum(background);
-    rescaler->SetOutputMaximum(background + foreground);
-  } else {
-    rescaler->SetOutputMinimum(0.0);
-    rescaler->SetOutputMaximum(foreground);
-  }
-  rescaler->Update();
-  img = rescaler->GetOutput();
-
-  // add Gaussian noise with u=background and std=sigma
-  if (sigma > 0.0) {
-    typedef itk::ImageRegionIterator<FloatImageType> IteratorType;
-    IteratorType iter(img, img->GetLargestPossibleRegion());
-
-    typedef itk::Statistics::NormalVariateGenerator GeneratorType;
-    GeneratorType::Pointer generator = GeneratorType::New();
-    generator->Initialize(2003);
-
-    for (iter.GoToBegin(); !iter.IsAtEnd(); ++iter) {
-      iter.Value() += background + sigma * generator->GetVariate();
-    }
-  }
-
-  typedef itk::CastImageFilter<FloatImageType, ImageType> CasterType;
-  CasterType::Pointer caster = CasterType::New();
-  caster->SetInput(img);
-
-  typedef itk::ImageFileWriter<ImageType> WriterType;
-  WriterType::Pointer writer = WriterType::New();
-  writer->SetFileName(filename);
-  writer->SetInput(caster->GetOutput());
-  try {
-    writer->Update();
-  } catch(itk::ExceptionObject &e) {
-    std::cerr << "Snake::SaveImageUShort: Exception caught!\n"
-              << e << std::endl;
-  }
-}
-
 void Multisnake::set_intensity_scaling(double scale) {
   if (scale > kEpsilon) {
     intensity_scaling_ = scale;
@@ -2091,57 +1415,5 @@ ImageType::PixelType Multisnake::GetMaxImageIntensity() const {
   return filter->GetMaximum();
 }
 
-double Multisnake::ComputeDropletMeanIntensity(PointType center, double radius) const {
-  DataContainer intensities;
-  typedef itk::ImageRegionConstIteratorWithIndex<ImageType> IteratorType;
-  assert(image_);
-  IteratorType it(image_, image_->GetLargestPossibleRegion());
-  for (it.GoToBegin(); !it.IsAtEnd(); ++it) {
-    PointType p;
-    image_->TransformIndexToPhysicalPoint(it.GetIndex(), p);
-    if (p.EuclideanDistanceTo(center) < radius)
-      intensities.push_back(it.Get());
-  }
-  return Mean(intensities);
-}
-
-void Multisnake::ComputeSOACPointsFraction(const PointType &center,
-                                           double radius,
-                                           unsigned binning,
-                                           DataContainer &fractions) const {
-  assert(!converged_snakes_.empty());
-  std::vector<unsigned> counts(binning, 0);
-  std::vector<double> ranges(binning, 0.0);
-  double radius_step = radius / binning;
-  for (int i = 0; i < binning; i++) {
-    ranges[i] = radius_step * (i + 1);
-  }
-  ranges.back() = kPlusInfinity;  // last bucket is for >= 0.9r
-  unsigned number_of_soac_points = this->GetNumberOfSOACPoints(converged_snakes_);
-  for (SnakeConstIterator it = converged_snakes_.begin();
-       it != converged_snakes_.end(); ++it) {
-    for (unsigned j = 0; j != (*it)->GetSize(); ++j) {
-      double distance_to_center = center.EuclideanDistanceTo((*it)->GetPoint(j));
-      std::vector<double>::iterator position_it = std::upper_bound(
-          ranges.begin(), ranges.end(), distance_to_center);
-      std::vector<double>::difference_type n = position_it - ranges.begin();
-      assert(n >= 0);
-      counts[n]++;
-    }
-  }
-
-  for (unsigned i = 0; i < binning; i++) {
-    double percentage = static_cast<double>(counts[i]) / number_of_soac_points * 100;
-    fractions.push_back(percentage);
-  }
-}
-
-unsigned Multisnake::GetNumberOfSOACPoints(const SnakeContainer &snakes) const {
-  unsigned count = 0;
-  for (SnakeConstIterator it = snakes.begin(); it != snakes.end(); ++it) {
-    count += (*it)->GetSize();
-  }
-  return count;
-}
 
 } // namespace soax

@@ -30,11 +30,9 @@
 #include "vtkGL2PSExporter.h"
 #include "vtkEventQtSlotConnect.h"
 #include "vtkPointPicker.h"
-#include "vtkSmartVolumeMapper.h"
 #include "itkStatisticsImageFilter.h"
-#include "snake.h"
-#include "utility.h"
-
+#include "./snake.h"
+#include "./utility.h"
 
 namespace soax {
 
@@ -56,15 +54,8 @@ Viewer::Viewer():
   qvtk_ = new QVTKWidget;
   renderer_ = vtkSmartPointer<vtkRenderer>::New();
   qvtk_->GetRenderWindow()->AddRenderer(renderer_);
-
   camera_ = vtkSmartPointer<vtkCamera>::New();
-  // camera_->SetFocalPoint(0, 0, 0);
-  // camera_->SetPosition(1, 0, 0);
-  // camera_->ComputeViewPlaneNormal();
-  // camera_->SetViewUp(0, 0, 1);
-  // camera_->OrthogonalizeViewUp();
   renderer_->SetActiveCamera(camera_);
-  // renderer_->ResetCamera();
 
   for (unsigned i = 0; i < kDimension; i++) {
     slice_planes_[i] = vtkImagePlaneWidget::New();
@@ -111,23 +102,11 @@ Viewer::Viewer():
   junction_color_ = kGreen;
   selected_junction_color_ = kBlue;
   sphere_color_ = kRed;
-
-  frame_index_ = 0;
-  volume_shown_ = false;
-  snakes_shown_ = false;
-  junctions_shown_ = false;
-
-  corresponding_snake_forward_ = NULL;
-  corresponding_snake_backward_ = NULL;
 }
 
 Viewer::~Viewer() {
   selected_junctions_.clear();
   selected_snakes_.clear();
-  snakes_sequence_.clear();
-  junctions_sequence_.clear();
-  forward_correspondence_.clear();
-  backward_correspondence_.clear();
   this->RemoveJunctions();
   this->RemoveSnakes();
   this->RemoveColorSegments();
@@ -154,21 +133,6 @@ void Viewer::Reset() {
   this->ResetTrimTip();
   this->ResetExtendTip();
   this->ResetTrimBody();
-  volume_sequence_.clear();
-  // for (int i = 0; i < image_sequence_.size(); i++) {
-  //   image_sequence_[i]->Delete();
-  // }
-  image_sequence_.clear();
-  snakes_sequence_.clear();
-  junctions_sequence_.clear();
-  // trimmed_actor_ = NULL;
-  // trimmed_snake_ = NULL;
-  // trim_tip_index_ = kBigNumber;
-  // trim_body_index1_ = kBigNumber;
-  // trim_body_index2_ = kBigNumber;
-  // is_trim_body_second_click_ = false;
-  // inserted_point_.Fill(-1);
-
   renderer_->ResetCamera();
 }
 
@@ -200,127 +164,6 @@ void Viewer::SetupImage(ImageType::Pointer image) {
   this->UpdateJunctionRadius(image);
 }
 
-void Viewer::SetupImageSequence(const std::vector<ImageType::Pointer> &images) {
-  assert(image_sequence_.empty());
-
-  this->ComputeSequenceIntensityRange(images);
-  this->ConvertImageSequence(images);
-  mip_min_intensity_ = sequence_min_intensity_.back() +
-      0.05 * (sequence_max_intensity_.back() - sequence_min_intensity_.back());
-  mip_max_intensity_ = sequence_max_intensity_.back();
-
-  for (int i = 0; i < images.size(); i++) {
-    this->SetupVolumeSequence(image_sequence_[i], i);
-  }
-  window_ = sequence_max_intensity_.back() - sequence_min_intensity_.back();
-  level_ = sequence_min_intensity_.back() + window_ / 2;
-
-  // this->SetupSlicePlanes(image_sequence_[0]);
-  this->UpdateSlicePlanes(0);
-  this->SetupUpperLeftCornerText(sequence_min_intensity_[0], sequence_max_intensity_[0]);
-  this->SetupOrientationMarker();
-  this->SetupBoundingBox(volume_sequence_.front());
-  this->SetupCubeAxes(image_sequence_.front());
-  this->UpdateJunctionRadius(images[images.size()/2]);
-}
-
-void Viewer::ComputeSequenceIntensityRange(
-    const std::vector<ImageType::Pointer> &images) {
-  typedef itk::StatisticsImageFilter<ImageType> FilterType;
-  FilterType::Pointer filter = FilterType::New();
-  sequence_min_intensity_.reserve(images.size());
-  sequence_max_intensity_.reserve(images.size());
-  for (int i = 0; i < images.size(); i++) {
-    filter->SetInput(images[i]);
-    filter->Update();
-    sequence_min_intensity_.push_back(filter->GetMinimum());
-    sequence_max_intensity_.push_back(filter->GetMaximum());
-  }
-}
-
-void Viewer::ConvertImageSequence(const std::vector<ImageType::Pointer> &images) {
-  volume_sequence_.reserve(images.size());
-  typedef itk::ImageToVTKImageFilter<ImageType>  ConnectorType;
-  for (int i = 0; i < images.size(); i++) {
-    ConnectorType::Pointer connector = ConnectorType::New();
-    connector->SetInput(images[i]);
-    connector->Update();
-    vtkSmartPointer<vtkImageData> vtk_image = vtkSmartPointer<vtkImageData>::New();
-    vtk_image->DeepCopy(connector->GetOutput());
-    image_sequence_.push_back(vtk_image);
-  }
-}
-
-void Viewer::SetupVolumeSequence(vtkSmartPointer<vtkImageData> data, int index) {
-  vtkSmartPointer<vtkPiecewiseFunction> opacity_function =
-      vtkSmartPointer<vtkPiecewiseFunction>::New();
-
-  opacity_function->AddPoint(mip_min_intensity_, 0.0);
-  opacity_function->AddPoint(mip_max_intensity_, 1.0);
-
-  vtkSmartPointer<vtkColorTransferFunction> color_function =
-      vtkSmartPointer<vtkColorTransferFunction>::New();
-  color_function->SetColorSpaceToRGB();
-  // color is all white
-  color_function->AddRGBPoint(0, 1, 1, 1);
-  color_function->AddRGBPoint(255, 1, 1, 1);
-
-  vtkSmartPointer<vtkVolumeProperty> mip_volume_property =
-      vtkSmartPointer<vtkVolumeProperty>::New();
-  mip_volume_property->SetScalarOpacity(opacity_function);
-  mip_volume_property->SetColor(color_function);
-  mip_volume_property->SetInterpolationTypeToLinear();
-
-  vtkSmartPointer<vtkVolume> volume = vtkSmartPointer<vtkVolume>::New();
-  volume->SetProperty(mip_volume_property);
-
-  vtkSmartPointer<vtkSmartVolumeMapper> mapper =
-      vtkSmartPointer<vtkSmartVolumeMapper>::New();
-  mapper->SetBlendModeToMaximumIntensity();
-  mapper->SetInputData(data);
-  volume->SetMapper(mapper);
-  volume_sequence_.push_back(volume);
-}
-
-void Viewer::UpdateFrameRendering(int index) {
-  if (index == frame_index_) return;
-  if (volume_shown_) {
-    renderer_->RemoveViewProp(volume_sequence_[frame_index_]);
-    renderer_->AddViewProp(volume_sequence_[index]);
-  }
-  this->UpdateSlicePlanes(index);
-
-  // frame_index_ = index;
-  this->Render();
-}
-
-void Viewer::UpdateSnakesJunctions(int index) {
-  if (snakes_shown_) {
-    this->RemoveSnakes();
-    this->SetupSnakes(snakes_sequence_[index]);
-  }
-  if (junctions_shown_) {
-    this->RemoveJunctions();
-    if (!junctions_sequence_.empty())
-      this->SetupJunctions(junctions_sequence_[index]);
-  }
-  this->Render();
-}
-
-void Viewer::UpdateSlicePlanes(int index) {
-  double slice_pos[3];
-  for (int i = 0; i < kDimension; i++) {
-    slice_pos[i] = slice_planes_[i]->GetSlicePosition();
-    // slice_planes_[i]->SetInputData(image_sequence_[i]);
-    // slice_planes_[i]->SetWindowLevel(window_, level_);
-    // slice_planes_[i]->UpdatePlacement();
-  }
-  this->SetupSlicePlanes(image_sequence_[index]);
-  for (int i = 0; i < kDimension; i++) {
-    slice_planes_[i]->SetSlicePosition(slice_pos[i]);
-  }
-}
-
 void Viewer::UpdateJunctionRadius(ImageType::Pointer image) {
   ImageType::SizeType size = image->GetLargestPossibleRegion().GetSize();
   double diag_length = 0.0;
@@ -336,8 +179,6 @@ void Viewer::UpdateJunctionRadius(ImageType::Pointer image) {
     junction_radius_ = 2.5;
   else
     junction_radius_ = 3.5;
-  // std::cout << "Junction radius is set to: "
-  //           << junction_radius_ << std::endl;
 }
 
 void Viewer::SetupSlicePlanes(vtkImageData *data) {
@@ -384,36 +225,21 @@ void Viewer::SetupMIPRendering(vtkImageData *data) {
   mip_volume_property->SetInterpolationTypeToLinear();
   volume_->SetProperty(mip_volume_property);
 
-  // vtkSmartPointer<vtkVolumeRayCastMapper> mapper =
-  //     vtkSmartPointer<vtkVolumeRayCastMapper>::New();
-  vtkSmartPointer<vtkSmartVolumeMapper> mapper =
-      vtkSmartPointer<vtkSmartVolumeMapper>::New();
-  // mapper->SetBlendModeToComposite();
-  // mapper->SetRequestedRenderModeToRayCast();
-  // mapper->SetRequestedRenderMode(vtkSmartVolumeMapper::GPURenderMode);
-  mapper->SetBlendModeToMaximumIntensity();
+  vtkSmartPointer<vtkVolumeRayCastMapper> mapper =
+      vtkSmartPointer<vtkVolumeRayCastMapper>::New();
   mapper->SetInputData(data);
-  // vtkSmartPointer<vtkVolumeRayCastMIPFunction> mip_function =
-  //     vtkSmartPointer<vtkVolumeRayCastMIPFunction>::New();
-  // mapper->SetVolumeRayCastFunction(mip_function);
+  vtkSmartPointer<vtkVolumeRayCastMIPFunction> mip_function =
+      vtkSmartPointer<vtkVolumeRayCastMIPFunction>::New();
+  mapper->SetVolumeRayCastFunction(mip_function);
   volume_->SetMapper(mapper);
 }
 
 void Viewer::ToggleMIPRendering(bool state) {
-  volume_shown_ = state;
   if (state) {
-    if (volume_sequence_.empty()) {
-      renderer_->AddViewProp(volume_);
-    } else {
-      renderer_->AddViewProp(volume_sequence_[frame_index_]);
-    }
+    renderer_->AddViewProp(volume_);
     renderer_->ResetCamera();
   } else {
-    if (volume_sequence_.empty()) {
-      renderer_->RemoveViewProp(volume_);
-    } else {
-      renderer_->RemoveViewProp(volume_sequence_[frame_index_]);
-    }
+    renderer_->RemoveViewProp(volume_);
   }
   this->Render();
 }
@@ -444,13 +270,9 @@ void Viewer::SetupOrientationMarker() {
       SetFontSize(font_size);
   axes->GetZAxisCaptionActor2D()->GetCaptionTextProperty()->
       SetFontSize(font_size);
-  // orientation_marker_->SetOutlineColor(0, 0, 1);
   orientation_marker_->SetOrientationMarker(axes);
   orientation_marker_->SetInteractor(qvtk_->GetInteractor());
   orientation_marker_->SetViewport(0, 0, 0.3, 0.3);
-  // orientation_marker_->SetEnabled(true);
-  // orientation_marker_->InteractiveOn();
-  // axes->SetXAxisLabelText("hello");
 }
 
 void Viewer::ToggleOrientationMarker(bool state) {
@@ -466,11 +288,6 @@ void Viewer::SetupUpperLeftCornerText(unsigned min_intensity,
   buffer << "Intensity: [" << min_intensity << ", "
          << max_intensity << "]";
   corner_text_->SetText(2, buffer.str().c_str());
-}
-
-void Viewer::UpdateLeftCornerText(int index) {
-  this->SetupUpperLeftCornerText(sequence_min_intensity_[index],
-                                 sequence_max_intensity_[index]);
 }
 
 void Viewer::SetupUpperRightCornerText() {
@@ -519,22 +336,14 @@ void Viewer::ToggleBoundingBox(bool state) {
 void Viewer::SetupCubeAxes(vtkSmartPointer<vtkImageData> image) {
   cube_axes_->SetBounds(image->GetBounds());
   cube_axes_->SetCamera(camera_);
-  // cube_axes_->SetFlyModeToStaticTriad();
-  // std::cout << cube_axes_->GetCornerOffset() << std::endl;
-  // cube_axes_->SetCornerOffset(0.1);
-
-  // cube_axes_->XAxisTickVisibilityOff();
-  // cube_axes_->XAxisLabelVisibilityOff();
   cube_axes_->GetTitleTextProperty(0)->SetColor(kRed);
   cube_axes_->GetLabelTextProperty(0)->SetColor(kRed);
   cube_axes_->GetTitleTextProperty(1)->SetColor(kGreen);
   cube_axes_->GetLabelTextProperty(1)->SetColor(kGreen);
   cube_axes_->GetTitleTextProperty(2)->SetColor(kBlue);
   cube_axes_->GetLabelTextProperty(2)->SetColor(kBlue);
-  // cube_axes_->GetTitleTextProperty(0)->SetFontSize(40);
-  // std::cout << cube_axes_->GetTitleTextProperty(0)->GetFontSize() << std::endl;
-  // std::cout << cube_axes_->GetXAxisLabelVisibility() << std::endl;
-  vtkSmartPointer<vtkProperty> axes_property = vtkSmartPointer<vtkProperty>::New();
+  vtkSmartPointer<vtkProperty> axes_property =
+      vtkSmartPointer<vtkProperty>::New();
   axes_property->SetLineWidth(2.0);
   axes_property->SetColor(kRed);
   cube_axes_->SetXAxesLinesProperty(axes_property);
@@ -551,11 +360,6 @@ void Viewer::ToggleCubeAxes(bool state) {
     renderer_->RemoveActor(cube_axes_);
   this->Render();
 }
-
-// void Viewer::SetupSnakesSequence(const std::vector<SnakeContainer> &snakes_sequence,
-//                                  unsigned category) {
-
-// }
 
 void Viewer::SetupSnakesAsOneActor(const SnakeContainer &snakes) {
   if (snakes.empty()) return;
@@ -663,7 +467,8 @@ vtkPolyData * Viewer::MakePolyData(Snake *snake,
   return curve;
 }
 
-vtkPolyData * Viewer::MakePolyDataForMultipleSnakes(const SnakeContainer &snakes) {
+vtkPolyData * Viewer::MakePolyDataForMultipleSnakes(
+    const SnakeContainer &snakes) {
   vtkPolyData *curve = vtkPolyData::New();
   vtkPoints *points = vtkPoints::New();
   vtkCellArray *cells = vtkCellArray::New();
@@ -733,7 +538,6 @@ void Viewer::ChangeSnakeColor(Snake *s, double *color) {
 }
 
 void Viewer::ToggleSnakes(bool state) {
-  snakes_shown_ = state;
   if (state) {
     if (snakes_actor_)
       renderer_->AddActor(snakes_actor_);
@@ -805,7 +609,6 @@ void Viewer::SetupSphere(const PointType &point, vtkActor *sphere,
 }
 
 void Viewer::ToggleJunctions(bool state) {
-  junctions_shown_ = state;
   if (state) {
     for (ActorPointMap::const_iterator it = actor_junctions_.begin();
          it != actor_junctions_.end(); ++it) {
@@ -933,8 +736,8 @@ void Viewer::SetupColorSegments(bool azimuthal) {
         it->second->GetSize() - 1 : color_segment_step_;
     unsigned i = 0;
     while (i < it->second->GetSize() - step) {
-      // for (unsigned i = 0; i < it->second->GetSize() - step; i += step) {
-      vtkActor *actor = this->ActSnakeSegments(it->second, i, i + step + 1);
+      vtkActor *actor = this->ActSnakeSegments(it->second, i,
+                                               i + step + 1);
       this->SetupEvolvingActorProperty(actor);
       double color[3];
       VectorType vector = it->second->GetPoint(i) -
@@ -960,66 +763,66 @@ void Viewer::SetupColorSegments(bool azimuthal) {
   }
 }
 
-void Viewer::ComputeColor(VectorType &vector, bool azimuthal, double *color) {
+void Viewer::ComputeColor(const VectorType &vector,
+                          bool azimuthal, double *color) {
   double theta(0.0), phi(0.0);
-  this->ComputeThetaPhi(vector, theta, phi);
+  this->ComputeThetaPhi(vector, &theta, &phi);
   double hue = 0.0;
   if (azimuthal) {
     hue = phi * 2 + 180;
   } else {
     hue = theta * 2;
   }
-  this->ComputeRGBFromHue(hue, color[0], color[1], color[2]);
+  this->ComputeRGBFromHue(hue, color);
 }
 
-void Viewer::ComputeThetaPhi(VectorType &vector,
-                             double &theta,
-                             double &phi) {
+void Viewer::ComputeThetaPhi(const VectorType &vector,
+                             double *theta,
+                             double *phi) {
   // phi is (-pi/2, +pi/2]
   // theta is [0, pi)
-
-  const double r = vector.GetNorm();
-  if (std::abs(vector[0]) < kEpsilon && std::abs(vector[1]) < kEpsilon) {
+  VectorType v = vector;
+  const double r = v.GetNorm();
+  if (std::abs(v[0]) < kEpsilon && std::abs(v[1]) < kEpsilon) {
     // x = y = 0
-    phi = 0;
-    theta = 0;
-  } else if (std::abs(vector[0]) < kEpsilon) {
+    *phi = 0;
+    *theta = 0;
+  } else if (std::abs(v[0]) < kEpsilon) {
     // x = 0, y != 0
-    if (vector[1] < -kEpsilon)
-      vector = -vector;
+    if (v[1] < -kEpsilon)
+      v = -v;
 
-    phi = 90;
-    theta = std::acos(vector[2]/r) * 180 / kPi;
+    *phi = 90;
+    *theta = std::acos(v[2]/r) * 180 / kPi;
   } else {
     // x != 0
-    if (vector[0] < -kEpsilon)
-      vector = -vector;
+    if (v[0] < -kEpsilon)
+      v = -v;
 
-    theta = std::acos(vector[2]/r) * 180 / kPi;
-    phi = std::atan(vector[1] / vector[0]) * 180 / kPi;
+    *theta = std::acos(v[2]/r) * 180 / kPi;
+    *phi = std::atan(v[1] / v[0]) * 180 / kPi;
   }
 }
 
-void Viewer::ComputeRGBFromHue(double hue, double &red, double &green,
-                               double &blue) {
+void Viewer::ComputeRGBFromHue(double hue, double *color) {
   double intensity = 0.5;
   if (hue < 120) {
-    blue = 0;
-    red = intensity * (1 + std::cos(hue*kPi/180.0) /
+    color[0] = intensity * (1 + std::cos(hue*kPi/180.0) /
                        std::cos((60-hue)*kPi/180));
-    green = 3*intensity - red - blue;
+    color[1] = 3*intensity - color[0];
+    color[2] = 0;
   } else if (hue < 240) {
     double hue1 = hue - 120;
-    red = 0;
-    green = intensity * (1 + std::cos(hue1*kPi/180.0) /
+    color[0] = 0;
+    color[1] = intensity * (1 + std::cos(hue1*kPi/180.0) /
                          std::cos((60-hue1)*kPi/180));
-    blue = 3*intensity - red -green;
+    color[2] = 3*intensity - color[1];
   } else {
     double hue1 = hue - 240;
-    green = 0;
-    blue = intensity * (1 + std::cos(hue1*kPi/180.0) /
+    color[1] = 0;
+    color[2] = intensity * (1 + std::cos(hue1*kPi/180.0) /
                         std::cos((60-hue1)*kPi/180));
-    red = 3*intensity - green - blue;
+    color[0] = 3*intensity - color[2];
   }
 }
 
@@ -1059,12 +862,8 @@ void Viewer::SelectSnakeForView() {
     ActorSnakeMap::const_iterator it = actor_snake_map_.find(actor);
     if (it != actor_snake_map_.end()) {
       actor->GetProperty()->SetColor(selected_snake_color_);
-      // if (selected_snake_) {
-      //   snake_actor_map_[selected_snake_]->GetProperty()->SetColor(snake_color_);
-      // }
       selected_snake_ = it->second;
-      // it->second->PrintSelf();
-      this->UpdateCorrespondingSnakes();
+      it->second->PrintSelf();
     }
   }
 }
@@ -1080,177 +879,6 @@ void Viewer::DeselectSnakeForView() {
       actor->GetProperty()->SetColor(snake_color_);
       selected_snake_ = NULL;
     }
-  }
-}
-
-void Viewer::HighlightCorrespondingSnake(int index) {
-  if (index > frame_index_ && corresponding_snake_forward_) {
-    SnakeActorMap::const_iterator it = snake_actor_map_.find(corresponding_snake_forward_);
-    if (it != snake_actor_map_.end()) {
-      it->second->GetProperty()->SetColor(selected_snake_color_);
-      selected_snake_ = corresponding_snake_forward_;
-    }
-  }
-
-  if (index < frame_index_ && corresponding_snake_backward_) {
-    SnakeActorMap::const_iterator it = snake_actor_map_.find(corresponding_snake_backward_);
-    if (it != snake_actor_map_.end()) {
-      it->second->GetProperty()->SetColor(selected_snake_color_);
-      selected_snake_ = corresponding_snake_backward_;
-    }
-  }
-
-  this->UpdateCorrespondingSnakes();
-  this->Render();
-}
-
-
-
-void Viewer::UpdateCorrespondingSnakes() {
-  CorrespondenceMap::const_iterator forward_it =
-      forward_correspondence_.find(selected_snake_);
-  CorrespondenceMap::const_iterator backward_it =
-      backward_correspondence_.find(selected_snake_);
-
-  if (forward_it != forward_correspondence_.end()) {
-    corresponding_snake_forward_ = forward_it->second;
-  } else {
-    corresponding_snake_forward_ = NULL;
-  }
-  if (backward_it != backward_correspondence_.end()) {
-    corresponding_snake_backward_ = backward_it->second;
-  } else {
-    corresponding_snake_backward_ = NULL;
-  }
-}
-
-void Viewer::SolveCorrespondence() {
-  assert(!snakes_sequence_.empty());
-  this->GetAllSnakes();
-  unsigned n = all_snakes_.size();
-  Matrix<double> distance_matrix(n, n);
-  this->ComputeDistanceMatrix(distance_matrix);
-  std::ofstream outfile("distance_matrix.csv");
-  this->PrintMatrix(distance_matrix, outfile);
-  outfile.close();
-  // fill in the Hungarian
-  Munkres solver;
-  solver.solve(distance_matrix);
-  outfile.open("solved_matrix.csv");
-  this->PrintMatrix(distance_matrix, outfile);
-  outfile.close();
-
-  IntMatrix assignment;
-  assignment.resize(n, std::vector<int>(n, 0));
-  for (int i = 0; i < n; i++) {
-    for (int j = i+1; j < n; j++) {
-      if (fabs(distance_matrix(i, j)) < kEpsilon) {
-        assignment[i][j] = 1;
-        assignment[j][i] = 1;
-      }
-    }
-  }
-  // std::ofstream outfile2("assignment_matrix.csv");
-  // for (int i = 0; i < n; i++) {
-  //   for (int j = 0; j < n; j++) {
-  //     outfile2 << assignment[i][j] << ",";
-  //   }
-  //   outfile2 << std::endl;
-  // }
-  // outfile2.close();
-  // assignment[4][8] = 1;
-  // assignment[8][12] = 1;
-  // assignment[12][15] = 1;
-  // assignment[8][4] = 1;
-  // assignment[12][8] = 1;
-  // assignment[15][12] = 1;
-  this->ComputeCorrespondenceMap(assignment);
-}
-
-void Viewer::ComputeCorrespondenceMap(const IntMatrix &assignment) {
-  for (int i = 0; i < assignment.size(); i++) {
-    for (int j = 0; j < assignment[i].size(); j++) {
-      if (assignment[i][j]) {
-        if (i < j) {
-          forward_correspondence_[all_snakes_[i]] = all_snakes_[j];
-        } else if (i > j) {
-          backward_correspondence_[all_snakes_[i]] = all_snakes_[j];
-        }
-      }
-    }
-  }
-}
-
-void Viewer::GetAllSnakes() {
-  assert(!snakes_sequence_.empty());
-  unsigned max_number_of_frames = snakes_sequence_.size();
-  snake_quantity_partial_sums_.reserve(max_number_of_frames);
-  unsigned last_size = 0;
-  for (unsigned i = 0; i < max_number_of_frames; i++) {
-    for (unsigned j = 0; j < snakes_sequence_[i].size(); j++) {
-      all_snakes_.push_back(snakes_sequence_[i][j]);
-    }
-    snake_quantity_partial_sums_.push_back(
-        last_size + snakes_sequence_[i].size());
-    last_size = snake_quantity_partial_sums_.back();
-  }
-
-  // for (unsigned i = 0; i < snake_quantity_partial_sums_.size(); ++i) {
-  //   std::cout << snake_quantity_partial_sums_[i] << std::endl;
-  // }
-}
-
-void Viewer::ComputeDistanceMatrix(Matrix<double> &distance_matrix) {
-  assert(!all_snakes_.empty());
-
-  // Compute the curve distance first.
-  for (unsigned i = 0; i < distance_matrix.rows(); i++) {
-    for (unsigned j = 0; j < distance_matrix.columns(); j++) {
-      if (this->HasNoEdge(i, j)) {
-        distance_matrix(i, j) = kPlusInfinity;
-      } else {
-        distance_matrix(i, j) = this->ComputeDistance(all_snakes_[i], all_snakes_[j]);
-      }
-    }
-  }
-}
-
-bool Viewer::HasNoEdge(int i, int j) {
-  assert(!snake_quantity_partial_sums_.empty());
-  return (i >= j) ||
-      (std::upper_bound(snake_quantity_partial_sums_.begin(),
-                        snake_quantity_partial_sums_.end(), i) ==
-      std::upper_bound(snake_quantity_partial_sums_.begin(),
-                       snake_quantity_partial_sums_.end(), j));
-}
-
-double Viewer::ComputeDistance(Snake *si, Snake *sj) {
-  DataContainer distances;
-  for (int i = 0; i < si->GetSize(); i++) {
-    distances.push_back(this->ComputeShortestDistance(si->GetPoint(i), sj));
-  }
-  for (int j = 0; j < sj->GetSize(); j++) {
-    distances.push_back(this->ComputeShortestDistance(sj->GetPoint(j), si));
-  }
-  return Mean(distances);
-}
-
-double Viewer::ComputeShortestDistance(const PointType &p, Snake *s) {
-  double min_dist = kPlusInfinity;
-  for (int i = 0; i < s->GetSize(); i++) {
-    double d = p.EuclideanDistanceTo(s->GetPoint(i));
-    if (d < min_dist)
-      min_dist = d;
-  }
-  return min_dist;
-}
-
-void Viewer::PrintMatrix(const Matrix<double> m, std::ostream &os) {
-  for (int row = 0 ; row < m.rows() ; row++) {
-    for (int col = 0; col < m.columns(); col++) {
-      os << m(row, col) << ",";
-    }
-    os << std::endl;
   }
 }
 
@@ -1305,7 +933,8 @@ void Viewer::RemoveSelectedSnakes() {
   if (selected_snakes_.empty()) return;
   for (SnakeSet::const_iterator it = selected_snakes_.begin();
        it != selected_snakes_.end(); ++it) {
-    SnakeActorMap::const_iterator snake_actor_it = snake_actor_map_.find(*it);
+    SnakeActorMap::const_iterator snake_actor_it =
+        snake_actor_map_.find(*it);
     if (snake_actor_it != snake_actor_map_.end()) {
       renderer_->RemoveActor(snake_actor_it->second);
       actor_snake_map_.erase(snake_actor_it->second);
@@ -1410,11 +1039,13 @@ void Viewer::ToggleExtendTip(bool state) {
     for (unsigned i = 0; i < kDimension; ++i) {
       slot_connector_->Connect(slice_planes_[i],
                                vtkCommand::EndInteractionEvent,
-                               this, SLOT(SelectExtendVertex(vtkObject *)));
+                               this,
+                               SLOT(SelectExtendVertex(vtkObject *)));
     }
     slot_connector_->Connect(qvtk_->GetInteractor(),
                              vtkCommand::RightButtonPressEvent,
-                             this, SLOT(DeselectExtendVertex(vtkObject *)));
+                             this,
+                             SLOT(DeselectExtendVertex(vtkObject *)));
   } else {
     slot_connector_->Disconnect(qvtk_->GetInteractor(),
                                 vtkCommand::LeftButtonPressEvent,
@@ -1494,11 +1125,13 @@ void Viewer::ToggleTrimBody(bool state) {
     for (unsigned i = 0; i < kDimension; ++i) {
       slot_connector_->Connect(slice_planes_[i],
                                vtkCommand::EndInteractionEvent,
-                               this, SLOT(SelectInsertedVertex(vtkObject *)));
+                               this,
+                               SLOT(SelectInsertedVertex(vtkObject *)));
     }
     slot_connector_->Connect(qvtk_->GetInteractor(),
                              vtkCommand::RightButtonPressEvent,
-                             this, SLOT(DeselectInsertedVertex(vtkObject *)));
+                             this,
+                             SLOT(DeselectInsertedVertex(vtkObject *)));
   } else {
     slot_connector_->Disconnect(qvtk_->GetInteractor(),
                                 vtkCommand::LeftButtonPressEvent,
@@ -1680,11 +1313,10 @@ void Viewer::DeselectJunction() {
   }
 }
 
-void Viewer::RemoveSelectedJunctions(Junctions &junctions) {
+void Viewer::RemoveSelectedJunctions() {
   if (selected_junctions_.empty()) return;
   for (ActorPointMap::iterator it = selected_junctions_.begin();
        it != selected_junctions_.end(); ++it) {
-    junctions.RemoveJunction(it->second);
     renderer_->RemoveActor(it->first);
     actor_junctions_.erase(it->first);
     it->first->Delete();
@@ -1692,6 +1324,14 @@ void Viewer::RemoveSelectedJunctions(Junctions &junctions) {
   selected_junctions_.clear();
 }
 
+std::vector<PointType> Viewer::GetSelectedJunctions() const {
+  std::vector<PointType> pts;
+  for (ActorPointMap::const_iterator it = selected_junctions_.begin();
+       it != selected_junctions_.end(); ++it) {
+    pts.push_back(it->second);
+  }
+  return pts;
+}
 
 void Viewer::Render() {
   qvtk_->GetRenderWindow()->Render();

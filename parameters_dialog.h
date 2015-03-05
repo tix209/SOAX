@@ -65,6 +65,7 @@ class ParametersDialog : public QDialog {
   }
   unsigned GetRadialNear() {return radial_near_edit_->text().toInt();}
   unsigned GetRadialFar() {return radial_far_edit_->text().toInt();}
+  double GetZSpacing() {return z_spacing_edit_->text().toDouble();}
   unsigned GetDelta() {return delta_edit_->text().toUInt();}
   double GetOverlapThreshold() {
     return overlap_threshold_edit_->text().toDouble();
@@ -109,6 +110,7 @@ class ParametersDialog : public QDialog {
   QLineEdit *number_of_sectors_edit_;
   QLineEdit *radial_near_edit_;
   QLineEdit *radial_far_edit_;
+  QLineEdit *z_spacing_edit_;
   QLineEdit *delta_edit_;
   QLineEdit *overlap_threshold_edit_;
   QLineEdit *grouping_distance_threshold_edit_;

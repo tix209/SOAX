@@ -1160,6 +1160,7 @@ void MainWindow::SetParameters() {
   Snake::set_number_of_sectors(parameters_dialog_->GetNumberOfSectors());
   Snake::set_radial_near(parameters_dialog_->GetRadialNear());
   Snake::set_radial_far(parameters_dialog_->GetRadialFar());
+  Snake::set_z_spacing(parameters_dialog_->GetZSpacing());
   Snake::set_delta(parameters_dialog_->GetDelta());
   Snake::set_overlap_threshold(parameters_dialog_->GetOverlapThreshold());
   Snake::set_grouping_distance_threshold(

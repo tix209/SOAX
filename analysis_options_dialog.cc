@@ -39,13 +39,13 @@ void AnalysisOptionsDialog::GetImageCenter(PointType &center) const {
 }
 
 QGroupBox * AnalysisOptionsDialog::CreateCurvatureGroup() {
-  QGroupBox *gb = new QGroupBox(tr("Curvature (Unit:snake points)"));
+  QGroupBox *gb = new QGroupBox(tr("Curvature (1/pixel)"));
   coarse_graining_edit_ = new QLineEdit("8");
 
   connect(coarse_graining_edit_, SIGNAL(textChanged(const QString &)),
           this, SLOT(EnableOKButton()));
 
-  QLabel *label = new QLabel(tr("Coarse graining"));
+  QLabel *label = new QLabel(tr("Coarse graining (SOAC points)"));
 
   QHBoxLayout *layout = new QHBoxLayout;
   layout->addWidget(label);
@@ -57,7 +57,7 @@ QGroupBox * AnalysisOptionsDialog::CreateCurvatureGroup() {
 
 QGroupBox * AnalysisOptionsDialog::CreatePointDensityGroup() {
   QGroupBox *gb = new QGroupBox(
-      tr("Radial orientation && Point density (Unit:pixels)"));
+      tr("Spherical, Radial Orientation && Point Density"));
   center_x_edit_ = new QLineEdit("0");
   center_y_edit_ = new QLineEdit("0");
   center_z_edit_ = new QLineEdit("0");
@@ -75,8 +75,8 @@ QGroupBox * AnalysisOptionsDialog::CreatePointDensityGroup() {
   connect(pixel_size_edit_, SIGNAL(textChanged(const QString &)),
           this, SLOT(EnableOKButton()));
 
-  QLabel *center_label = new QLabel(tr("Center (x, y, z)"));
-  QLabel *radius_label = new QLabel(tr("Radius (pixel)"));
+  QLabel *center_label = new QLabel(tr("Center x, y, z (pixels)"));
+  QLabel *radius_label = new QLabel(tr("Radius (pixels) "));
   QLabel *pixel_size_label = new QLabel(tr("Pixel size (um)"));
 
   QHBoxLayout *hlayout1 = new QHBoxLayout;

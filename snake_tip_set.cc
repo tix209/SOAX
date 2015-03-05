@@ -28,7 +28,6 @@ void SnakeTipSet::Combine(SnakeTipSet *ts) {
   }
 }
 
-
 void SnakeTipSet::UpdatePosition() {
   degree_ = tips_.size();
   assert(!tips_.empty());
@@ -41,7 +40,6 @@ void SnakeTipSet::UpdatePosition() {
     position_[i] = sum / degree_;
   }
 }
-
 
 double SnakeTipSet::ComputeDistance(SnakeTip *t) const {
   assert(!tips_.empty());
@@ -76,7 +74,6 @@ void SnakeTipSet::Configure() {
     this->Configure();
   }
 }
-
 
 double SnakeTipSet::FindSmoothestPair(SnakeTip * &t1, SnakeTip * &t2) {
   double max_angle = 0.0;

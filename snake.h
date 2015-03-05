@@ -132,6 +132,11 @@ class Snake {
     radial_far_ = rfar > 0 ? rfar : 2;
   }
 
+  static double z_spacing() {return z_spacing_;}
+  static void set_z_spacing(double spacing) {
+    z_spacing_ = spacing;
+  }
+
   static unsigned delta() {return delta_;}
   static void set_delta(unsigned n) {delta_ = n;}
 

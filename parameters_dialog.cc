@@ -15,7 +15,6 @@
 namespace soax {
 ParametersDialog::ParametersDialog(QWidget *parent) : QDialog(parent) {
   QVBoxLayout *layout = new QVBoxLayout;
-  //  QGridLayout *layout = new QGridLayout;
   layout->addWidget(this->CreateSnakeGroup());
 
   button_box_ = new QDialogButtonBox(QDialogButtonBox::Ok |
@@ -53,6 +52,7 @@ void ParametersDialog::SetCurrentParameters(Multisnake *ms) {
       QString::number(Snake::number_of_sectors()));
   radial_near_edit_->setText(QString::number(Snake::radial_near()));
   radial_far_edit_->setText(QString::number(Snake::radial_far()));
+  z_spacing_edit_->setText(QString::number(Snake::z_spacing()));
   delta_edit_->setText(QString::number(Snake::delta()));
   overlap_threshold_edit_->setText(
       QString::number(Snake::overlap_threshold()));
@@ -94,6 +94,7 @@ QGroupBox * ParametersDialog::CreateSnakeGroup() {
   number_of_sectors_edit_ = new QLineEdit("0");
   radial_near_edit_ = new QLineEdit("0");
   radial_far_edit_ = new QLineEdit("0");
+  z_spacing_edit_ = new QLineEdit("0");
   delta_edit_ = new QLineEdit("0");
   overlap_threshold_edit_ = new QLineEdit("0.0");
   grouping_distance_threshold_edit_ = new QLineEdit("0.0");
@@ -143,6 +144,8 @@ QGroupBox * ParametersDialog::CreateSnakeGroup() {
           this, SLOT(EnableOKButton()));
   connect(radial_far_edit_, SIGNAL(textEdited(const QString &)),
           this, SLOT(EnableOKButton()));
+  connect(z_spacing_edit_, SIGNAL(textEdited(const QString &)),
+          this, SLOT(EnableOKButton()));
   connect(delta_edit_, SIGNAL(textEdited(const QString &)),
           this, SLOT(EnableOKButton()));
   connect(overlap_threshold_edit_, SIGNAL(textEdited(const QString &)),
@@ -164,9 +167,9 @@ QGroupBox * ParametersDialog::CreateSnakeGroup() {
                       intensity_scaling_edit_);
   layout_left->addRow(tr("Gaussian Standard Deviation (pixels)"),
                       sigma_edit_);
-  layout_left->addRow(tr("Ridge Threshold"), ridge_threshold_edit_);
-  layout_left->addRow(tr("Foreground"), foreground_edit_);
-  layout_left->addRow(tr("Background"), background_edit_);
+  layout_left->addRow(tr("Ridge Threshold (tau)"), ridge_threshold_edit_);
+  layout_left->addRow(tr("Maximum Foreground"), foreground_edit_);
+  layout_left->addRow(tr("Minimum Foreground"), background_edit_);
   layout_left->addRow(tr("Snake Point Spacing (pixels) "), spacing_edit_);
   layout_left->addRow(tr("Minimum Snake Length (pixels)"),
                       min_snake_length_edit_);
@@ -183,18 +186,20 @@ QGroupBox * ParametersDialog::CreateSnakeGroup() {
   layout_right->addRow(tr("Alpha"), alpha_edit_);
   layout_right->addRow(tr("Beta"), beta_edit_);
   layout_right->addRow(tr("Gamma"), gamma_edit_);
-  layout_right->addRow(tr("External Factor"), external_factor_edit_);
-  layout_right->addRow(tr("Stretch Factor"), stretch_factor_edit_);
-  layout_right->addRow(tr("Number of Sectors"), number_of_sectors_edit_);
+  layout_right->addRow(tr("External Factor (k_img)"), external_factor_edit_);
+  layout_right->addRow(tr("Stretch Factor (k_str)"), stretch_factor_edit_);
+  layout_right->addRow(tr("Number of Background Radial Sectors"),
+                       number_of_sectors_edit_);
   layout_right->addRow(tr("Radial Near (pixels)"), radial_near_edit_);
   layout_right->addRow(tr("Radial Far (pixels)"), radial_far_edit_);
+  layout_right->addRow(tr("Pixel Size Z/XY"), z_spacing_edit_);
   layout_right->addRow(tr("Delta"), delta_edit_);
   layout_right->addRow(tr("Overlap Threshold (pixels)"),
                        overlap_threshold_edit_);
   layout_right->addRow(tr("Grouping Distance Threshold (pixels)"),
                        grouping_distance_threshold_edit_);
   layout_right->addRow(tr("Grouping Delta"), grouping_delta_edit_);
-  layout_right->addRow(tr("Direction Threshold (radians)"),
+  layout_right->addRow(tr("Minimum Angle for SOAC Linking (radians)"),
                        direction_threshold_edit_);
 
   QHBoxLayout *layout = new QHBoxLayout;

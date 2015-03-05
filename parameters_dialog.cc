@@ -192,7 +192,7 @@ QGroupBox * ParametersDialog::CreateSnakeGroup() {
                        number_of_sectors_edit_);
   layout_right->addRow(tr("Radial Near (pixels)"), radial_near_edit_);
   layout_right->addRow(tr("Radial Far (pixels)"), radial_far_edit_);
-  layout_right->addRow(tr("Pixel Size Z/XY"), z_spacing_edit_);
+  layout_right->addRow(tr("Background Z/XY ratio (pixels)"), z_spacing_edit_);
   layout_right->addRow(tr("Delta"), delta_edit_);
   layout_right->addRow(tr("Overlap Threshold (pixels)"),
                        overlap_threshold_edit_);

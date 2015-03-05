@@ -185,23 +185,23 @@ void Multisnake::AssignParameters(const std::string &name,
   if (name == "intensity-scaling") {
     this->set_intensity_scaling(String2Double(value));
     Snake::set_intensity_scaling(intensity_scaling_);
-  } else if (name == "smoothing") {
+  } else if (name == "smoothing" || name == "gaussian-std") {
     sigma_ = String2Double(value);
-  } else if (name == "grad-diff") {
+  } else if (name == "grad-diff" || name == "ridge-threshold") {
     ridge_threshold_ = String2Double(value);
-  } else if (name == "foreground") {
+  } else if (name == "foreground" || name == "maximum-foreground") {
     foreground_ = String2Unsigned(value);
     Snake::set_foreground(foreground_);
-  } else if (name == "background") {
+  } else if (name == "background" || name == "minimum-foreground") {
     background_ = String2Unsigned(value);
     Snake::set_background(background_);
-  } else if (name == "spacing") {
+  } else if (name == "spacing" || name == "snake-point-spacing") {
     Snake::set_desired_spacing(String2Double(value));
   } else if (name == "init-z") {
     initialize_z_ = value == "true";
-  } else if (name == "minimum-size") {
+  } else if (name == "minimum-size" || name == "minimum-snake-length") {
     Snake::set_minimum_length(String2Double(value));
-  } else if (name == "max-iterations") {
+  } else if (name == "max-iterations" || name == "maximum-iterations") {
     Snake::set_max_iterations(String2Unsigned(value));
   } else if (name == "change-threshold") {
     Snake::set_change_threshold(String2Double(value));
@@ -213,16 +213,19 @@ void Multisnake::AssignParameters(const std::string &name,
     solver_bank_->set_beta(String2Double(value));
   } else if (name == "gamma") {
     solver_bank_->set_gamma(String2Double(value));
-  } else if (name == "weight") {
+  } else if (name == "weight" || name == "external-factor") {
     Snake::set_external_factor(String2Double(value));
-  } else if (name == "stretch") {
+  } else if (name == "stretch" || name == "stretch-factor") {
     Snake::set_stretch_factor(String2Double(value));
-  } else if (name == "nsector") {
+  } else if (name == "nsector" ||
+             name == "number-of-background-radial-sectors") {
     Snake::set_number_of_sectors(String2Unsigned(value));
   } else if (name == "radial-near") {
     Snake::set_radial_near(String2Unsigned(value));
   } else if (name == "radial-far") {
     Snake::set_radial_far(String2Unsigned(value));
+  } else if (name == "background-z-xy-ratio") {
+    Snake::set_z_spacing(String2Double(value));
   } else if (name == "delta") {
     Snake::set_delta(String2Unsigned(value));
   } else if (name == "overlap-threshold") {
@@ -231,7 +234,8 @@ void Multisnake::AssignParameters(const std::string &name,
     Snake::set_grouping_distance_threshold(String2Double(value));
   } else if (name == "grouping-delta") {
     Snake::set_grouping_delta(String2Unsigned(value));
-  } else if (name == "direction-threshold") {
+  } else if (name == "direction-threshold" ||
+             name == "minimum-angle-for-soac-linking") {
     Snake::set_direction_threshold(String2Double(value));
   } else if (name == "damp-z") {
     Snake::set_damp_z(value == "true");
@@ -253,31 +257,34 @@ void Multisnake::SaveParameters(const std::string &filename) const {
 std::ostream & Multisnake::WriteParameters(std::ostream &os) const {
   os << std::boolalpha;
   os << "intensity-scaling\t" << intensity_scaling_ << std::endl;
-  os << "smoothing\t" << sigma_ << std::endl;
-  os << "grad-diff\t" << ridge_threshold_ << std::endl;
-  os << "foreground\t" << foreground_ << std::endl;
-  os << "background\t" << background_ << std::endl;
+  os << "gaussian-std\t" << sigma_ << std::endl;
+  os << "ridge-threshold\t" << ridge_threshold_ << std::endl;
+  os << "maximum-foreground\t" << foreground_ << std::endl;
+  os << "minimum-foreground\t" << background_ << std::endl;
   os << "init-z\t" << initialize_z_ << std::endl;
-  os << "spacing \t" << Snake::desired_spacing() << std::endl;
-  os << "minimum-size \t" << Snake::minimum_length() << std::endl;
-  os << "max-iterations \t" << Snake::max_iterations() << std::endl;
-  os << "change-threshold \t" << Snake::change_threshold() << std::endl;
-  os << "check-period \t" << Snake::check_period() << std::endl;
-  os << "alpha \t" << solver_bank_->alpha() << std::endl;
-  os << "beta \t" << solver_bank_->beta() << std::endl;
-  os << "gamma \t" << solver_bank_->gamma() << std::endl;
-  os << "weight \t" << Snake::external_factor() << std::endl;
-  os << "stretch \t" << Snake::stretch_factor() << std::endl;
-  os << "nsector \t" << Snake::number_of_sectors() << std::endl;
-  os << "radial-near \t" << Snake::radial_near() << std::endl;
-  os << "radial-far \t" << Snake::radial_far() << std::endl;
-  os << "delta \t" << Snake::delta() << std::endl;
-  os << "overlap-threshold \t" << Snake::overlap_threshold() << std::endl;
-  os << "grouping-distance-threshold \t"
+  os << "snake-point-spacing\t" << Snake::desired_spacing() << std::endl;
+  os << "minimum-snake-length\t" << Snake::minimum_length() << std::endl;
+  os << "maximum-iterations\t" << Snake::max_iterations() << std::endl;
+  os << "change-threshold\t" << Snake::change_threshold() << std::endl;
+  os << "check-period\t" << Snake::check_period() << std::endl;
+  os << "alpha\t" << solver_bank_->alpha() << std::endl;
+  os << "beta\t" << solver_bank_->beta() << std::endl;
+  os << "gamma\t" << solver_bank_->gamma() << std::endl;
+  os << "external-factor\t" << Snake::external_factor() << std::endl;
+  os << "stretch-factor\t" << Snake::stretch_factor() << std::endl;
+  os << "number-of-background-radial-sectors\t"
+     << Snake::number_of_sectors() << std::endl;
+  os << "background-z-xy-ratio\t" << Snake::z_spacing() << std::endl;
+  os << "radial-near\t" << Snake::radial_near() << std::endl;
+  os << "radial-far\t" << Snake::radial_far() << std::endl;
+  os << "delta\t" << Snake::delta() << std::endl;
+  os << "overlap-threshold\t" << Snake::overlap_threshold() << std::endl;
+  os << "grouping-distance-threshold\t"
      << Snake::grouping_distance_threshold() << std::endl;
-  os << "grouping-delta \t" << Snake::grouping_delta() << std::endl;
-  os << "direction-threshold \t" << Snake::direction_threshold() << std::endl;
-  os << "damp-z \t" << Snake::damp_z() << std::endl;
+  os << "grouping-delta\t" << Snake::grouping_delta() << std::endl;
+  os << "minimum-angle-for-soac-linking\t"
+     << Snake::direction_threshold() << std::endl;
+  os << "damp-z\t" << Snake::damp_z() << std::endl;
   os << std::noboolalpha;
   return os;
 }

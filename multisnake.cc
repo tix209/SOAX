@@ -590,7 +590,6 @@ void Multisnake::DeformSnakes() {
   while (!initial_snakes_.empty()) {
     Snake *snake = initial_snakes_.back();
     initial_snakes_.pop_back();
-    // outfile << snake->ComputeIntensity() << std::endl;
     solver_bank_->Reset(false);
     snake->Evolve(solver_bank_, converged_snakes_, kBigNumber, is_2d_);
 
@@ -645,8 +644,6 @@ void Multisnake::GroupSnakes() {
   junctions_.Initialize(converged_snakes_);
   junctions_.Union();
   junctions_.Configure();
-  //  junctions_.PrintTipSets();
-  //  junctions_.PrintTips();
   this->LinkSegments(converged_snakes_);
   SnakeIterator it = converged_snakes_.begin();
   while (it != converged_snakes_.end()) {
@@ -656,7 +653,6 @@ void Multisnake::GroupSnakes() {
       it++;
     } else {
       delete *it;
-      // std::cout << "snake  erased!" << std::endl;
       it = converged_snakes_.erase(it);
     }
   }
@@ -747,8 +743,6 @@ void Multisnake::UpdateJunctions() {
     if (num_of_close_snake > 1)
       new_junction_points.push_back(*it);
   }
-  // int size_diff = junction_points.size() - new_junction_points.size();
-  // std::cout << "size diff: " << size_diff << std::endl;
   junctions_.set_junction_points(new_junction_points);
 }
 
@@ -901,8 +895,6 @@ void Multisnake::SaveSnakes(const SnakeContainer &snakes,
   }
 
   unsigned snake_index = 0;
-  // outfile << std::setprecision(12);
-
   for (SnakeConstIterator it = snakes.begin(); it != snakes.end(); ++it) {
     outfile << "#" << (*it)->open() << std::endl;
     for (unsigned j = 0; j != (*it)->GetSize(); ++j) {
@@ -1156,6 +1148,15 @@ void Multisnake::ComputeSphericalOrientation(
   }
 }
 
+void Multisnake::ComputeSnakeLength(double pixel_size,
+                                    std::ostream &os) const {
+  os << "Index,Length(um)" << std::endl;
+  for (int i = 0; i < converged_snakes_.size(); i++) {
+    os << i << "," << converged_snakes_[i]->length() * pixel_size
+       << std::endl;
+  }
+}
+
 bool Multisnake::IsInsideSphere(const PointType &center,
                                 double r, const PointType p) const {
   return center.EuclideanDistanceTo(p) < r;
@@ -1274,8 +1275,6 @@ void Multisnake::ComputeLocalSNRs(const SnakeContainer &snakes,
 
       if (local_bg_defined)
         snrs.push_back(local_snr);
-      // else
-      //   std::cerr << "Local background undefined!" << std::endl;
     }
   }
 }
@@ -1289,11 +1288,9 @@ void Multisnake::ComputeResultSnakesVertexErrorHausdorffDistance(
   this->ComputeErrorFromSnakesToComparingSnakes(errors1);
   this->ComputeErrorFromComparingSnakesToSnakes(errors2);
   vertex_error = (Mean(errors1) + Mean(errors2))/2;
-  // std::cout << "ve: " << vertex_error << std::endl;
   double max_error1 = Maximum(errors1);
   double max_error2 = Maximum(errors2);
   hausdorff = max_error1 > max_error2 ? max_error1 : max_error2;
-  // std::cout << "hausdorff: " << hausdorff << std::endl;
 }
 
 void Multisnake::GenerateSyntheticImage(unsigned foreground,
@@ -1307,7 +1304,6 @@ void Multisnake::GenerateSyntheticImage(unsigned foreground,
   img->SetRegions(image_->GetLargestPossibleRegion());
   img->Allocate();
   if (sigma < kEpsilon) {
-    // std::cout << "generating clean image..." << std::endl;
     img->FillBuffer(background);
   } else {
     img->FillBuffer(0.0);

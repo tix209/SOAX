@@ -291,6 +291,10 @@ void MainWindow::CreateAnalysisMenuActions() {
   connect(compute_curvature_, SIGNAL(triggered()),
           this, SLOT(ComputeCurvature()));
 
+  compute_snake_length_ = new QAction(tr("Compute Snake Length"), this);
+  connect(compute_snake_length_, SIGNAL(triggered()),
+          this, SLOT(ComputeSnakeLength()));
+
   show_analysis_options_ = new QAction(tr("Options"), this);
   connect(show_analysis_options_, SIGNAL(triggered()),
           this, SLOT(ShowAnalysisOptions()));
@@ -377,6 +381,7 @@ void MainWindow::CreateMenus() {
   analysis_->addAction(compute_radial_orientation_);
   analysis_->addAction(compute_point_density_);
   analysis_->addAction(compute_curvature_);
+  analysis_->addAction(compute_snake_length_);
   analysis_->addAction(show_analysis_options_);
 
   tools_ = menuBar()->addMenu(tr("&Tools"));
@@ -473,6 +478,7 @@ void MainWindow::ResetActions() {
   compute_radial_orientation_->setEnabled(false);
   compute_point_density_->setEnabled(false);
   compute_curvature_->setEnabled(false);
+  compute_snake_length_->setEnabled(false);
   show_analysis_options_->setEnabled(false);
 
   show_parameters_->setEnabled(false);
@@ -620,6 +626,7 @@ void MainWindow::LoadSnakes() {
   compute_radial_orientation_->setEnabled(true);
   compute_point_density_->setEnabled(true);
   compute_curvature_->setEnabled(true);
+  compute_snake_length_->setEnabled(true);
   show_analysis_options_->setEnabled(true);
 }
 
@@ -884,6 +891,7 @@ void MainWindow::DeformSnakes() {
   compute_radial_orientation_->setEnabled(true);
   compute_point_density_->setEnabled(true);
   compute_curvature_->setEnabled(true);
+  compute_snake_length_->setEnabled(true);
   show_analysis_options_->setEnabled(true);
 }
 
@@ -1026,7 +1034,7 @@ void MainWindow::ComputeSphericalOrientation() {
   outfile.open(analysis_filename_.c_str());
   if (!outfile.is_open()) {
     QMessageBox msg_box;
-    msg_box.setText("Opening file failed.");
+    msg_box.setText("Open file failed.");
     msg_box.setIcon(QMessageBox::Critical);
     msg_box.exec();
     return;
@@ -1056,7 +1064,7 @@ void MainWindow::ComputeRadialOrientation() {
   outfile.open(analysis_filename_.c_str());
   if (!outfile.is_open()) {
     QMessageBox msg_box;
-    msg_box.setText("Opening file failed.");
+    msg_box.setText("Open file failed.");
     msg_box.setIcon(QMessageBox::Critical);
     msg_box.exec();
     return;
@@ -1086,7 +1094,7 @@ void MainWindow::ComputePointDensity() {
   outfile.open(analysis_filename_.c_str());
   if (!outfile.is_open()) {
     QMessageBox msg_box;
-    msg_box.setText("Opening file failed.");
+    msg_box.setText("Open file failed.");
     msg_box.setIcon(QMessageBox::Critical);
     msg_box.exec();
     return;
@@ -1111,13 +1119,35 @@ void MainWindow::ComputeCurvature() {
   outfile.open(analysis_filename_.c_str());
   if (!outfile.is_open()) {
     QMessageBox msg_box;
-    msg_box.setText("Opening file failed.");
+    msg_box.setText("Open file failed.");
     msg_box.setIcon(QMessageBox::Critical);
     msg_box.exec();
     return;
   }
   multisnake_->ComputeCurvature(coarse_graining, outfile);
   statusBar()->showMessage(tr("Curvature file saved."));
+  outfile.close();
+}
+
+void MainWindow::ComputeSnakeLength() {
+  QString dir = this->GetLastDirectory(analysis_filename_);
+  QString filename = QFileDialog::getSaveFileName(
+      this, tr("Save Snake Length"), dir, tr("CSV files (*.csv)"));
+  if (filename.isEmpty()) return;
+  analysis_filename_ = filename.toStdString();
+  double pixel_size = analysis_options_dialog_->GetPixelSize();
+
+  std::ofstream outfile;
+  outfile.open(analysis_filename_.c_str());
+  if (!outfile.is_open()) {
+    QMessageBox msg_box;
+    msg_box.setText("Open file failed.");
+    msg_box.setIcon(QMessageBox::Critical);
+    msg_box.exec();
+    return;
+  }
+  multisnake_->ComputeSnakeLength(pixel_size, outfile);
+  statusBar()->showMessage(tr("SOAC length file saved."));
   outfile.close();
 }
 

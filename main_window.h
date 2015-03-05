@@ -64,6 +64,7 @@ class MainWindow : public QMainWindow {
   void ComputeRadialOrientation();
   void ComputePointDensity();
   void ComputeCurvature();
+  void ComputeSnakeLength();
   void ShowAnalysisOptions();
 
   void ShowParametersDialog();
@@ -148,6 +149,7 @@ class MainWindow : public QMainWindow {
   QAction *compute_radial_orientation_;
   QAction *compute_point_density_;
   QAction *compute_curvature_;
+  QAction *compute_snake_length_;
   QAction *show_analysis_options_;
 
   // Actions in Tools menu

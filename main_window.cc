@@ -15,6 +15,8 @@
 #include "./view_options_dialog.h"
 #include "./solver_bank.h"
 #include "./analysis_options_dialog.h"
+#include "./utility.h"
+
 
 namespace soax {
 
@@ -514,7 +516,14 @@ void MainWindow::OpenImage() {
   view_options_dialog_->SetClipSpan(viewer_->clip_span());
   view_options_dialog_->SetColorSegmentStep(viewer_->color_segment_step());
 
-  analysis_options_dialog_->SetImageCenter(multisnake_->GetImageCenter());
+  PointType center = multisnake_->GetImageCenter();
+  analysis_options_dialog_->SetImageCenter(center);
+  DataContainer center_coordinates;
+  for (int i = 0; i < kDimension; i++) {
+    center_coordinates.push_back(center[i]);
+  }
+  double radius = Minimum(center_coordinates);
+  analysis_options_dialog_->SetRadius(radius);
 
   open_image_->setEnabled(false);
   save_as_isotropic_image_->setEnabled(true);
@@ -1025,8 +1034,7 @@ void MainWindow::GroupSnakes() {
 void MainWindow::ComputeSphericalOrientation() {
   QString dir = this->GetLastDirectory(analysis_filename_);
   QString filename = QFileDialog::getSaveFileName(
-      this, tr("Save spherical orientation"),
-      dir, tr("CSV files (*.csv)"));
+      this, tr("Save spherical orientation"), dir, tr("CSV files (*.csv)"));
   if (filename.isEmpty()) return;
   analysis_filename_ = filename.toStdString();
 
@@ -1052,7 +1060,7 @@ void MainWindow::ComputeSphericalOrientation() {
 void MainWindow::ComputeRadialOrientation() {
   QString dir = this->GetLastDirectory(analysis_filename_);
   QString filename = QFileDialog::getSaveFileName(
-      this, tr("Save radial orientation"), dir, tr("Text files (*.txt)"));
+      this, tr("Save radial orientation"), dir, tr("CSV files (*.csv)"));
   if (filename.isEmpty()) return;
   analysis_filename_ = filename.toStdString();
 
@@ -1079,7 +1087,7 @@ void MainWindow::ComputePointDensity() {
   QString dir = this->GetLastDirectory(analysis_filename_);
   QString filename = QFileDialog::getSaveFileName(
       this, tr("Save SOAC point density/intensity"), dir,
-      tr("Text files (*.txt)"));
+      tr("CSV files (*.csv)"));
   if (filename.isEmpty()) return;
   analysis_filename_ = filename.toStdString();
 
@@ -1109,12 +1117,12 @@ void MainWindow::ComputePointDensity() {
 void MainWindow::ComputeCurvature() {
   QString dir = this->GetLastDirectory(analysis_filename_);
   QString filename = QFileDialog::getSaveFileName(
-      this, tr("Save curvature"), dir, tr("Text files (*.txt)"));
+      this, tr("Save curvature"), dir, tr("CSV files (*.csv)"));
   if (filename.isEmpty()) return;
   analysis_filename_ = filename.toStdString();
 
   int coarse_graining = analysis_options_dialog_->GetCoarseGraining();
-
+  double pixel_size = analysis_options_dialog_->GetPixelSize();
   std::ofstream outfile;
   outfile.open(analysis_filename_.c_str());
   if (!outfile.is_open()) {
@@ -1124,7 +1132,7 @@ void MainWindow::ComputeCurvature() {
     msg_box.exec();
     return;
   }
-  multisnake_->ComputeCurvature(coarse_graining, outfile);
+  multisnake_->ComputeCurvature(coarse_graining, pixel_size, outfile);
   statusBar()->showMessage(tr("Curvature file saved."));
   outfile.close();
 }

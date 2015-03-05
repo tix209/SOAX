@@ -998,17 +998,29 @@ double Multisnake::ComputeShortestDistance(
   return min_dist;
 }
 
+void Multisnake::ComputeSphericalOrientation(
+    const PointType &center, double max_r, std::ostream &os) const {
+  os << "Polar,Azimuthal" << std::endl;
+  for (SnakeConstIterator it = converged_snakes_.begin();
+       it != converged_snakes_.end(); ++it) {
+    for (unsigned i = 0; i < (*it)->GetSize() - 1; ++i) {
+      const PointType &p1 = (*it)->GetPoint(i);
+      const PointType &p2 = (*it)->GetPoint(i+1);
+      if (this->IsInsideSphere(center, max_r, p1) &&
+          this->IsInsideSphere(center, max_r, p2)) {
+        double theta, phi;
+        this->ComputeThetaPhi(p1 - p2, theta, phi);
+        os << theta << "," << phi << std::endl;
+      }
+    }
+  }
+}
 
 void Multisnake::ComputeRadialOrientation(const PointType &center,
                                           double pixel_size,
                                           std::ostream & os) const {
   if (converged_snakes_.empty()) return;
-
-  const unsigned width = 16;
-  os << "Image file\t" << image_filename_ << "\n"
-     << "Image center\t" << center << "\n"
-     << std::setw(width) << "radius (um)"
-     << std::setw(width) << "theta" << std::endl;
+  os << "Radius(um),Theta" << std::endl;
 
   for (SnakeConstIterator it = converged_snakes_.begin();
        it != converged_snakes_.end(); ++it) {
@@ -1016,8 +1028,7 @@ void Multisnake::ComputeRadialOrientation(const PointType &center,
       double r, theta;
       this->ComputeRTheta((*it)->GetPoint(i), (*it)->GetPoint(i+1),
                           center, r, theta);
-      os << std::setw(width) << r * pixel_size
-         << std::setw(width) << theta << std::endl;
+      os << r * pixel_size << "," << theta << std::endl;
     }
   }
 }
@@ -1044,17 +1055,8 @@ void Multisnake::ComputePointDensityAndIntensity(const PointType &center,
                                                  std::ostream & os) const {
   if (converged_snakes_.empty()) return;
 
-  const unsigned width = 16;
   unsigned max_r = static_cast<unsigned>(max_radius);
-
-  os << "Image file\t" << image_filename_
-     << "\nImage center\t" << center
-     << "\nMax radius\t" << max_r
-     << std::setw(width) << "radius (pixel)"
-     << std::setw(width) << "radius (um)"
-     << std::setw(width) << "soac density"
-     << std::setw(width) << "soac intensity"
-     << std::setw(width) << "voxel intensity" << std::endl;
+  os << "Radius(um),SOAC-density,SOAC-intensity,Voxel-intensity" << std::endl;
 
   DataContainer snake_intensities(max_r, 0.0);
   DataContainer voxel_intensities(max_r, 0.0);
@@ -1100,18 +1102,15 @@ void Multisnake::ComputePointDensityAndIntensity(const PointType &center,
     voxel_intensities[i] /= voxel_counts[i];
     double r = (i+1) * pixel_size;
     double density = snaxel_counts[i] / (4 * kPi * r * r);
-    os << std::setw(width) << i + 1
-       << std::setw(width) << r
-       << std::setw(width) << density
-       << std::setw(width) << snake_intensities[i]
-       << std::setw(width) << voxel_intensities[i] << std::endl;
+    os << r << "," << density << "," << snake_intensities[i] << ","
+       << voxel_intensities[i] << std::endl;
   }
 }
 
-void Multisnake::ComputeCurvature(int coarse_graining, std::ostream &os) const {
-  os << "Image file\t" << image_filename_ << "\n"
-     << "Coarse graining\t" << coarse_graining << std::endl;
-
+void Multisnake::ComputeCurvature(int coarse_graining,
+                                  double pixel_size,
+                                  std::ostream &os) const {
+  os << "Curvature(1/um)" << std::endl;
   for (SnakeConstIterator it = converged_snakes_.begin();
        it != converged_snakes_.end(); ++it) {
     const int end_index = (*it)->GetSize() - 2*coarse_graining;
@@ -1123,27 +1122,9 @@ void Multisnake::ComputeCurvature(int coarse_graining, std::ostream &os) const {
       vec1.Normalize();
       VectorType vec2 = p2 - p1;
       vec2.Normalize();
-      double length = coarse_graining * (*it)->spacing();
+      double length = coarse_graining * (*it)->spacing() * pixel_size;
       double curvature = (vec1 - vec2).GetNorm() / length;
       os << curvature << std::endl;
-    }
-  }
-}
-
-void Multisnake::ComputeSphericalOrientation(
-    const PointType &center, double max_r, std::ostream &os) const {
-  os << "Polar,Azimuthal" << std::endl;
-  for (SnakeConstIterator it = converged_snakes_.begin();
-       it != converged_snakes_.end(); ++it) {
-    for (unsigned i = 0; i < (*it)->GetSize() - 1; ++i) {
-      const PointType &p1 = (*it)->GetPoint(i);
-      const PointType &p2 = (*it)->GetPoint(i+1);
-      if (this->IsInsideSphere(center, max_r, p1) &&
-          this->IsInsideSphere(center, max_r, p2)) {
-        double theta, phi;
-        this->ComputeThetaPhi(p1 - p2, theta, phi);
-        os << theta << "," << phi << std::endl;
-      }
     }
   }
 }

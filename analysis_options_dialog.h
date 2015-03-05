@@ -23,10 +23,11 @@ class AnalysisOptionsDialog : public QDialog {
  public:
   explicit AnalysisOptionsDialog(QWidget * parent = NULL);
 
-  void SetImageCenter(const PointType &center);
-  void GetImageCenter(PointType &center) const;
-
+  double GetPixelSize() const;
   int GetCoarseGraining() const;
+
+  void GetImageCenter(PointType &center) const;
+  void SetImageCenter(const PointType &center);
 
   double GetCenterX() const;
   double GetCenterY() const;
@@ -36,15 +37,16 @@ class AnalysisOptionsDialog : public QDialog {
   void SetCenterZ(double value);
 
   unsigned GetRadius() const;
-  double GetPixelSize() const;
+  void SetRadius(double r);
 
  public slots:  // NOLINT(whitespace/indent)
   void EnableOKButton();
   void DisableOKButton();
 
  private:
-  QGroupBox *CreatePointDensityGroup();
+  QGroupBox *CreateGeneralGroup();
   QGroupBox *CreateCurvatureGroup();
+  QGroupBox *CreatePointDensityGroup();
 
   QLineEdit *coarse_graining_edit_;
   QLineEdit *center_x_edit_;

@@ -24,7 +24,7 @@ double Snake::change_threshold_ = 0.1;
 unsigned Snake::check_period_ = 100;
 unsigned Snake::iterations_per_press_ = 100;
 double Snake::external_factor_ = 1.0;
-double Snake::stretch_factor_ = 0.3;
+double Snake::stretch_factor_ = 0.2;
 int Snake::number_of_sectors_ = 8;
 int Snake::radial_near_ = 4;
 int Snake::radial_far_ = 8;
@@ -34,7 +34,7 @@ double Snake::grouping_distance_threshold_ = 4.0;
 unsigned Snake::grouping_delta_ = 8.0;
 double Snake::direction_threshold_ = 2.1;
 bool Snake::damp_z_ = false;
-double Snake::z_spacing_ = 1.0;
+double Snake::z_spacing_ = 2.88;
 const double Snake::kBoundary = 0.5;
 
 

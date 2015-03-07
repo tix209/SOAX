@@ -1139,7 +1139,7 @@ void Multisnake::ComputeSnakeLength(double pixel_size,
 }
 
 bool Multisnake::IsInsideSphere(const PointType &center,
-                                double r, const PointType p) const {
+                                double r, const PointType &p) const {
   return center.EuclideanDistanceTo(p) < r;
 }
 

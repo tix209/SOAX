@@ -1038,20 +1038,26 @@ void MainWindow::ComputeSphericalOrientation() {
   if (filename.isEmpty()) return;
   analysis_filename_ = filename.toStdString();
 
-  std::ofstream outfile;
-  outfile.open(analysis_filename_.c_str());
-  if (!outfile.is_open()) {
-    QMessageBox msg_box;
-    msg_box.setText("Open file failed.");
-    msg_box.setIcon(QMessageBox::Critical);
-    msg_box.exec();
+  PointType center;
+  if (!analysis_options_dialog_->GetImageCenter(&center)) {
+    ShowErrorDialog("Image center is invalid!");
+    return;
+  }
+  double inside_percentage = 0.9;
+  double radius = 0.0;
+  if (!analysis_options_dialog_->GetRadius(&radius)) {
+    ShowErrorDialog("Radius is invalid!");
     return;
   }
 
-  PointType center;
-  analysis_options_dialog_->GetImageCenter(center);
-  double inside_percentage = 0.9;
-  double max_r = inside_percentage * analysis_options_dialog_->GetRadius();;
+  std::ofstream outfile;
+  outfile.open(analysis_filename_.c_str());
+  if (!outfile.is_open()) {
+    ShowErrorDialog("Open file failed!");
+    return;
+  }
+
+  double max_r = inside_percentage * radius;
   multisnake_->ComputeSphericalOrientation(center, max_r, outfile);
   statusBar()->showMessage(tr("Spherical orientation file saved."));
   outfile.close();
@@ -1065,16 +1071,20 @@ void MainWindow::ComputeRadialOrientation() {
   analysis_filename_ = filename.toStdString();
 
   PointType center;
-  analysis_options_dialog_->GetImageCenter(center);
-  double pixel_size = analysis_options_dialog_->GetPixelSize();
+  if (!analysis_options_dialog_->GetImageCenter(&center)) {
+    ShowErrorDialog("Image center is invalid!");
+    return;
+  }
+  double pixel_size = 1.0;
+  if (!analysis_options_dialog_->GetPixelSize(&pixel_size)) {
+    ShowErrorDialog("Pixel size is invalid!");
+    return;
+  }
 
   std::ofstream outfile;
   outfile.open(analysis_filename_.c_str());
   if (!outfile.is_open()) {
-    QMessageBox msg_box;
-    msg_box.setText("Open file failed.");
-    msg_box.setIcon(QMessageBox::Critical);
-    msg_box.exec();
+    ShowErrorDialog("Open file failed!");
     return;
   }
 
@@ -1092,19 +1102,27 @@ void MainWindow::ComputePointDensity() {
   analysis_filename_ = filename.toStdString();
 
   PointType center;
-  analysis_options_dialog_->GetImageCenter(center);
+  if (!analysis_options_dialog_->GetImageCenter(&center)) {
+    ShowErrorDialog("Image center is invalid!");
+    return;
+  }
+  double radius = 0.0;
+  if (!analysis_options_dialog_->GetRadius(&radius)) {
+    ShowErrorDialog("Radius is invalid!");
+    return;
+  }
   double inside_percentage = 1.1;
-  double max_radius = analysis_options_dialog_->GetRadius() *
-      inside_percentage;
-  double pixel_size = analysis_options_dialog_->GetPixelSize();
+  double max_radius = radius * inside_percentage;
+  double pixel_size = 1.0;
+  if (!analysis_options_dialog_->GetPixelSize(&pixel_size)) {
+    ShowErrorDialog("Pixel size is invalid!");
+    return;
+  }
 
   std::ofstream outfile;
   outfile.open(analysis_filename_.c_str());
   if (!outfile.is_open()) {
-    QMessageBox msg_box;
-    msg_box.setText("Open file failed.");
-    msg_box.setIcon(QMessageBox::Critical);
-    msg_box.exec();
+    ShowErrorDialog("Open file failed!");
     return;
   }
 
@@ -1121,15 +1139,21 @@ void MainWindow::ComputeCurvature() {
   if (filename.isEmpty()) return;
   analysis_filename_ = filename.toStdString();
 
-  int coarse_graining = analysis_options_dialog_->GetCoarseGraining();
-  double pixel_size = analysis_options_dialog_->GetPixelSize();
+  int coarse_graining = 8;
+  if (!analysis_options_dialog_->GetCoarseGraining(&coarse_graining)) {
+    ShowErrorDialog("Coarse graining is invalid!");
+    return;
+  }
+  double pixel_size = 1.0;
+  if (!analysis_options_dialog_->GetPixelSize(&pixel_size)) {
+    ShowErrorDialog("Pixel size is invalid!");
+    return;
+  }
+
   std::ofstream outfile;
   outfile.open(analysis_filename_.c_str());
   if (!outfile.is_open()) {
-    QMessageBox msg_box;
-    msg_box.setText("Open file failed.");
-    msg_box.setIcon(QMessageBox::Critical);
-    msg_box.exec();
+    ShowErrorDialog("Open file failed!");
     return;
   }
   multisnake_->ComputeCurvature(coarse_graining, pixel_size, outfile);
@@ -1143,15 +1167,17 @@ void MainWindow::ComputeSnakeLength() {
       this, tr("Save Snake Length"), dir, tr("CSV files (*.csv)"));
   if (filename.isEmpty()) return;
   analysis_filename_ = filename.toStdString();
-  double pixel_size = analysis_options_dialog_->GetPixelSize();
+  double pixel_size = 1.0;
+  if (!analysis_options_dialog_->GetPixelSize(&pixel_size)) {
+    ShowErrorDialog("Pixel size is invalid!");
+    return;
+  }
 
   std::ofstream outfile;
   outfile.open(analysis_filename_.c_str());
   if (!outfile.is_open()) {
     QMessageBox msg_box;
-    msg_box.setText("Open file failed.");
-    msg_box.setIcon(QMessageBox::Critical);
-    msg_box.exec();
+    ShowErrorDialog("Open file failed!");
     return;
   }
   multisnake_->ComputeSnakeLength(pixel_size, outfile);
@@ -1259,5 +1285,11 @@ QString MainWindow::GetLastDirectory(const std::string &filename) const {
   return dir;
 }
 
+void MainWindow::ShowErrorDialog(const char *msg) {
+  QMessageBox msg_box;
+  msg_box.setText(msg);
+  msg_box.setIcon(QMessageBox::Warning);
+  msg_box.exec();
+}
 
 }  // namespace soax

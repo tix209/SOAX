@@ -27,58 +27,37 @@ AnalysisOptionsDialog::AnalysisOptionsDialog(QWidget *parent) :
   connect(button_box_, SIGNAL(rejected()), this, SLOT(reject()));
 }
 
-double AnalysisOptionsDialog::GetPixelSize() const {
-  return pixel_size_edit_->text().toDouble();
+bool AnalysisOptionsDialog::GetPixelSize(double *pixel_size) const {
+  bool ok = false;
+  *pixel_size = pixel_size_edit_->text().toDouble(&ok);
+  return ok;
 }
 
-int AnalysisOptionsDialog::GetCoarseGraining() const {
-  return coarse_graining_edit_->text().toInt();
+bool AnalysisOptionsDialog::GetCoarseGraining(int *coarse_graining) const {
+  bool ok = false;
+  *coarse_graining = coarse_graining_edit_->text().toInt(&ok);
+  return ok;
 }
 
-void AnalysisOptionsDialog::GetImageCenter(PointType &center) const {
-  center[0] = center_x_edit_->text().toDouble();
-  center[1] = center_y_edit_->text().toDouble();
-  center[2] = center_z_edit_->text().toDouble();
+bool AnalysisOptionsDialog::GetImageCenter(PointType *center) const {
+  bool ok = false;
+  for (int i = 0; i < kDimension; i++) {
+    (*center)[i] = center_edit_[i]->text().toDouble(&ok);
+    if (!ok) return false;
+  }
+  return true;
 }
 
 void AnalysisOptionsDialog::SetImageCenter(const PointType &center) {
-  center_x_edit_->setText(QString::number(center[0]));
-  center_y_edit_->setText(QString::number(center[1]));
-  center_z_edit_->setText(QString::number(center[2]));
+  for (int i = 0; i < kDimension; i++) {
+    center_edit_[i]->setText(QString::number(center[i]));
+  }
 }
 
-double AnalysisOptionsDialog::GetCenterX() const {
-  return center_x_edit_->text().toDouble();
-}
-
-double AnalysisOptionsDialog::GetCenterY() const {
-  return center_y_edit_->text().toDouble();
-}
-
-double AnalysisOptionsDialog::GetCenterZ() const {
-  return center_z_edit_->text().toDouble();
-}
-
-void AnalysisOptionsDialog::SetCenterX(double value) {
-  QString s;
-  s.setNum(value);
-  center_x_edit_->setText(s);
-}
-
-void AnalysisOptionsDialog::SetCenterY(double value) {
-  QString s;
-  s.setNum(value);
-  center_y_edit_->setText(s);
-}
-
-void AnalysisOptionsDialog::SetCenterZ(double value) {
-  QString s;
-  s.setNum(value);
-  center_z_edit_->setText(s);
-}
-
-unsigned AnalysisOptionsDialog::GetRadius() const {
-  return radius_edit_->text().toUInt();
+bool AnalysisOptionsDialog::GetRadius(double *radius) const {
+  bool ok = false;
+  *radius = radius_edit_->text().toDouble(&ok);
+  return ok;
 }
 
 void AnalysisOptionsDialog::SetRadius(double r) {
@@ -123,17 +102,13 @@ QGroupBox * AnalysisOptionsDialog::CreateCurvatureGroup() {
 
 QGroupBox * AnalysisOptionsDialog::CreatePointDensityGroup() {
   QGroupBox *gb = new QGroupBox(tr("Spherical Confinement"));
-  center_x_edit_ = new QLineEdit("0");
-  center_y_edit_ = new QLineEdit("0");
-  center_z_edit_ = new QLineEdit("0");
+  for (int i = 0; i < kDimension; i++) {
+    center_edit_[i] = new QLineEdit("0.0");
+    connect(center_edit_[i], SIGNAL(textChanged(const QString &)),
+            this, SLOT(EnableOKButton()));
+  }
   radius_edit_ = new QLineEdit("0");
 
-  connect(center_x_edit_, SIGNAL(textChanged(const QString &)),
-          this, SLOT(EnableOKButton()));
-  connect(center_y_edit_, SIGNAL(textChanged(const QString &)),
-          this, SLOT(EnableOKButton()));
-  connect(center_z_edit_, SIGNAL(textChanged(const QString &)),
-          this, SLOT(EnableOKButton()));
   connect(radius_edit_, SIGNAL(textChanged(const QString &)),
           this, SLOT(EnableOKButton()));
 
@@ -143,15 +118,15 @@ QGroupBox * AnalysisOptionsDialog::CreatePointDensityGroup() {
   QLabel *label_r = new QLabel(tr("Radius (pixels)"));
   QHBoxLayout *hbox1 = new QHBoxLayout;
   hbox1->addWidget(label_x);
-  hbox1->addWidget(center_x_edit_);
+  hbox1->addWidget(center_edit_[0]);
   hbox1->addStretch();
   QHBoxLayout *hbox2 = new QHBoxLayout;
   hbox2->addWidget(label_y);
-  hbox2->addWidget(center_y_edit_);
+  hbox2->addWidget(center_edit_[1]);
   hbox2->addStretch();
   QHBoxLayout *hbox3 = new QHBoxLayout;
   hbox3->addWidget(label_z);
-  hbox3->addWidget(center_z_edit_);
+  hbox3->addWidget(center_edit_[2]);
   hbox3->addStretch();
   QHBoxLayout *hbox4 = new QHBoxLayout;
   hbox4->addWidget(label_r);

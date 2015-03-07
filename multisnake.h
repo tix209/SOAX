@@ -304,7 +304,7 @@ class Multisnake : public QObject {
                             std::ostream &os, unsigned direction) const;
 
   bool IsInsideSphere(const PointType &center,
-                      double r, const PointType p) const;
+                      double r, const PointType &p) const;
 
   std::string image_filename_;
   ImageType::Pointer image_;

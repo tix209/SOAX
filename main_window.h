@@ -92,6 +92,9 @@ class MainWindow : public QMainWindow {
   QString GetLastDirectory(const std::string &filename) const;
   void SetParameters();
 
+  void ShowErrorDialog(const char *msg);
+
+
   QWidget *central_widget_;
   ParametersDialog *parameters_dialog_;
   ViewOptionsDialog *view_options_dialog_;

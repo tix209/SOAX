@@ -1131,7 +1131,6 @@ void Multisnake::ComputeCurvature(int coarse_graining,
 
 void Multisnake::ComputeSnakeLength(double pixel_size,
                                     std::ostream &os) const {
-  os << "Index,Length(um)" << std::endl;
   for (int i = 0; i < converged_snakes_.size(); i++) {
     os << i << "," << converged_snakes_[i]->length() * pixel_size
        << std::endl;

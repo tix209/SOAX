@@ -1180,6 +1180,7 @@ void MainWindow::ComputeSnakeLength() {
     ShowErrorDialog("Open file failed!");
     return;
   }
+  outfile << "Index,Length(um)" << std::endl;
   multisnake_->ComputeSnakeLength(pixel_size, outfile);
   statusBar()->showMessage(tr("SOAC length file saved."));
   outfile.close();

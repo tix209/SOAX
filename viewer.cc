@@ -78,6 +78,7 @@ Viewer::Viewer():
         vtkImagePlaneWidget::VTK_SLICE_MOTION_ACTION);
     slice_planes_[i]->SetMiddleButtonAction(
         vtkImagePlaneWidget::VTK_WINDOW_LEVEL_ACTION);
+    slice_planes_[i]->TextureInterpolateOff();
   }
 
   volume_ = vtkSmartPointer<vtkVolume>::New();

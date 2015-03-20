@@ -771,7 +771,7 @@ void Multisnake::LoadSnakes(const std::string &filename,
   PointContainer junction_points;
 
   while (std::getline(infile, line)) {
-    if (snakes == converged_snakes_ && isalpha(line[0])) {
+    if ((&snakes == &converged_snakes_) && isalpha(line[0])) {
       std::stringstream converter;
       converter << line;
       converter >> name >> value;
@@ -787,7 +787,7 @@ void Multisnake::LoadSnakes(const std::string &filename,
       points.clear();
     } else if (line[0] == '[') {
       this->LoadPoint(line, junction_points);
-    } else {
+    } else if (isdigit(line[0])) {
       std::istringstream stream(line);
       double snake_index, point_index, x, y, z;
       stream >> snake_index >> point_index >> x >> y >> z;

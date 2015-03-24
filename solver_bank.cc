@@ -21,8 +21,12 @@ void SolverBank::ClearSolvers(SolverContainer &solvers) {
   if (solvers.empty()) return;
   for (SolverContainer::iterator it = solvers.begin();
        it != solvers.end(); ++it) {
-    if (*it)
+    if (*it) {
+      (*it)->DestroyMatrix(0);
+      (*it)->DestroyVector(0);
+      (*it)->DestroySolution(0);
       delete *it;
+    }
   }
   solvers.clear();
 }

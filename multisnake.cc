@@ -31,11 +31,11 @@
 
 namespace soax {
 
-Multisnake::Multisnake() : image_(NULL), external_force_(NULL),
-                           intensity_scaling_(0.0), sigma_(0.0),
-                           ridge_threshold_(0.01), foreground_(65535),
-                           background_(0), initialize_z_(true),
-                           is_2d_(false) {
+Multisnake::Multisnake(QObject *parent) :
+    QObject(parent), image_(NULL), external_force_(NULL),
+    intensity_scaling_(0.0), sigma_(0.0),
+    ridge_threshold_(0.01), foreground_(65535),
+    background_(0), initialize_z_(true), is_2d_(false) {
   interpolator_ = InterpolatorType::New();
   vector_interpolator_ = VectorInterpolatorType::New();
   transform_ = TransformType::New();
@@ -47,6 +47,9 @@ Multisnake::~Multisnake() {
   this->ClearSnakeContainer(converged_snakes_);
   this->ClearSnakeContainer(comparing_snakes1_);
   this->ClearSnakeContainer(comparing_snakes2_);
+  image_ = NULL;
+  external_force_ = NULL;
+  transform_ = NULL;
   delete solver_bank_;
 }
 
@@ -641,6 +644,7 @@ void Multisnake::ClearSnakeContainer(SnakeContainer &snakes) {
 }
 
 void Multisnake::GroupSnakes() {
+  if (converged_snakes_.empty()) return;
   junctions_.Initialize(converged_snakes_);
   junctions_.Union();
   junctions_.Configure();

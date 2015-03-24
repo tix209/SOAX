@@ -32,7 +32,7 @@ class Multisnake : public QObject {
  public:
   typedef itk::Image<double, kDimension> FloatImageType;
 
-  Multisnake();
+  explicit Multisnake(QObject *parent = 0);
   ~Multisnake();
   void Reset();
   void ResetContainers();

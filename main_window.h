@@ -65,6 +65,7 @@ class MainWindow : public QMainWindow {
   void ComputePointDensity();
   void ComputeCurvature();
   void ComputeSnakeLength();
+  void ComputeAll();
   void ShowAnalysisOptions();
 
   void ShowParametersDialog();
@@ -90,6 +91,15 @@ class MainWindow : public QMainWindow {
 
   void ResetActions();
   QString GetLastDirectory(const std::string &filename) const;
+
+  bool WriteSphericalOrientation(const std::string &filename);
+  bool WriteRadialOrientation(const std::string &filename);
+  bool WritePointDensity(const std::string &filename);
+  bool WriteCurvature(const std::string &filename);
+  bool WriteSnakeLength(const std::string &filename);
+
+  std::string GenerateAnalysisFilePath(const QString &dir,
+                                       const std::string &str) const;
   void SetParameters();
 
   void ShowErrorDialog(const char *msg);
@@ -153,6 +163,7 @@ class MainWindow : public QMainWindow {
   QAction *compute_point_density_;
   QAction *compute_curvature_;
   QAction *compute_snake_length_;
+  QAction *compute_all_;
   QAction *show_analysis_options_;
 
   // Actions in Tools menu

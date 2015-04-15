@@ -297,6 +297,10 @@ void MainWindow::CreateAnalysisMenuActions() {
   connect(compute_snake_length_, SIGNAL(triggered()),
           this, SLOT(ComputeSnakeLength()));
 
+  compute_all_ = new QAction(tr("Compute All"), this);
+  connect(compute_all_, SIGNAL(triggered()),
+          this, SLOT(ComputeAll()));
+
   show_analysis_options_ = new QAction(tr("Options"), this);
   connect(show_analysis_options_, SIGNAL(triggered()),
           this, SLOT(ShowAnalysisOptions()));
@@ -384,6 +388,7 @@ void MainWindow::CreateMenus() {
   analysis_->addAction(compute_point_density_);
   analysis_->addAction(compute_curvature_);
   analysis_->addAction(compute_snake_length_);
+  analysis_->addAction(compute_all_);
   analysis_->addAction(show_analysis_options_);
 
   tools_ = menuBar()->addMenu(tr("&Tools"));
@@ -481,6 +486,7 @@ void MainWindow::ResetActions() {
   compute_point_density_->setEnabled(false);
   compute_curvature_->setEnabled(false);
   compute_snake_length_->setEnabled(false);
+  compute_all_->setEnabled(false);
   show_analysis_options_->setEnabled(false);
 
   show_parameters_->setEnabled(false);
@@ -636,6 +642,7 @@ void MainWindow::LoadSnakes() {
   compute_point_density_->setEnabled(true);
   compute_curvature_->setEnabled(true);
   compute_snake_length_->setEnabled(true);
+  compute_all_->setEnabled(true);
   show_analysis_options_->setEnabled(true);
 }
 
@@ -691,6 +698,7 @@ void MainWindow::LoadJFilamentSnakes() {
   compute_radial_orientation_->setEnabled(true);
   compute_point_density_->setEnabled(true);
   compute_curvature_->setEnabled(true);
+  compute_all_->setEnabled(true);
   show_analysis_options_->setEnabled(true);
 }
 
@@ -901,6 +909,7 @@ void MainWindow::DeformSnakes() {
   compute_point_density_->setEnabled(true);
   compute_curvature_->setEnabled(true);
   compute_snake_length_->setEnabled(true);
+  compute_all_->setEnabled(true);
   show_analysis_options_->setEnabled(true);
 }
 
@@ -965,6 +974,7 @@ void MainWindow::DeformSnakesInAction() {
   compute_radial_orientation_->setEnabled(true);
   compute_point_density_->setEnabled(true);
   compute_curvature_->setEnabled(true);
+  compute_all_->setEnabled(true);
   show_analysis_options_->setEnabled(true);
 }
 
@@ -1004,6 +1014,7 @@ void MainWindow::CutSnakes() {
   compute_radial_orientation_->setEnabled(true);
   compute_point_density_->setEnabled(true);
   compute_curvature_->setEnabled(true);
+  compute_all_->setEnabled(true);
   show_analysis_options_->setEnabled(true);
 }
 
@@ -1028,6 +1039,7 @@ void MainWindow::GroupSnakes() {
   compute_radial_orientation_->setEnabled(true);
   compute_point_density_->setEnabled(true);
   compute_curvature_->setEnabled(true);
+  compute_all_->setEnabled(true);
   show_analysis_options_->setEnabled(true);
 }
 
@@ -1037,30 +1049,35 @@ void MainWindow::ComputeSphericalOrientation() {
       this, tr("Save spherical orientation"), dir, tr("CSV files (*.csv)"));
   if (filename.isEmpty()) return;
   analysis_filename_ = filename.toStdString();
+  if (WriteSphericalOrientation(analysis_filename_))
+    statusBar()->showMessage(tr("Spherical orientation file saved."));
+}
 
+bool MainWindow::WriteSphericalOrientation(const std::string &filename) {
   PointType center;
   if (!analysis_options_dialog_->GetImageCenter(&center)) {
     ShowErrorDialog("Image center is invalid!");
-    return;
+    return false;
   }
+
   double inside_percentage = 0.9;
   double radius = 0.0;
   if (!analysis_options_dialog_->GetRadius(&radius)) {
     ShowErrorDialog("Radius is invalid!");
-    return;
+    return false;
   }
 
   std::ofstream outfile;
-  outfile.open(analysis_filename_.c_str());
+  outfile.open(filename.c_str());
   if (!outfile.is_open()) {
     ShowErrorDialog("Open file failed!");
-    return;
+    return false;
   }
 
   double max_r = inside_percentage * radius;
   multisnake_->ComputeSphericalOrientation(center, max_r, outfile);
-  statusBar()->showMessage(tr("Spherical orientation file saved."));
   outfile.close();
+  return true;
 }
 
 void MainWindow::ComputeRadialOrientation() {
@@ -1069,28 +1086,32 @@ void MainWindow::ComputeRadialOrientation() {
       this, tr("Save radial orientation"), dir, tr("CSV files (*.csv)"));
   if (filename.isEmpty()) return;
   analysis_filename_ = filename.toStdString();
+  if (WriteRadialOrientation(analysis_filename_))
+    statusBar()->showMessage(tr("Radial orientation file saved."));
+}
 
+bool MainWindow::WriteRadialOrientation(const std::string &filename) {
   PointType center;
   if (!analysis_options_dialog_->GetImageCenter(&center)) {
     ShowErrorDialog("Image center is invalid!");
-    return;
+    return false;
   }
   double pixel_size = 1.0;
   if (!analysis_options_dialog_->GetPixelSize(&pixel_size)) {
     ShowErrorDialog("Pixel size is invalid!");
-    return;
+    return false;
   }
 
   std::ofstream outfile;
-  outfile.open(analysis_filename_.c_str());
+  outfile.open(filename.c_str());
   if (!outfile.is_open()) {
     ShowErrorDialog("Open file failed!");
-    return;
+    return false;
   }
 
   multisnake_->ComputeRadialOrientation(center, pixel_size, outfile);
-  statusBar()->showMessage(tr("Radial orientation file saved."));
   outfile.close();
+  return true;
 }
 
 void MainWindow::ComputePointDensity() {
@@ -1100,36 +1121,42 @@ void MainWindow::ComputePointDensity() {
       tr("CSV files (*.csv)"));
   if (filename.isEmpty()) return;
   analysis_filename_ = filename.toStdString();
+  if (WritePointDensity(analysis_filename_))
+    statusBar()->showMessage(tr("SOAC point density/intensity file saved."));
+}
 
+bool MainWindow::WritePointDensity(const std::string &filename) {
   PointType center;
   if (!analysis_options_dialog_->GetImageCenter(&center)) {
     ShowErrorDialog("Image center is invalid!");
-    return;
+    return false;
   }
+
   double radius = 0.0;
   if (!analysis_options_dialog_->GetRadius(&radius)) {
     ShowErrorDialog("Radius is invalid!");
-    return;
+    return false;
   }
+
   double inside_percentage = 1.1;
   double max_radius = radius * inside_percentage;
   double pixel_size = 1.0;
   if (!analysis_options_dialog_->GetPixelSize(&pixel_size)) {
     ShowErrorDialog("Pixel size is invalid!");
-    return;
+    return false;
   }
 
   std::ofstream outfile;
-  outfile.open(analysis_filename_.c_str());
+  outfile.open(filename.c_str());
   if (!outfile.is_open()) {
     ShowErrorDialog("Open file failed!");
-    return;
+    return false;
   }
 
   multisnake_->ComputePointDensityAndIntensity(center, max_radius,
                                                pixel_size, outfile);
-  statusBar()->showMessage(tr("SOAC point density/intensity file saved."));
   outfile.close();
+  return true;
 }
 
 void MainWindow::ComputeCurvature() {
@@ -1138,27 +1165,32 @@ void MainWindow::ComputeCurvature() {
       this, tr("Save curvature"), dir, tr("CSV files (*.csv)"));
   if (filename.isEmpty()) return;
   analysis_filename_ = filename.toStdString();
+  if (WriteCurvature(analysis_filename_))
+    statusBar()->showMessage(tr("Curvature file saved."));
+}
 
+bool MainWindow::WriteCurvature(const std::string &filename) {
   int coarse_graining = 8;
   if (!analysis_options_dialog_->GetCoarseGraining(&coarse_graining)) {
     ShowErrorDialog("Coarse graining is invalid!");
-    return;
+    return false;
   }
+
   double pixel_size = 1.0;
   if (!analysis_options_dialog_->GetPixelSize(&pixel_size)) {
     ShowErrorDialog("Pixel size is invalid!");
-    return;
+    return false;
   }
 
   std::ofstream outfile;
-  outfile.open(analysis_filename_.c_str());
+  outfile.open(filename.c_str());
   if (!outfile.is_open()) {
     ShowErrorDialog("Open file failed!");
-    return;
+    return false;
   }
   multisnake_->ComputeCurvature(coarse_graining, pixel_size, outfile);
-  statusBar()->showMessage(tr("Curvature file saved."));
   outfile.close();
+  return true;
 }
 
 void MainWindow::ComputeSnakeLength() {
@@ -1167,23 +1199,87 @@ void MainWindow::ComputeSnakeLength() {
       this, tr("Save Snake Length"), dir, tr("CSV files (*.csv)"));
   if (filename.isEmpty()) return;
   analysis_filename_ = filename.toStdString();
+  if (WriteSnakeLength(analysis_filename_))
+    statusBar()->showMessage(tr("Snake length file saved."));
+}
+
+bool MainWindow::WriteSnakeLength(const std::string &filename) {
   double pixel_size = 1.0;
   if (!analysis_options_dialog_->GetPixelSize(&pixel_size)) {
     ShowErrorDialog("Pixel size is invalid!");
-    return;
+    return false;
   }
 
   std::ofstream outfile;
-  outfile.open(analysis_filename_.c_str());
+  outfile.open(filename.c_str());
   if (!outfile.is_open()) {
-    QMessageBox msg_box;
     ShowErrorDialog("Open file failed!");
-    return;
+    return false;
   }
   outfile << "Index,Length(um)" << std::endl;
   multisnake_->ComputeSnakeLength(pixel_size, outfile);
-  statusBar()->showMessage(tr("SOAC length file saved."));
   outfile.close();
+  return true;
+}
+
+void MainWindow::ComputeAll() {
+  QString prev_dir = this->GetLastDirectory(analysis_filename_);
+  QString curr_dir = QFileDialog::getExistingDirectory(
+      this, tr("Open an Analysis Folder"), prev_dir,
+      QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
+  analysis_filename_ = curr_dir.toStdString();
+
+  std::string spherical_orientation_file_path =
+      GenerateAnalysisFilePath(curr_dir, "_spherical_orientation.csv");
+  if (!WriteSphericalOrientation(spherical_orientation_file_path)) {
+    ShowErrorDialog("Write spherical orientation failed!");
+    return;
+  }
+
+  std::string radial_orientation_file_path =
+      GenerateAnalysisFilePath(curr_dir, "_radial_orientation.csv");
+  if (!WriteRadialOrientation(radial_orientation_file_path)) {
+    ShowErrorDialog("Write radial orientation failed!");
+    return;
+  }
+
+  std::string point_density_file_path =
+      GenerateAnalysisFilePath(curr_dir, "_point_density.csv");
+  if (!WritePointDensity(point_density_file_path)) {
+    ShowErrorDialog("Write point density failed!");
+    return;
+  }
+
+  std::string curvature_file_path =
+      GenerateAnalysisFilePath(curr_dir, "_curvature.csv");
+  if (!WriteCurvature(curvature_file_path)) {
+    ShowErrorDialog("Write curvature failed!");
+    return;
+  }
+
+  std::string length_file_path =
+      GenerateAnalysisFilePath(curr_dir, "_length.csv");
+  if (!WriteSnakeLength(length_file_path)) {
+    ShowErrorDialog("Write snake length failed!");
+    return;
+  }
+
+  // std::cout << spherical_orientation_file_path << std::endl;
+  // std::cout << radial_orientation_file_path << std::endl;
+  // std::cout << point_density_file_path << std::endl;
+  // std::cout << curvature_file_path << std::endl;
+  // std::cout << length_file_path << std::endl;
+
+  QString msg = QString("All files are saved in ") + curr_dir;
+  statusBar()->showMessage(msg);
+}
+
+std::string MainWindow::GenerateAnalysisFilePath(const QString &dir,
+                                                 const std::string &str) const {
+  std::string::size_type pos = image_filename_.find_last_of("/\\");
+  std::string name = image_filename_.substr(pos + 1,
+                                            image_filename_.size() - pos - 5) + str;
+  return QDir(dir).absoluteFilePath(name.c_str()).toStdString();
 }
 
 void MainWindow::ShowAnalysisOptions() {
@@ -1271,7 +1367,7 @@ void MainWindow::SaveSnapshot() {
 void MainWindow::AboutSOAX() {
   QMessageBox::about(
       this, tr("About SOAX"),
-      tr("<h3>SOAX 3.5.6</h3>"
+      tr("<h3>SOAX 3.5.7</h3>"
          "<p>Copyright &copy; Lehigh University"
          "<p>SOAX extracts curvilinear networks from 2D/3D images."
          "This work is supported by NIH grant R01GM098430."));

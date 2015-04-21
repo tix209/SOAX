@@ -15,7 +15,7 @@ AnalysisOptionsDialog::AnalysisOptionsDialog(QWidget *parent) :
   QVBoxLayout *layout = new QVBoxLayout;
   layout->addWidget(this->CreateGeneralGroup());
   layout->addWidget(this->CreateCurvatureGroup());
-  layout->addWidget(this->CreatePointDensityGroup());
+  layout->addWidget(this->CreateSphericalConfinementGroup());
 
   button_box_ = new QDialogButtonBox(QDialogButtonBox::Ok |
                                      QDialogButtonBox::Cancel);
@@ -64,6 +64,12 @@ void AnalysisOptionsDialog::SetRadius(double r) {
   radius_edit_->setText(QString::number(r));
 }
 
+bool AnalysisOptionsDialog::GetInsideRatio(double *ratio) const {
+  bool ok = false;
+  *ratio = inside_ratio_edit_->text().toDouble(&ok);
+  return ok;
+}
+
 void AnalysisOptionsDialog::DisableOKButton() {
   button_box_->button(QDialogButtonBox::Ok)->setEnabled(false);
 }
@@ -100,7 +106,7 @@ QGroupBox * AnalysisOptionsDialog::CreateCurvatureGroup() {
   return gb;
 }
 
-QGroupBox * AnalysisOptionsDialog::CreatePointDensityGroup() {
+QGroupBox * AnalysisOptionsDialog::CreateSphericalConfinementGroup() {
   QGroupBox *gb = new QGroupBox(tr("Spherical Confinement"));
   for (int i = 0; i < kDimension; i++) {
     center_edit_[i] = new QLineEdit("0.0");
@@ -108,36 +114,45 @@ QGroupBox * AnalysisOptionsDialog::CreatePointDensityGroup() {
             this, SLOT(EnableOKButton()));
   }
   radius_edit_ = new QLineEdit("0");
+  inside_ratio_edit_ = new QLineEdit("1.0");
 
   connect(radius_edit_, SIGNAL(textChanged(const QString &)),
           this, SLOT(EnableOKButton()));
 
-  QLabel *label_x = new QLabel(tr("Center X (pixels)"));
-  QLabel *label_y = new QLabel(tr("Center Y (pixels)"));
-  QLabel *label_z = new QLabel(tr("Center Z (pixels)"));
-  QLabel *label_r = new QLabel(tr("Radius (pixels)"));
-  QHBoxLayout *hbox1 = new QHBoxLayout;
-  hbox1->addWidget(label_x);
-  hbox1->addWidget(center_edit_[0]);
-  hbox1->addStretch();
-  QHBoxLayout *hbox2 = new QHBoxLayout;
-  hbox2->addWidget(label_y);
-  hbox2->addWidget(center_edit_[1]);
-  hbox2->addStretch();
-  QHBoxLayout *hbox3 = new QHBoxLayout;
-  hbox3->addWidget(label_z);
-  hbox3->addWidget(center_edit_[2]);
-  hbox3->addStretch();
-  QHBoxLayout *hbox4 = new QHBoxLayout;
-  hbox4->addWidget(label_r);
-  hbox4->addWidget(radius_edit_);
-  hbox4->addStretch();
-  QVBoxLayout *vbox = new QVBoxLayout;
-  vbox->addLayout(hbox1);
-  vbox->addLayout(hbox2);
-  vbox->addLayout(hbox3);
-  vbox->addLayout(hbox4);
-  gb->setLayout(vbox);
+  QFormLayout *form  = new QFormLayout;
+  form->addRow(tr("Center X (pixels)"), center_edit_[0]);
+  form->addRow(tr("Center Y (pixels)"), center_edit_[1]);
+  form->addRow(tr("Center Z (pixels)"), center_edit_[2]);
+  form->addRow(tr("Radius (pixels)"), radius_edit_);
+  form->addRow(tr("Inside Ratio"), inside_ratio_edit_);
+
+  // QLabel *label_x = new QLabel(tr("Center X (pixels)"));
+  // QLabel *label_y = new QLabel(tr("Center Y (pixels)"));
+  // QLabel *label_z = new QLabel(tr("Center Z (pixels)"));
+  // QLabel *label_r = new QLabel(tr("Radius (pixels)"));
+  // QHBoxLayout *hbox1 = new QHBoxLayout;
+  // hbox1->addWidget(label_x);
+  // hbox1->addWidget(center_edit_[0]);
+  // hbox1->addStretch();
+  // QHBoxLayout *hbox2 = new QHBoxLayout;
+  // hbox2->addWidget(label_y);
+  // hbox2->addWidget(center_edit_[1]);
+  // hbox2->addStretch();
+  // QHBoxLayout *hbox3 = new QHBoxLayout;
+  // hbox3->addWidget(label_z);
+  // hbox3->addWidget(center_edit_[2]);
+  // hbox3->addStretch();
+  // QHBoxLayout *hbox4 = new QHBoxLayout;
+  // hbox4->addWidget(label_r);
+  // hbox4->addWidget(radius_edit_);
+  // hbox4->addStretch();
+  // QVBoxLayout *vbox = new QVBoxLayout;
+  // vbox->addLayout(hbox1);
+  // vbox->addLayout(hbox2);
+  // vbox->addLayout(hbox3);
+  // vbox->addLayout(hbox4);
+  // gb->setLayout(vbox);
+  gb->setLayout(form);
   return gb;
 }
 

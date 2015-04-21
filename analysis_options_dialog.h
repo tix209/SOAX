@@ -32,6 +32,8 @@ class AnalysisOptionsDialog : public QDialog {
   bool GetRadius(double *radius) const;
   void SetRadius(double r);
 
+  bool GetInsideRatio(double *ratio) const;
+
  public slots:  // NOLINT(whitespace/indent)
   void EnableOKButton();
   void DisableOKButton();
@@ -39,12 +41,13 @@ class AnalysisOptionsDialog : public QDialog {
  private:
   QGroupBox *CreateGeneralGroup();
   QGroupBox *CreateCurvatureGroup();
-  QGroupBox *CreatePointDensityGroup();
+  QGroupBox *CreateSphericalConfinementGroup();
 
   QLineEdit *coarse_graining_edit_;
   QLineEdit *center_edit_[kDimension];
   QLineEdit *radius_edit_;
   QLineEdit *pixel_size_edit_;
+  QLineEdit *inside_ratio_edit_;
   QDialogButtonBox *button_box_;
 
   DISALLOW_COPY_AND_ASSIGN(AnalysisOptionsDialog);

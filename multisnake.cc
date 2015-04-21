@@ -120,6 +120,21 @@ PointType Multisnake::GetImageCenter() const {
   return center;
 }
 
+double Multisnake::GetImageDiagonal() const {
+  double diag = 0.0;
+  if (image_) {
+    ImageType::SizeType size = image_->GetLargestPossibleRegion().GetSize();
+    if (size[2] == 1) {
+      return static_cast<double>(std::sqrt(size[0] * size[0] +
+                                           size[1] * size[1]));
+    } else {
+      return static_cast<double>(std::sqrt(size[0] * size[0] +
+                                           size[1] * size[1] +
+                                           size[2] * size[2]));
+    }
+  }
+}
+
 void Multisnake::SaveAsIsotropicImage(const std::string &filename,
                                       double z_spacing) {
   typedef itk::BSplineInterpolateImageFunction<ImageType, double, double>

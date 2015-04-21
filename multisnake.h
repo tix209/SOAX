@@ -45,6 +45,11 @@ class Multisnake : public QObject {
 
   PointType GetImageCenter() const;
 
+  /**
+   * Returns the length of the image diagonal.
+   */
+  double GetImageDiagonal() const;
+
   /*
    * Resample and save as an isotropic 16-bit image.
    */

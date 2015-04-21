@@ -528,7 +528,9 @@ void MainWindow::OpenImage() {
   for (int i = 0; i < kDimension; i++) {
     center_coordinates.push_back(center[i]);
   }
-  double radius = Minimum(center_coordinates);
+  // double radius = Minimum(center_coordinates);
+  double radius = multisnake_->GetImageDiagonal() / 2.0;
+  // std::cout << radius <<  std::endl;
   analysis_options_dialog_->SetRadius(radius);
 
   open_image_->setEnabled(false);
@@ -1060,7 +1062,12 @@ bool MainWindow::WriteSphericalOrientation(const std::string &filename) {
     return false;
   }
 
-  double inside_percentage = 0.9;
+  double inside_percentage = 1.0;
+  if (!analysis_options_dialog_->GetInsideRatio(&inside_percentage)) {
+    ShowErrorDialog("Inside ratio is invalid!");
+    return false;
+  }
+
   double radius = 0.0;
   if (!analysis_options_dialog_->GetRadius(&radius)) {
     ShowErrorDialog("Radius is invalid!");
@@ -1138,8 +1145,14 @@ bool MainWindow::WritePointDensity(const std::string &filename) {
     return false;
   }
 
-  double inside_percentage = 1.1;
-  double max_radius = radius * inside_percentage;
+  double inside_percentage = 1.0;
+  if (!analysis_options_dialog_->GetInsideRatio(&inside_percentage)) {
+    ShowErrorDialog("Inside ratio is invalid!");
+    return false;
+  }
+
+  // double inside_percentage = 1.1;
+  double max_r = inside_percentage * radius;
   double pixel_size = 1.0;
   if (!analysis_options_dialog_->GetPixelSize(&pixel_size)) {
     ShowErrorDialog("Pixel size is invalid!");
@@ -1153,7 +1166,7 @@ bool MainWindow::WritePointDensity(const std::string &filename) {
     return false;
   }
 
-  multisnake_->ComputePointDensityAndIntensity(center, max_radius,
+  multisnake_->ComputePointDensityAndIntensity(center, max_r,
                                                pixel_size, outfile);
   outfile.close();
   return true;

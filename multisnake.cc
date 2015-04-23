@@ -329,15 +329,18 @@ void Multisnake::ComputeImageGradient(bool reset) {
                                      InternalImageType> ScalerType;
   ScalerType::Pointer scaler = ScalerType::New();
   scaler->SetInput(image_);
-  scaler->SetScale(intensity_scaling_);
+  scaler->SetScale(GetIntensityScaling());
   scaler->SetShift(0.0);
   scaler->Update();
 
   if (is_2d_ || sigma_ < 0.01) {
-    typedef itk::GradientImageFilter<InternalImageType> FilterType;
+    typedef itk::GradientImageFilter<InternalImageType, double, double>
+        FilterType;
     FilterType::Pointer filter = FilterType::New();
-    // filter->SetInput(image_);
     filter->SetInput(scaler->GetOutput());
+    // filter->SetUseImageSpacingOff();
+    // filter->UseImageDirectionOff();
+
     typedef itk::VectorCastImageFilter<FilterType::OutputImageType,
                                        VectorImageType> CasterType;
     CasterType::Pointer caster = CasterType::New();
@@ -1378,10 +1381,14 @@ void Multisnake::GenerateSyntheticImage(unsigned foreground,
 }
 
 void Multisnake::set_intensity_scaling(double scale) {
-  if (scale > kEpsilon) {
-    intensity_scaling_ = scale;
-  } else if (image_) {
-    intensity_scaling_ = 1.0 / this->GetMaxImageIntensity();
+  intensity_scaling_ = scale;
+}
+
+double Multisnake::GetIntensityScaling() const {
+  if (image_ && fabs(intensity_scaling_) < kEpsilon) {
+    return 1.0 / this->GetMaxImageIntensity();
+  } else {
+    return intensity_scaling_;
   }
 }
 

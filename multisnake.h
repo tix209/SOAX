@@ -69,6 +69,7 @@ class Multisnake : public QObject {
    * automatically scale the maximum intensity to 1.0.
    */
   void set_intensity_scaling(double scale);
+  double GetIntensityScaling() const;
 
   double sigma() const {return sigma_;}
   void set_sigma(double sigma) {sigma_ = sigma;}

@@ -421,23 +421,24 @@ void Snake::AddExternalForce(VectorContainer &rhs) {
 
 
 void Snake::AddStretchingForce(VectorContainer &rhs, bool is_2d) {
+  this->UpdateHeadTangent();
   if (!this->HeadIsFixed()) {
-    this->UpdateHeadTangent();
     double z_damp = 1;
     if (damp_z_)
       z_damp = exp(-fabs(head_tangent_[2]));
 
-    double head_multiplier = this->ComputeLocalStretch(true, is_2d);
+    double head_multiplier = this->ComputeLocalStretch(0, is_2d);
     rhs.front() += stretch_factor_ * z_damp * head_multiplier * head_tangent_;
   }
 
+  this->UpdateTailTangent();
   if (!this->TailIsFixed()) {
-    this->UpdateTailTangent();
     double z_damp = 1;
     if (damp_z_)
       z_damp = exp(-fabs(tail_tangent_[2]));
 
-    double tail_multiplier = this->ComputeLocalStretch(false, is_2d);
+    double tail_multiplier = this->ComputeLocalStretch(vertices_.size() - 1,
+                                                       is_2d);
     rhs.back() += stretch_factor_ * z_damp * tail_multiplier * tail_tangent_;
   }
 }
@@ -469,27 +470,26 @@ void Snake::UpdateTailTangent() {
 
 /* Note that scaling the intensity is not necessary here because they
  * are cancelled out. */
-double Snake::ComputeLocalStretch(bool is_head, bool is_2d) {
-  PointType &vertex = is_head ? vertices_.front() : vertices_.back();
-  double fg = interpolator_->Evaluate(vertex);
+double Snake::ComputeLocalStretch(unsigned index, bool is_2d) {
+  double fg = interpolator_->Evaluate(vertices_[index]);
   if (fg < background_ + kEpsilon || fg > foreground_)
     return 0.0;
 
   double bg = 0.0;
   if (is_2d)
-    bg = this->ComputeBackgroundMeanIntensity2d(is_head);
+    bg = this->ComputeBackgroundMeanIntensity2d(index);
   else
-    bg = this->ComputeBackgroundMeanIntensity(is_head);
+    bg = this->ComputeBackgroundMeanIntensity(index);
 
   if (bg < 0.0)
     return 0.0;
   return 1.0 - bg / fg;
 }
 
-double Snake::ComputeBackgroundMeanIntensity(bool is_head) const {
-  const PointType &vertex = is_head ? vertices_.front() : vertices_.back();
-  const VectorType &normal = is_head ? head_tangent_ : tail_tangent_;
-  // std::cout << normal.GetNorm() << std::endl;
+double Snake::ComputeBackgroundMeanIntensity(unsigned index) const {
+  const PointType &vertex = vertices_[index];
+  const VectorType &normal = this->ComputeUnitTangentVector(index);
+
   assert(std::fabs(normal.GetNorm() - 1.0) < 1e-9);
   VectorType z_axis;
   z_axis[0] = 0.0;
@@ -534,9 +534,9 @@ double Snake::ComputeBackgroundMeanIntensity(bool is_head) const {
   }
 }
 
-double Snake::ComputeBackgroundMeanIntensity2d(bool is_head) const {
-  const VectorType &normal = is_head ? head_tangent_ : tail_tangent_;
-  PointType vertex = is_head ? vertices_.front() : vertices_.back();
+double Snake::ComputeBackgroundMeanIntensity2d(unsigned index) const {
+  const VectorType &normal = this->ComputeUnitTangentVector(index);
+  PointType vertex = vertices_[index];
   DataContainer bgs;
 
   for (int d = radial_near_; d < radial_far_; d++) {
@@ -560,8 +560,10 @@ double Snake::ComputeBackgroundMeanIntensity2d(bool is_head) const {
     }
   }
 
-  if (bgs.empty()) return -1.0;
-  else  return Mean(bgs);
+  if (bgs.empty())
+    return -1.0;
+  else
+    return Mean(bgs);
 }
 
 double Snake::ComputePodX(double x, const VectorType &tvec,
@@ -912,16 +914,19 @@ bool Snake::ComputeLocalBackgroundMeanStd(unsigned index, int radial_near,
 }
 
 VectorType Snake::ComputeUnitTangentVector(unsigned index) const {
-  VectorType tangent;
-  if (index == 0)
-    tangent = vertices_.at(0) - vertices_.at(1);
-  else if (index == vertices_.size() - 1)
-    tangent = vertices_.at(vertices_.size()-2) -
-        vertices_.at(vertices_.size()-1);
-  else
+  if (index == 0) {
+    return head_tangent_;
+    // tangent = vertices_.at(0) - vertices_.at(1);
+  } else if (index == vertices_.size() - 1) {
+    return tail_tangent_;
+    // tangent = vertices_.at(vertices_.size()-2) -
+    //     vertices_.at(vertices_.size()-1);
+  } else {
+    VectorType tangent;
     tangent = vertices_.at(index-1) - vertices_.at(index+1);
-  tangent.Normalize();
-  return tangent;
+    tangent.Normalize();
+    return tangent;
+  }
 }
 
 void Snake::Trim(unsigned start, unsigned end) {

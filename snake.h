@@ -178,6 +178,14 @@ class Snake {
    */
   double ComputeIntensity() const;
 
+  /*
+   * Compute the mean background intensity around the tips. The sample points
+   * are on a orthogonal plane at tips. The sampling region is a annulus
+   * defined by "radial_near_" and "radial_far_".
+   */
+  double ComputeBackgroundMeanIntensity(unsigned index) const;
+  double ComputeBackgroundMeanIntensity2d(unsigned index) const;
+
   /**
    * Return the average local SNR of the snake.
    */
@@ -243,15 +251,7 @@ class Snake {
   void UpdateHeadTangent();
   void UpdateTailTangent();
 
-  double ComputeLocalStretch(bool is_head, bool is_2d);
-
-  /*
-   * Compute the mean background intensity around the tips. The sample points
-   * are on a orthogonal plane at tips. The sampling region is a annulus
-   * defined by "radial_near_" and "radial_far_".
-   */
-  double ComputeBackgroundMeanIntensity(bool is_head) const;
-  double ComputeBackgroundMeanIntensity2d(bool is_head) const;
+  double ComputeLocalStretch(unsigned index, bool is_2d);
 
   double ComputePodX(double x, const VectorType &tvec,
                      double dist, bool plus_root) const;

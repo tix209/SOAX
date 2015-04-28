@@ -921,11 +921,19 @@ void Multisnake::SaveSnakes(const SnakeContainer &snakes,
     outfile << "#" << (*it)->open() << std::endl;
     for (unsigned j = 0; j != (*it)->GetSize(); ++j) {
       double intensity = interpolator_->Evaluate((*it)->GetPoint(j));
+      double background_intensity = -1.0;
+      if (is_2d_) {
+        background_intensity = (*it)->ComputeBackgroundMeanIntensity2d(j);
+      } else {
+        background_intensity = (*it)->ComputeBackgroundMeanIntensity(j);
+      }
       outfile << snake_index << std::setw(12) << j
               << std::setw(column_width) << (*it)->GetX(j)
               << std::setw(column_width) << (*it)->GetY(j)
               << std::setw(column_width) << (*it)->GetZ(j)
-              << std::setw(20) << intensity << std::endl;
+              << std::setw(20) << intensity
+              << std::setw(column_width) << background_intensity
+              << std::endl;
     }
     snake_index++;
   }

@@ -121,17 +121,18 @@ PointType Multisnake::GetImageCenter() const {
 }
 
 double Multisnake::GetImageDiagonal() const {
-  double diag = 0.0;
   if (image_) {
     ImageType::SizeType size = image_->GetLargestPossibleRegion().GetSize();
     if (size[2] == 1) {
-      return static_cast<double>(std::sqrt(size[0] * size[0] +
-                                           size[1] * size[1]));
+      return std::sqrt(static_cast<double>(
+          size[0] * size[0] + size[1] * size[1]));
     } else {
-      return static_cast<double>(std::sqrt(size[0] * size[0] +
+      return std::sqrt(static_cast<double>(size[0] * size[0] +
                                            size[1] * size[1] +
                                            size[2] * size[2]));
     }
+  } else {
+    return 0.0;
   }
 }
 

@@ -907,7 +907,7 @@ void Multisnake::SaveSnakes(const SnakeContainer &snakes,
     return;
   }
 
-  const unsigned column_width = 16;
+  const unsigned column_width = 12;
   outfile << "image\t" << image_filename_ << std::endl;
   this->WriteParameters(outfile);
 
@@ -915,7 +915,13 @@ void Multisnake::SaveSnakes(const SnakeContainer &snakes,
     std::cout << "No snakes to save!" << std::endl;
     return;
   }
-
+  outfile << "\ns" << std::setw(column_width) << "p"
+          << std::setw(column_width) << "x"
+          << std::setw(column_width) << "y"
+          << std::setw(column_width) << "z"
+          << std::setw(column_width) << "fg_int"
+          << std::setw(column_width) << "bg_int"
+          << std::endl;
   unsigned snake_index = 0;
   for (SnakeConstIterator it = snakes.begin(); it != snakes.end(); ++it) {
     outfile << "#" << (*it)->open() << std::endl;
@@ -927,11 +933,11 @@ void Multisnake::SaveSnakes(const SnakeContainer &snakes,
       } else {
         background_intensity = (*it)->ComputeBackgroundMeanIntensity(j);
       }
-      outfile << snake_index << std::setw(12) << j
+      outfile << snake_index << std::setw(column_width) << j
               << std::setw(column_width) << (*it)->GetX(j)
               << std::setw(column_width) << (*it)->GetY(j)
               << std::setw(column_width) << (*it)->GetZ(j)
-              << std::setw(20) << intensity
+              << std::setw(column_width) << intensity
               << std::setw(column_width) << background_intensity
               << std::endl;
     }

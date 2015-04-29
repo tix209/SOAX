@@ -852,7 +852,6 @@ void MainWindow::InitializeSnakes() {
 
   viewer_->RemoveSnakes();
   viewer_->SetupSnakes(multisnake_->initial_snakes());
-  // viewer_->SetupSnakesAsOneActor(multisnake_->initial_snakes());
   toggle_snakes_->setChecked(true);
   viewer_->Render();
 

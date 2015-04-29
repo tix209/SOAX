@@ -914,19 +914,27 @@ bool Snake::ComputeLocalBackgroundMeanStd(unsigned index, int radial_near,
 }
 
 VectorType Snake::ComputeUnitTangentVector(unsigned index) const {
+  VectorType tangent;
+
   if (index == 0) {
-    return head_tangent_;
-    // tangent = vertices_.at(0) - vertices_.at(1);
+    if (head_tangent_[0]) {
+      return head_tangent_;
+    } else {
+      tangent = vertices_.at(0) - vertices_.at(1);
+    }
   } else if (index == vertices_.size() - 1) {
-    return tail_tangent_;
-    // tangent = vertices_.at(vertices_.size()-2) -
-    //     vertices_.at(vertices_.size()-1);
+    if (tail_tangent_[0]) {
+      return tail_tangent_;
+    } else {
+      tangent = vertices_.at(vertices_.size() - 2) -
+                vertices_.at(vertices_.size() - 1);
+    }
   } else {
-    VectorType tangent;
-    tangent = vertices_.at(index-1) - vertices_.at(index+1);
-    tangent.Normalize();
-    return tangent;
+    tangent = vertices_.at(index - 1) - vertices_.at(index + 1);
   }
+
+  tangent.Normalize();
+  return tangent;
 }
 
 void Snake::Trim(unsigned start, unsigned end) {

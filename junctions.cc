@@ -82,13 +82,13 @@ void Junctions::Union() {
 }
 
 void Junctions::AddToTipSets(SnakeTip *t) {
-    TipSetContainer close_tip_sets;
-    // Find any TipSets that is close to t and put them to close_tip_sets
-    this->FindCloseTipSets(t, close_tip_sets);
-    // Get consolidated TipSet by merging TipSets which are all close to t
-    SnakeTipSet *ts = this->MergeCloseTipSets(close_tip_sets);
-    // Add t to the consolidated TipSet
-    this->JoinTipSet(t, ts);
+  TipSetContainer close_tip_sets;
+  // Find any TipSets that is close to t and put them to close_tip_sets
+  this->FindCloseTipSets(t, close_tip_sets);
+  // Get consolidated TipSet by merging TipSets which are all close to t
+  SnakeTipSet *ts = this->MergeCloseTipSets(close_tip_sets);
+  // Add t to the consolidated TipSet
+  this->JoinTipSet(t, ts);
 }
 
 void Junctions::FindCloseTipSets(SnakeTip *t,

@@ -191,6 +191,9 @@ class Snake {
    */
   double ComputeSNR() const;
 
+  bool IsInsideImage(const PointType &point,
+                     unsigned dim = kDimension,
+                     double padding = kBoundary) const;
  private:
   typedef std::vector<std::pair<double, double> > PairContainer;
   typedef std::set<unsigned> IndexSet;
@@ -269,8 +272,6 @@ class Snake {
                           const VectorType &radial,
                           const VectorType &normal,
                           int d, int s) const;
-  bool IsInsideImage(const PointType &point,
-                     unsigned dim = kDimension) const;
 
   void CheckBodyOverlap(const SnakeContainer &converged_snakes);
 

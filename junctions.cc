@@ -128,6 +128,7 @@ void Junctions::RemoveTipSet(SnakeTipSet *ts) {
                                            tip_sets_.end(),
                                            ts);
   if (it != tip_sets_.end()) {
+    delete *it;
     tip_sets_.erase(it);
   } else {
     std::cerr << "Junctions::RemoveTipSet: ts not found!" << std::endl;

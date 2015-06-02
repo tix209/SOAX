@@ -1038,13 +1038,16 @@ double Multisnake::ComputeShortestDistance(
 void Multisnake::ComputeSphericalOrientation(
     const PointType &center, double max_r, std::ostream &os) const {
   os << "Polar,Azimuthal" << std::endl;
+  const unsigned step = 1;
   for (SnakeConstIterator it = converged_snakes_.begin();
        it != converged_snakes_.end(); ++it) {
-    for (unsigned i = 0; i < (*it)->GetSize() - 1; ++i) {
+    for (unsigned i = 0; i < (*it)->GetSize() - step; i += step) {
       const PointType &p1 = (*it)->GetPoint(i);
-      const PointType &p2 = (*it)->GetPoint(i+1);
+      const PointType &p2 = (*it)->GetPoint(i + step);
       if (this->IsInsideSphere(center, max_r, p1) &&
           this->IsInsideSphere(center, max_r, p2)) {
+      // if ((*it)->IsInsideImage(p1, kDimension, 2.0) &&
+      //     (*it)->IsInsideImage(p2, kDimension, 2.0)) {
         double theta, phi;
         this->ComputeThetaPhi(p1 - p2, theta, phi);
         os << theta << "," << phi << std::endl;
@@ -1201,8 +1204,8 @@ void Multisnake::ComputeThetaPhi(VectorType vector,
     if (vector[0] < -kEpsilon)
       vector = -vector;
 
-    theta = std::acos(vector[2]/r) * 180 / kPi;
     phi = std::atan(vector[1] / vector[0]) * 180 / kPi;
+    theta = std::acos(vector[2]/r) * 180 / kPi;
   }
 }
 

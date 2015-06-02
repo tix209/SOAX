@@ -177,7 +177,6 @@ void Snake::Evolve(SolverBank *solver, const SnakeContainer &converged_snakes,
     this->HandleTailOverlap(converged_snakes);
     if (!viable_)  break;
     this->IterateOnce(solver, is_2d);
-    // this->PrintSelf();
     this->Resample();
     iter++;
     if (!viable_)  break;
@@ -519,7 +518,7 @@ double Snake::ComputeBackgroundMeanIntensity(unsigned index) const {
                                                std::sin(angle) * short_axis);
       v[2] *= z_spacing_;
       PointType p = vertex + v;
-      if (this->IsInsideImage(p)) {
+      if (IsInsideImage(p)) {
         double intensity = interpolator_->Evaluate(p);
         if (intensity > background_)
           bgs.push_back(intensity);
@@ -545,7 +544,7 @@ double Snake::ComputeBackgroundMeanIntensity2d(unsigned index) const {
     pod[1] = this->ComputePodY(vertex[1], normal, d, false);
     pod[2] = vertex[2];
 
-    if (this->IsInsideImage(pod, 2)) {
+    if (IsInsideImage(pod, 2)) {
       double intensity = interpolator_->Evaluate(pod);
       bgs.push_back(intensity);
     }
@@ -554,7 +553,7 @@ double Snake::ComputeBackgroundMeanIntensity2d(unsigned index) const {
     pod[1] = this->ComputePodY(vertex[1], normal, d, true);
     pod[2] = vertex[2];
 
-    if (this->IsInsideImage(pod, 2)) {
+    if (IsInsideImage(pod, 2)) {
       double intensity = interpolator_->Evaluate(pod);
       bgs.push_back(intensity);
     }
@@ -652,10 +651,11 @@ void Snake::ComputeSamplePoint(PointType &point, const PointType &origin,
   }
 }
 
-bool Snake::IsInsideImage(const PointType &point, unsigned dim) const {
+bool Snake::IsInsideImage(const PointType &point, unsigned dim,
+                          double padding) const {
   ImageType::SizeType size = image_->GetLargestPossibleRegion().GetSize();
   for (unsigned i = 0; i < dim; ++i) {
-    if (point[i] < kBoundary || point[i] >= size[i] - kBoundary)
+    if (point[i] < padding || point[i] >= size[i] - padding)
       return false;
   }
   return true;
@@ -899,7 +899,7 @@ bool Snake::ComputeLocalBackgroundMeanStd(unsigned index, int radial_near,
                                                std::sin(angle) * short_axis);
       v[2] *= z_spacing_;
       PointType p = vertex + v;
-      if (this->IsInsideImage(p)) {
+      if (IsInsideImage(p)) {
         bgs.push_back(interpolator_->Evaluate(p));
       }
     }

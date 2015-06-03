@@ -70,6 +70,10 @@ bool AnalysisOptionsDialog::GetInsideRatio(double *ratio) const {
   return ok;
 }
 
+bool AnalysisOptionsDialog::ExcludeBoundaryChecked() const {
+  return exclude_boundary_check_->isChecked();
+}
+
 void AnalysisOptionsDialog::DisableOKButton() {
   button_box_->button(QDialogButtonBox::Ok)->setEnabled(false);
 }
@@ -81,14 +85,21 @@ void AnalysisOptionsDialog::EnableOKButton() {
 QGroupBox * AnalysisOptionsDialog::CreateGeneralGroup() {
   QGroupBox *gb = new QGroupBox(tr("General"));
   pixel_size_edit_ = new QLineEdit("1.0");
+  exclude_boundary_check_ = new QCheckBox(tr(""));
   connect(pixel_size_edit_, SIGNAL(textChanged(const QString &)),
           this, SLOT(EnableOKButton()));
-  QLabel *label = new QLabel(tr("Pixel Size (um)"));
+  connect(exclude_boundary_check_, SIGNAL(stateChanged(int)),
+          this, SLOT(EnableOKButton()));
+
   QHBoxLayout *hbox = new QHBoxLayout;
-  hbox->addWidget(label);
-  hbox->addWidget(pixel_size_edit_);
+  hbox->addWidget(exclude_boundary_check_);
   hbox->addStretch();
-  gb->setLayout(hbox);
+
+  QFormLayout *form = new QFormLayout;
+  form->addRow(tr("Pixel Size (um)"), pixel_size_edit_);
+  form->addRow(tr("Exclude points near image boundary"), hbox);
+
+  gb->setLayout(form);
   return gb;
 }
 
@@ -126,32 +137,6 @@ QGroupBox * AnalysisOptionsDialog::CreateSphericalConfinementGroup() {
   form->addRow(tr("Radius (pixels)"), radius_edit_);
   form->addRow(tr("Inside Ratio"), inside_ratio_edit_);
 
-  // QLabel *label_x = new QLabel(tr("Center X (pixels)"));
-  // QLabel *label_y = new QLabel(tr("Center Y (pixels)"));
-  // QLabel *label_z = new QLabel(tr("Center Z (pixels)"));
-  // QLabel *label_r = new QLabel(tr("Radius (pixels)"));
-  // QHBoxLayout *hbox1 = new QHBoxLayout;
-  // hbox1->addWidget(label_x);
-  // hbox1->addWidget(center_edit_[0]);
-  // hbox1->addStretch();
-  // QHBoxLayout *hbox2 = new QHBoxLayout;
-  // hbox2->addWidget(label_y);
-  // hbox2->addWidget(center_edit_[1]);
-  // hbox2->addStretch();
-  // QHBoxLayout *hbox3 = new QHBoxLayout;
-  // hbox3->addWidget(label_z);
-  // hbox3->addWidget(center_edit_[2]);
-  // hbox3->addStretch();
-  // QHBoxLayout *hbox4 = new QHBoxLayout;
-  // hbox4->addWidget(label_r);
-  // hbox4->addWidget(radius_edit_);
-  // hbox4->addStretch();
-  // QVBoxLayout *vbox = new QVBoxLayout;
-  // vbox->addLayout(hbox1);
-  // vbox->addLayout(hbox2);
-  // vbox->addLayout(hbox3);
-  // vbox->addLayout(hbox4);
-  // gb->setLayout(vbox);
   gb->setLayout(form);
   return gb;
 }

@@ -10,6 +10,7 @@
 #define ANALYSIS_OPTIONS_DIALOG_H_
 
 #include <QDialog>
+#include <QCheckBox>
 #include "./global.h"
 class QLineEdit;
 class QGroupBox;
@@ -34,6 +35,8 @@ class AnalysisOptionsDialog : public QDialog {
 
   bool GetInsideRatio(double *ratio) const;
 
+  bool ExcludeBoundaryChecked() const;
+
  public slots:  // NOLINT(whitespace/indent)
   void EnableOKButton();
   void DisableOKButton();
@@ -49,6 +52,8 @@ class AnalysisOptionsDialog : public QDialog {
   QLineEdit *pixel_size_edit_;
   QLineEdit *inside_ratio_edit_;
   QDialogButtonBox *button_box_;
+
+  QCheckBox *exclude_boundary_check_;
 
   DISALLOW_COPY_AND_ASSIGN(AnalysisOptionsDialog);
 };

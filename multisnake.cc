@@ -1036,7 +1036,8 @@ double Multisnake::ComputeShortestDistance(
 }
 
 void Multisnake::ComputeSphericalOrientation(
-    const PointType &center, double max_r, std::ostream &os) const {
+    const PointType &center, double max_r, double padding,
+    std::ostream &os) const {
   os << "Polar,Azimuthal" << std::endl;
   const unsigned step = 1;
   for (SnakeConstIterator it = converged_snakes_.begin();
@@ -1045,9 +1046,9 @@ void Multisnake::ComputeSphericalOrientation(
       const PointType &p1 = (*it)->GetPoint(i);
       const PointType &p2 = (*it)->GetPoint(i + step);
       if (this->IsInsideSphere(center, max_r, p1) &&
-          this->IsInsideSphere(center, max_r, p2)) {
-      // if ((*it)->IsInsideImage(p1, kDimension, 2.0) &&
-      //     (*it)->IsInsideImage(p2, kDimension, 2.0)) {
+          this->IsInsideSphere(center, max_r, p2) &&
+          (*it)->IsInsideImage(p1, kDimension, padding) &&
+          (*it)->IsInsideImage(p2, kDimension, padding)) {
         double theta, phi;
         this->ComputeThetaPhi(p1 - p2, theta, phi);
         os << theta << "," << phi << std::endl;
@@ -1149,22 +1150,27 @@ void Multisnake::ComputePointDensityAndIntensity(const PointType &center,
 
 void Multisnake::ComputeCurvature(int coarse_graining,
                                   double pixel_size,
+                                  double padding,
                                   std::ostream &os) const {
   os << "Curvature(1/um)" << std::endl;
   for (SnakeConstIterator it = converged_snakes_.begin();
        it != converged_snakes_.end(); ++it) {
-    const int end_index = (*it)->GetSize() - 2*coarse_graining;
+    const int end_index = (*it)->GetSize() - 2 * coarse_graining;
     for (int i = 0; i < end_index; i += coarse_graining) {
       PointType p0 = (*it)->GetPoint(i);
       PointType p1 = (*it)->GetPoint(i + coarse_graining);
-      PointType p2 = (*it)->GetPoint(i + 2*coarse_graining);
-      VectorType vec1 = p1 - p0;
-      vec1.Normalize();
-      VectorType vec2 = p2 - p1;
-      vec2.Normalize();
-      double length = coarse_graining * (*it)->spacing() * pixel_size;
-      double curvature = (vec1 - vec2).GetNorm() / length;
-      os << curvature << std::endl;
+      PointType p2 = (*it)->GetPoint(i + 2 * coarse_graining);
+      if ((*it)->IsInsideImage(p0, kDimension, padding) &&
+          (*it)->IsInsideImage(p1, kDimension, padding) &&
+          (*it)->IsInsideImage(p2, kDimension, padding)) {
+        VectorType vec1 = p1 - p0;
+        vec1.Normalize();
+        VectorType vec2 = p2 - p1;
+        vec2.Normalize();
+        double length = coarse_graining * (*it)->spacing() * pixel_size;
+        double curvature = (vec1 - vec2).GetNorm() / length;
+        os << curvature << std::endl;
+      }
     }
   }
 }

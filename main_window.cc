@@ -1073,6 +1073,11 @@ bool MainWindow::WriteSphericalOrientation(const std::string &filename) {
     return false;
   }
 
+  double padding = 0.0;
+  if (analysis_options_dialog_->ExcludeBoundaryChecked()) {
+    padding = 2.0;
+  }
+
   std::ofstream outfile;
   outfile.open(filename.c_str());
   if (!outfile.is_open()) {
@@ -1081,7 +1086,7 @@ bool MainWindow::WriteSphericalOrientation(const std::string &filename) {
   }
 
   double max_r = inside_percentage * radius;
-  multisnake_->ComputeSphericalOrientation(center, max_r, outfile);
+  multisnake_->ComputeSphericalOrientation(center, max_r, padding, outfile);
   outfile.close();
   return true;
 }
@@ -1194,13 +1199,20 @@ bool MainWindow::WriteCurvature(const std::string &filename) {
     return false;
   }
 
+  double padding = 0.0;
+  if (analysis_options_dialog_->ExcludeBoundaryChecked()) {
+    padding = 2.0;
+  }
+
   std::ofstream outfile;
   outfile.open(filename.c_str());
   if (!outfile.is_open()) {
     ShowErrorDialog("Open file failed!");
     return false;
   }
-  multisnake_->ComputeCurvature(coarse_graining, pixel_size, outfile);
+
+  multisnake_->ComputeCurvature(coarse_graining, pixel_size,
+                                padding, outfile);
   outfile.close();
   return true;
 }

@@ -655,7 +655,7 @@ bool Snake::IsInsideImage(const PointType &point, unsigned dim,
                           double padding) const {
   ImageType::SizeType size = image_->GetLargestPossibleRegion().GetSize();
   for (unsigned i = 0; i < dim; ++i) {
-    if (point[i] < padding || point[i] >= size[i] - padding)
+    if (point[i] < padding || point[i] > size[i] - padding)
       return false;
   }
   return true;

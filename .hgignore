@@ -1,4 +1,0 @@
-syntax: glob
-icon
-test/data
-*.user

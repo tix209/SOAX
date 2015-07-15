@@ -26,6 +26,9 @@
 #include "itkNormalVariateGenerator.h"
 #include "itkMinimumMaximumImageCalculator.h"
 #include "itkInvertIntensityImageFilter.h"
+#include "itkSmoothingRecursiveGaussianImageFilter.h"
+#include "itkExtractImageFilter.h"
+#include "itkTileImageFilter.h"
 #include "./solver_bank.h"
 #include "./utility.h"
 
@@ -333,43 +336,70 @@ void Multisnake::ComputeImageGradient(bool reset) {
   scaler->SetScale(GetIntensityScaling());
   scaler->SetShift(0.0);
   scaler->Update();
+  InternalImageType::Pointer img = scaler->GetOutput();
 
-  if (is_2d_ || sigma_ < 0.01) {
-    typedef itk::GradientImageFilter<InternalImageType, double, double>
-        FilterType;
-    FilterType::Pointer filter = FilterType::New();
-    filter->SetInput(scaler->GetOutput());
-    // filter->SetUseImageSpacingOff();
-    // filter->UseImageDirectionOff();
+  if (sigma_ > 0.0) {
+    if (is_2d_) {
+      typedef itk::Image<double, 2> TwoDImageType;
+      typedef itk::ExtractImageFilter<InternalImageType,
+                                      TwoDImageType> ExtractFilterType;
+      ExtractFilterType::Pointer extractor = ExtractFilterType::New();
+      extractor->SetDirectionCollapseToSubmatrix();
+      extractor->SetInput(img);
+      InternalImageType::SizeType size =
+          img->GetLargestPossibleRegion().GetSize();
+      size[2] = 0;
+      InternalImageType::IndexType index =
+          img->GetLargestPossibleRegion().GetIndex();
+      InternalImageType::RegionType region;
+      region.SetSize(size);
+      region.SetIndex(index);
+      extractor->SetExtractionRegion(region);
 
-    typedef itk::VectorCastImageFilter<FilterType::OutputImageType,
-                                       VectorImageType> CasterType;
-    CasterType::Pointer caster = CasterType::New();
-    caster->SetInput(filter->GetOutput());
-    try {
-      caster->Update();
-    } catch(itk::ExceptionObject & e) {
-      std::cerr << "Exception caught when computing image gradient!\n"
-                << e << std::endl;
+      typedef itk::SmoothingRecursiveGaussianImageFilter<
+        TwoDImageType, TwoDImageType> SmoothingFilterType;
+      SmoothingFilterType::Pointer smoother = SmoothingFilterType::New();
+      smoother->SetInput(extractor->GetOutput());
+      smoother->SetSigma(sigma_);
+
+      typedef itk::TileImageFilter<TwoDImageType, InternalImageType>
+          TileFilterType;
+      TileFilterType::Pointer tiler = TileFilterType::New();
+      itk::FixedArray<unsigned, kDimension> layout;
+      layout[0] = 1;
+      layout[1] = 1;
+      layout[2] = 0;
+      tiler->SetLayout(layout);
+      tiler->SetInput(0, smoother->GetOutput());
+      tiler->Update();
+      img = tiler->GetOutput();
+    } else {
+      typedef itk::SmoothingRecursiveGaussianImageFilter<
+        InternalImageType, InternalImageType> SmoothingFilterType;
+      SmoothingFilterType::Pointer smoother = SmoothingFilterType::New();
+      smoother->SetInput(scaler->GetOutput());
+      smoother->SetSigma(sigma_);
+      smoother->Update();
+      img = smoother->GetOutput();
     }
-    external_force_ = caster->GetOutput();
-    external_force_->DisconnectPipeline();
-  } else {
-    typedef itk::GradientRecursiveGaussianImageFilter<
-      InternalImageType, VectorImageType> FilterType;
-    FilterType::Pointer filter = FilterType::New();
-    filter->SetSigma(sigma_);
-    // filter->SetInput(image_);
-    filter->SetInput(scaler->GetOutput());
-    try {
-      filter->Update();
-    } catch(itk::ExceptionObject & e) {
-      std::cerr << "Exception caught when computing image gradient!\n"
-                << e << std::endl;
-    }
-    external_force_ = filter->GetOutput();
-    external_force_->DisconnectPipeline();
   }
+
+  typedef itk::GradientImageFilter<InternalImageType, double, double>
+      GradientFilterType;
+  GradientFilterType::Pointer filter = GradientFilterType::New();
+  filter->SetInput(img);
+  typedef itk::VectorCastImageFilter<GradientFilterType::OutputImageType,
+                                     VectorImageType> CasterType;
+  CasterType::Pointer caster = CasterType::New();
+  caster->SetInput(filter->GetOutput());
+  try {
+    caster->Update();
+  } catch(itk::ExceptionObject & e) {
+    std::cerr << "Exception caught when computing image gradient!\n"
+              << e << std::endl;
+  }
+  external_force_ = caster->GetOutput();
+  external_force_->DisconnectPipeline();
   vector_interpolator_->SetInputImage(external_force_);
 }
 

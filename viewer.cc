@@ -60,6 +60,8 @@ Viewer::Viewer():
     trim_tip_index_(kBigNumber), trim_body_index1_(kBigNumber),
     trim_body_index2_(kBigNumber), is_trim_body_second_click_(false) {
   qvtk_ = new QVTKWidget;
+  qvtk_->GetRenderWindow()->SetMultiSamples(8);
+
   renderer_ = vtkSmartPointer<vtkRenderer>::New();
   qvtk_->GetRenderWindow()->AddRenderer(renderer_);
   camera_ = vtkSmartPointer<vtkCamera>::New();
@@ -446,7 +448,7 @@ vtkPolyData * Viewer::MakePolyData(Snake *snake,
   vtkCellArray *cells = vtkCellArray::New();
 
   vtkIdType cell_index[2];
-  vtkFloatingPointType coordinates[3];
+  double coordinates[3];
 
   for (unsigned i = start, j = 0; i < end; ++i, ++j) {
     coordinates[0] = snake->GetX(i);
@@ -484,7 +486,7 @@ vtkPolyData * Viewer::MakePolyDataForMultipleSnakes(
 
   unsigned int index = 0;
   vtkIdType cell_index[2];
-  vtkFloatingPointType coordinates[3];
+  double coordinates[3];
 
   for (SnakeContainer::const_iterator s_iter = snakes.begin();
        s_iter != snakes.end(); ++s_iter) {
@@ -681,7 +683,7 @@ vtkPolyData * Viewer::MakeClippedPolyData(unsigned axis, double position) {
 
   unsigned int index = 0;
   vtkIdType cell_index[2];
-  vtkFloatingPointType coordinates[3];
+  double coordinates[3];
 
   for (SnakeActorMap::const_iterator it = snake_actor_map_.begin();
        it != snake_actor_map_.end(); ++it) {

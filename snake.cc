@@ -146,7 +146,7 @@ void Snake::InterpolateVertices(const PairContainer *sums,
                         std::make_pair(spacing_*i, 0.0));
       it2 = it1--;
       new_vertices.at(i)[k] = it1->second + (it2->second - it1->second) *
-          (spacing_*i - it1->first) / (it2->first - it1->first);
+                              (spacing_*i - it1->first) / (it2->first - it1->first);
     }
   }
   vertices_ = new_vertices;
@@ -389,39 +389,41 @@ void Snake::IterateOnce(SolverBank *solver, bool is_2d) {
 }
 
 void Snake::CopySolutionToVertices(SolverBank *solver, unsigned dim) {
-  double image_size = image_->GetLargestPossibleRegion().GetSize()[dim];
+  // double image_size = image_->GetLargestPossibleRegion().GetSize()[dim];
 
   for (unsigned i = 0; i < vertices_.size(); ++i) {
     double value = solver->GetSolution(vertices_.size(), i, open_);
-    if (value < kBoundary) {
-      vertices_.at(i)[dim] = kBoundary;
-    } else if (value > image_size - kBoundary - 1.0) {
-      vertices_.at(i)[dim] = image_size - kBoundary - 1.0;
-    } else {
-      vertices_.at(i)[dim] = value;
-    }
+    // if (value < kBoundary) {
+    //   vertices_.at(i)[dim] = kBoundary;
+    // } else if (value > image_size - kBoundary - 1.0) {
+    //   vertices_.at(i)[dim] = image_size - kBoundary - 1.0;
+    // } else {
+    //   vertices_.at(i)[dim] = value;
+    // }
+    vertices_.at(i)[dim] = value;
   }
 }
 
 void Snake::ComputeRHSVector(double gamma, VectorContainer &rhs, bool is_2d) {
+  this->AddVerticesInfo(gamma, rhs);
   this->AddExternalForce(rhs);
   if (open_)
     this->AddStretchingForce(rhs, is_2d);
-  this->AddVerticesInfo(gamma, rhs);
 }
 
 void Snake::AddExternalForce(VectorContainer &rhs) {
   for (unsigned i = 0; i < vertices_.size(); ++i) {
-    VectorType force = vector_interpolator_->Evaluate(vertices_.at(i));
-    force *= external_factor_;
-    rhs.push_back(force);
+    if (IsInsideImage(vertices_.at(i))) {
+      rhs.at(i) += external_factor_ *
+                   vector_interpolator_->Evaluate(vertices_.at(i));
+    }
   }
 }
 
 
 void Snake::AddStretchingForce(VectorContainer &rhs, bool is_2d) {
   this->UpdateHeadTangent();
-  if (!this->HeadIsFixed()) {
+  if (IsInsideImage(vertices_.front()) && !this->HeadIsFixed()) {
     double z_damp = 1;
     if (damp_z_)
       z_damp = exp(-fabs(head_tangent_[2]));
@@ -431,7 +433,7 @@ void Snake::AddStretchingForce(VectorContainer &rhs, bool is_2d) {
   }
 
   this->UpdateTailTangent();
-  if (!this->TailIsFixed()) {
+  if (IsInsideImage(vertices_.back()) && !this->TailIsFixed()) {
     double z_damp = 1;
     if (damp_z_)
       z_damp = exp(-fabs(tail_tangent_[2]));
@@ -445,7 +447,7 @@ void Snake::AddStretchingForce(VectorContainer &rhs, bool is_2d) {
 void Snake::AddVerticesInfo(double gamma, VectorContainer &rhs) {
   for (unsigned i = 0; i < vertices_.size(); ++i) {
     VectorType vector = vertices_.at(i).GetVectorFromOrigin();
-    rhs.at(i) += vector * gamma;
+    rhs.push_back(vector * gamma);
   }
 }
 
@@ -462,7 +464,7 @@ void Snake::UpdateTailTangent() {
     tail_tangent_ = vertices_.back() - vertices_.front();
   else
     tail_tangent_ = vertices_.back() -
-        vertices_.at(vertices_.size() - 1 - delta_);
+                    vertices_.at(vertices_.size() - 1 - delta_);
   tail_tangent_.Normalize();
 }
 

@@ -108,8 +108,8 @@ int main(int argc, char **argv) {
 
     if (vm.count("version")) {
       const std::string version_msg(
-          "best_snake 1.2\n"
-          "Copyright (C) 2015, Lehigh University.");
+		  "Best Snake 3.6.0 \n"
+          "Copyright (C) 2016, Lehigh University.");
       std::cout << version_msg << std::endl;
       return EXIT_SUCCESS;
     }

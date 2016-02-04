@@ -31,9 +31,9 @@ void ResampleImage(const std::string &input_filename,
 
 int main (int argc, char **argv) {
   if (argc < 4) {
-    std::cerr << "Usage (for TIFF image only): ./batch_resample"
-        " <input_dir> <output_dir> <z_spacing (relative to x/y)>"
-              << std::endl;
+    std::cerr << "Batch Resample 3.6.0.\n"
+		"Usage (for TIFF image only): ./batch_resample "
+		"<input_dir> <output_dir> <z_spacing (relative to x/y)>" << std::endl;
     return -1;
   }
 

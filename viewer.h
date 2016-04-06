@@ -101,7 +101,6 @@ class Viewer : public QObject {
   void SaveViewpoint(const std::string &filename) const;
   void PrintScreenAsPNGImage(const std::string &filename) const;
   void PrintScreenAsTIFFImage(const std::string &filename) const;
-  void PrintScreenAsVectorImage(const std::string &filename) const;
 
   const SnakeSet &selected_snakes() const {return selected_snakes_;}
   void RemoveSelectedSnakes();

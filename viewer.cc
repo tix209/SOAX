@@ -35,7 +35,6 @@
 #include "vtkWindowToImageFilter.h"
 #include "vtkPNGWriter.h"
 #include "vtkTIFFWriter.h"
-#include "vtkGL2PSExporter.h"
 #include "vtkEventQtSlotConnect.h"
 #include "vtkPointPicker.h"
 #include "itkStatisticsImageFilter.h"
@@ -1396,19 +1395,21 @@ void Viewer::SaveViewpoint(const std::string &filename) const {
 
 
 void Viewer::PrintScreenAsPNGImage(const std::string &filename) const {
-  vtkNew<vtkWindowToImageFilter> filter;
+  vtkWindowToImageFilter *filter = vtkWindowToImageFilter::New();
   filter->SetInput(qvtk_->GetRenderWindow());
   // filter->SetMagnification(2);
   filter->SetInputBufferTypeToRGBA();
   filter->Update();
-  vtkNew<vtkPNGWriter> png_writer;
+  vtkPNGWriter *png_writer = vtkPNGWriter::New();
   png_writer->SetInputConnection(filter->GetOutputPort());
   png_writer->SetFileName(filename.c_str());
   png_writer->Write();
+  png_writer->Delete();
+  filter->Delete();
 }
 
 void Viewer::PrintScreenAsTIFFImage(const std::string &filename) const {
-  vtkNew<vtkWindowToImageFilter> filter;
+  vtkWindowToImageFilter *filter = vtkWindowToImageFilter::New();
   filter->SetInput(qvtk_->GetRenderWindow());
   // filter->SetMagnification(2);
   filter->SetInputBufferTypeToRGBA();
@@ -1417,31 +1418,12 @@ void Viewer::PrintScreenAsTIFFImage(const std::string &filename) const {
   std::string name = filename;
   name.replace(name.length()-3, 3, "tif");
 
-  vtkNew<vtkTIFFWriter> tiff_writer;
+  vtkTIFFWriter *tiff_writer = vtkTIFFWriter::New();
   tiff_writer->SetInputConnection(filter->GetOutputPort());
   tiff_writer->SetFileName(name.c_str());
   tiff_writer->Write();
-}
-
-void Viewer::PrintScreenAsVectorImage(const std::string &filename) const {
-  std::string::size_type dot_position = filename.find_last_of(".");
-  std::string name = filename;
-  if (dot_position == std::string::npos) {
-    std::cerr << "No suffix specified! Abort." << std::endl;
-    return;
-  } else {
-    name = filename.substr(0, dot_position);
-  }
-
-  vtkNew<vtkGL2PSExporter> exp;
-  exp->SetRenderWindow(qvtk_->GetRenderWindow());
-  exp->CompressOff();
-  exp->SetSortToBSP();
-  exp->SetFilePrefix(name.c_str());
-  exp->SetTitle("SOAX Screenshot");
-  exp->TextAsPathOn();
-  exp->SetFileFormatToEPS();
-  exp->Write();
+  tiff_writer->Delete();
+  filter->Delete();
 }
 
 }  // namespace soax

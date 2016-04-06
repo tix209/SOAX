@@ -247,14 +247,14 @@ class Snake {
    */
   void CopySolutionToVertices(SolverBank *solver, unsigned direction);
   void ComputeRHSVector(double gamma, VectorContainer &rhs, bool is_2d);
-  void AddExternalForce(VectorContainer &rhs);
-  void AddStretchingForce(VectorContainer &rhs, bool is_2d);
+  void AddExternalForce(VectorContainer &rhs, unsigned dim);
+  void AddStretchingForce(VectorContainer &rhs, unsigned dim);
   void AddVerticesInfo(double gamma, VectorContainer &rhs);
 
   void UpdateHeadTangent();
   void UpdateTailTangent();
 
-  double ComputeLocalStretch(unsigned index, bool is_2d);
+  double ComputeLocalStretch(unsigned index, unsigned dim);
 
   double ComputePodX(double x, const VectorType &tvec,
                      double dist, bool plus_root) const;

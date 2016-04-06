@@ -405,15 +405,16 @@ void Snake::CopySolutionToVertices(SolverBank *solver, unsigned dim) {
 }
 
 void Snake::ComputeRHSVector(double gamma, VectorContainer &rhs, bool is_2d) {
+  unsigned dim = is_2d ? 2 : kDimension;
   this->AddVerticesInfo(gamma, rhs);
-  this->AddExternalForce(rhs);
+  this->AddExternalForce(rhs, dim);
   if (open_)
-    this->AddStretchingForce(rhs, is_2d);
+    this->AddStretchingForce(rhs, dim);
 }
 
-void Snake::AddExternalForce(VectorContainer &rhs) {
+void Snake::AddExternalForce(VectorContainer &rhs, unsigned dim) {
   for (unsigned i = 0; i < vertices_.size(); ++i) {
-    if (IsInsideImage(vertices_.at(i))) {
+    if (IsInsideImage(vertices_.at(i), dim)) {
       rhs.at(i) += external_factor_ *
                    vector_interpolator_->Evaluate(vertices_.at(i));
     }
@@ -421,25 +422,25 @@ void Snake::AddExternalForce(VectorContainer &rhs) {
 }
 
 
-void Snake::AddStretchingForce(VectorContainer &rhs, bool is_2d) {
+void Snake::AddStretchingForce(VectorContainer &rhs, unsigned dim) {
   this->UpdateHeadTangent();
-  if (IsInsideImage(vertices_.front()) && !this->HeadIsFixed()) {
+  if (IsInsideImage(vertices_.front(), dim) && !this->HeadIsFixed()) {
     double z_damp = 1;
     if (damp_z_)
       z_damp = exp(-fabs(head_tangent_[2]));
 
-    double head_multiplier = this->ComputeLocalStretch(0, is_2d);
+    double head_multiplier = this->ComputeLocalStretch(0, dim);
     rhs.front() += stretch_factor_ * z_damp * head_multiplier * head_tangent_;
   }
 
   this->UpdateTailTangent();
-  if (IsInsideImage(vertices_.back()) && !this->TailIsFixed()) {
+  if (IsInsideImage(vertices_.back(), dim) && !this->TailIsFixed()) {
     double z_damp = 1;
     if (damp_z_)
       z_damp = exp(-fabs(tail_tangent_[2]));
 
-    double tail_multiplier = this->ComputeLocalStretch(vertices_.size() - 1,
-                                                       is_2d);
+    double tail_multiplier = this->ComputeLocalStretch(
+        vertices_.size() - 1, dim);
     rhs.back() += stretch_factor_ * z_damp * tail_multiplier * tail_tangent_;
   }
 }
@@ -471,13 +472,13 @@ void Snake::UpdateTailTangent() {
 
 /* Note that scaling the intensity is not necessary here because they
  * are cancelled out. */
-double Snake::ComputeLocalStretch(unsigned index, bool is_2d) {
+double Snake::ComputeLocalStretch(unsigned index, unsigned dim) {
   double fg = interpolator_->Evaluate(vertices_[index]);
   if (fg < background_ + kEpsilon || fg > foreground_)
     return 0.0;
 
   double bg = 0.0;
-  if (is_2d)
+  if (dim == 2)
     bg = this->ComputeBackgroundMeanIntensity2d(index);
   else
     bg = this->ComputeBackgroundMeanIntensity(index);

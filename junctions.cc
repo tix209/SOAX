@@ -204,7 +204,7 @@ void Junctions::PrintJunctionPoints(const std::string &filename) const {
   outfile.open(filename.c_str(), std::ios::out | std::ios::app);
   if (!outfile.is_open()) {
     std::cerr << "Junctions::PrintJunctionPoints: Couldn't open file: "
-              << outfile << std::endl;
+              << filename << std::endl;
     return;
   }
 

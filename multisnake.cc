@@ -188,7 +188,7 @@ void Multisnake::LoadParameters(const std::string &filename) {
   std::ifstream infile(filename.c_str());
   if (!infile.is_open()) {
     std::cerr << "LoadParameters: couldn't open file: "
-              << infile << std::endl;
+              << filename << std::endl;
     return;
   }
 
@@ -269,7 +269,7 @@ void Multisnake::SaveParameters(const std::string &filename) const {
   std::ofstream outfile;
   outfile.open(filename.c_str());
   if (!outfile.is_open()) {
-    std::cerr << "Couldn't open file: " << outfile << std::endl;
+    std::cerr << "Couldn't open file: " << filename << std::endl;
     return;
   }
   this->WriteParameters(outfile);
@@ -867,7 +867,7 @@ void Multisnake::LoadJFilamentSnakes(const std::string &filename,
   this->ClearSnakeContainer(snakes);
   std::ifstream infile(filename.c_str());
   if (!infile) {
-    std::cerr << "Couldn't open file: " << infile << std::endl;
+    std::cerr << "Couldn't open file: " << filename << std::endl;
     return;
   }
 
@@ -989,7 +989,7 @@ void Multisnake::SaveJFilamentSnakes(const SnakeContainer &snakes,
   std::ofstream outfile;
   outfile.open(filename.c_str());
   if (!outfile.is_open()) {
-    std::cerr << "Couldn't open file: " << outfile << std::endl;
+    std::cerr << "Couldn't open file: " << filename << std::endl;
     return;
   }
 

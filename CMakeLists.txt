@@ -17,6 +17,10 @@ if(QT_FOUND)
   include(${QT_USE_FILE})
 endif(QT_FOUND)
 
+# Enable C++11
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+
+
 ## Enable these options for Windows build
 if (WIN32)
   set(Boost_USE_STATIC_LIBS        ON)

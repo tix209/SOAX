@@ -44,7 +44,7 @@ unsigned short String2UShort(const std::string &s) {
 std::string GetImagePath(const std::string &snake_path) {
   std::ifstream infile(snake_path.c_str());
   if (!infile) {
-    std::cerr << "Couldn't open file: " << infile << std::endl;
+    std::cerr << "Couldn't open file: " << snake_path << std::endl;
     return "";
   }
 
@@ -128,7 +128,7 @@ double Maximum(const DataContainer &data) {
 std::string GetImageName(const std::string &snake_path) {
   std::ifstream infile(snake_path.c_str());
   if (!infile) {
-    std::cerr << "Couldn't open file: " << infile << std::endl;
+    std::cerr << "Couldn't open file: " << snake_path << std::endl;
     return "";
   }
 

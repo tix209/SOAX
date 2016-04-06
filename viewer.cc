@@ -19,8 +19,7 @@
 #include "vtkCubeAxesActor.h"
 #include "vtkCornerAnnotation.h"
 #include "vtkVolumeProperty.h"
-#include "vtkVolumeRayCastMapper.h"
-#include "vtkVolumeRayCastMIPFunction.h"
+#include "vtkSmartVolumeMapper.h"
 #include "vtkPiecewiseFunction.h"
 #include "vtkColorTransferFunction.h"
 #include "vtkAxesActor.h"
@@ -235,12 +234,10 @@ void Viewer::SetupMIPRendering(vtkImageData *data) {
   mip_volume_property->SetInterpolationTypeToLinear();
   volume_->SetProperty(mip_volume_property);
 
-  vtkSmartPointer<vtkVolumeRayCastMapper> mapper =
-      vtkSmartPointer<vtkVolumeRayCastMapper>::New();
+  vtkSmartPointer<vtkSmartVolumeMapper> mapper =
+      vtkSmartPointer<vtkSmartVolumeMapper>::New();
+  mapper->SetBlendModeToMaximumIntensity();
   mapper->SetInputData(data);
-  vtkSmartPointer<vtkVolumeRayCastMIPFunction> mip_function =
-      vtkSmartPointer<vtkVolumeRayCastMIPFunction>::New();
-  mapper->SetVolumeRayCastFunction(mip_function);
   volume_->SetMapper(mapper);
 }
 

@@ -34,6 +34,7 @@ MainWindow::MainWindow() : message_timeout_(0) {
   setCentralWidget(central_widget_);
   setWindowIcon(QIcon(":/icon/letter-x.png"));
   setWindowTitle("SOAX");
+  setUnifiedTitleAndToolBarOnMac(true);
 
   this->CreateActions();
   this->CreateMenus();

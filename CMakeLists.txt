@@ -73,8 +73,29 @@ qt4_wrap_cpp(multisnake_moc multisnake.h)
 qt4_wrap_cpp(mocs ${moc_gui_srcs})
 qt4_add_resources(rccs ${rcc_srcs})
 
-add_executable(soax soax.cc ${common_srcs} ${gui_srcs} ${mocs}
-  ${rccs} ${multisnake_moc} multisnake.cc)
+if (APPLE)
+  set(ICON_FOLDER icon)
+  set(ICON_NAME letter-x.icns)
+  set(ICON_FILE ${ICON_FOLDER}/${ICON_NAME})
+  set_source_files_properties(${ICON_FILE} PROPERTIES
+    MACOSX_PACKAGE_LOCATION Resources)
+
+  set(COPYRIGHT "Copyright (c) 2016 Lehigh University. All rights reserved.")
+  set(IDENTIFIER "edu.lehigh.soax")
+
+  set(MACOSX_BUNDLE_BUNDLE_NAME ${PROJECT_NAME})
+  set(MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION})
+  set(MACOSX_BUNDLE_LONG_VERSION_STRING ${PROJECT_VERSION})
+  set(MACOSX_BUNDLE_COPYRIGHT ${COPYRIGHT})
+  set(MACOSX_BUNDLE_GUI_IDENTIFIER ${IDENTIFIER})
+  set(MACOSX_BUNDLE_ICON_FILE ${ICON_NAME})
+  add_executable(soax MACOSX_BUNDLE soax.cc ${common_srcs} ${gui_srcs} ${mocs}
+    ${rccs} ${multisnake_moc} multisnake.cc ${ICON_FILE})
+else ()
+  add_executable(soax soax.cc ${common_srcs} ${gui_srcs} ${mocs}
+    ${rccs} ${multisnake_moc} multisnake.cc)
+endif ()
+
 add_executable(batch_soax batch_soax.cc ${common_srcs}
   ${multisnake_moc} multisnake.cc)
 add_executable(best_snake best_snake.cc ${common_srcs}

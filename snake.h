@@ -164,8 +164,8 @@ class Snake {
   const SnakeContainer &subsnakes() const {return subsnakes_;}
 
   void Evolve(SolverBank *solver, const SnakeContainer &converged_snakes,
-              unsigned max_iter, bool is_2d);
-  void EvolveWithTipFixed(SolverBank *solver, unsigned max_iter, bool is_2d);
+              unsigned max_iter, unsigned dim);
+  void EvolveWithTipFixed(SolverBank *solver, unsigned max_iter, unsigned dim);
   void UpdateHookedIndices();
   void CopySubSnakes(SnakeContainer &c);
   bool PassThrough(const PointType &p, double threshold) const;
@@ -239,14 +239,14 @@ class Snake {
                                Snake * &s, unsigned &index);
   double FindClosestIndexTo(const PointType &p, unsigned &ind);
 
-  void IterateOnce(SolverBank *solver, bool is_2d);
+  void IterateOnce(SolverBank *solver, unsigned dim);
 
   /*
    * Ensure the updated snake points stay within image after each
    * iteration.
    */
   void CopySolutionToVertices(SolverBank *solver, unsigned direction);
-  void ComputeRHSVector(double gamma, VectorContainer &rhs, bool is_2d);
+  void ComputeRHSVector(double gamma, VectorContainer &rhs, unsigned dim);
   void AddExternalForce(VectorContainer &rhs, unsigned dim);
   void AddStretchingForce(VectorContainer &rhs, unsigned dim);
   void AddVerticesInfo(double gamma, VectorContainer &rhs);

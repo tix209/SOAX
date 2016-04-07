@@ -38,7 +38,7 @@ Multisnake::Multisnake(QObject *parent) :
     QObject(parent), image_(NULL), external_force_(NULL),
     intensity_scaling_(0.0), sigma_(0.0),
     ridge_threshold_(0.01), foreground_(65535),
-    background_(0), initialize_z_(true), is_2d_(false) {
+    background_(0), initialize_z_(true), dim_(kDimension) {
   interpolator_ = InterpolatorType::New();
   vector_interpolator_ = VectorInterpolatorType::New();
   transform_ = TransformType::New();
@@ -94,7 +94,7 @@ void Multisnake::LoadImage(const std::string &filename) {
       image_->GetLargestPossibleRegion().GetSize();
   std::cout << "Image size: " << size << std::endl;
   if (size[2] < 2) {
-    is_2d_ = true;
+    dim_ = 2;
   }
   interpolator_->SetInputImage(image_);
 
@@ -339,7 +339,7 @@ void Multisnake::ComputeImageGradient(bool reset) {
   InternalImageType::Pointer img = scaler->GetOutput();
 
   if (sigma_ > 0.0) {
-    if (is_2d_) {
+    if (dim_ == 2) {
       typedef itk::Image<double, 2> TwoDImageType;
       typedef itk::ExtractImageFilter<InternalImageType,
                                       TwoDImageType> ExtractFilterType;
@@ -410,7 +410,7 @@ void Multisnake::InitializeSnakes() {
   this->ScanGradient(ridge_image);
 
   unsigned num_directions = 2;
-  if (!is_2d_ && initialize_z_) num_directions = 3;
+  if (dim_ == 3 && initialize_z_) num_directions = 3;
 
   BoolVectorImageType::Pointer candidate_image =
       InitializeBoolVectorImage();
@@ -445,8 +445,7 @@ void Multisnake::ScanGradient(BoolVectorImageType::Pointer ridge_image) {
   OutputIteratorType iter(ridge_image,
                           ridge_image->GetLargestPossibleRegion());
 
-  const unsigned d = is_2d_? 2 : 3;
-  for (unsigned i = 0; i < d; ++i) {
+  for (unsigned i = 0; i < dim_; ++i) {
     for (iter.GoToBegin(); !iter.IsAtEnd(); ++iter) {
       VectorImageType::IndexType index = iter.GetIndex();
       VectorImageType::IndexType current_index = index;
@@ -500,12 +499,11 @@ void Multisnake::GenerateCandidates(
     BoolVectorImageType::IndexType index = iter.GetIndex();
     BoolVectorImageType::PixelType ridge_value = ridge_image->GetPixel(index);
 
-    unsigned d = is_2d_ ? 2 : 3;
-    if (is_2d_) {
-      iter.Value()[direction] = ridge_value[(direction+1) % d];
+    if (dim_ == 2) {
+      iter.Value()[direction] = ridge_value[(direction+1) % dim_];
     } else {
-      iter.Value()[direction] = ridge_value[(direction+1) % d] &&
-          ridge_value[(direction+2) % d];
+      iter.Value()[direction] = ridge_value[(direction+1) % dim_] &&
+          ridge_value[(direction+2) % dim_];
     }
   }
 }
@@ -525,7 +523,7 @@ void Multisnake::LinkCandidates(
     BoolVectorImageType::Pointer candidate_image, unsigned direction) {
   ImageType::SizeType size = image_->GetLargestPossibleRegion().GetSize();
 
-  if (is_2d_) {
+  if (dim_ == 2) {
     for (unsigned c0 = 0; c0 < size[direction]; ++c0) {
       for (unsigned c1 = 0; c1 < size[(direction+1)%2]; ++c1) {
         BoolVectorImageType::IndexType current_index;
@@ -605,7 +603,7 @@ bool Multisnake::FindNextCandidate(
   if (candidate_image->GetPixel(index)[direction])
     return true;
 
-  if (is_2d_) {
+  if (dim_ == 2) {
     int d1 = (direction + 1) % 2;
     for (int c1 = current_index[d1] - 1;
          c1 <= current_index[d1] + 1; ++c1) {
@@ -643,7 +641,7 @@ void Multisnake::DeformSnakes() {
     Snake *snake = initial_snakes_.back();
     initial_snakes_.pop_back();
     solver_bank_->Reset(false);
-    snake->Evolve(solver_bank_, converged_snakes_, kBigNumber, is_2d_);
+    snake->Evolve(solver_bank_, converged_snakes_, kBigNumber, dim_);
 
     if (snake->viable()) {
       converged_snakes_.push_back(snake);
@@ -701,7 +699,7 @@ void Multisnake::GroupSnakes() {
   SnakeIterator it = converged_snakes_.begin();
   while (it != converged_snakes_.end()) {
     solver_bank_->Reset(false);
-    (*it)->EvolveWithTipFixed(solver_bank_, 100, is_2d_);
+    (*it)->EvolveWithTipFixed(solver_bank_, 100, dim_);
     if ((*it)->viable()) {
       it++;
     } else {
@@ -959,7 +957,7 @@ void Multisnake::SaveSnakes(const SnakeContainer &snakes,
     for (unsigned j = 0; j != (*it)->GetSize(); ++j) {
       double intensity = interpolator_->Evaluate((*it)->GetPoint(j));
       double background_intensity = -1.0;
-      if (is_2d_) {
+      if (dim_ == 2) {
         background_intensity = (*it)->ComputeBackgroundMeanIntensity2d(j);
       } else {
         background_intensity = (*it)->ComputeBackgroundMeanIntensity(j);

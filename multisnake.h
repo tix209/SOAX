@@ -92,7 +92,7 @@ class Multisnake : public QObject {
   bool initialize_z() const {return initialize_z_;}
   void set_initialize_z(bool init_z) {initialize_z_ = init_z;}
 
-  bool is_2d() const {return is_2d_;}
+  unsigned dim() const {return dim_;}
 
   SolverBank *solver_bank() const {return solver_bank_;}
 
@@ -362,10 +362,9 @@ class Multisnake : public QObject {
   bool initialize_z_;
 
   /*
-   * True if input image is 2d. If true, SOAX behaviour is adapted to
-   * 2D. The output SOACs z coordinates is 0.
+   * Image dimentionality in which snakes operate on.
    */
-  bool is_2d_;
+  unsigned dim_;
 
   DISALLOW_COPY_AND_ASSIGN(Multisnake);
 };

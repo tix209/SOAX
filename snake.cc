@@ -154,7 +154,7 @@ void Snake::InterpolateVertices(const PairContainer *sums,
 
 
 void Snake::Evolve(SolverBank *solver, const SnakeContainer &converged_snakes,
-                   unsigned max_iter, bool is_2d) {
+                   unsigned max_iter, unsigned dim) {
   unsigned iter = 0;
 
   while (iter <= max_iter) {
@@ -176,7 +176,7 @@ void Snake::Evolve(SolverBank *solver, const SnakeContainer &converged_snakes,
     if (!viable_)  break;
     this->HandleTailOverlap(converged_snakes);
     if (!viable_)  break;
-    this->IterateOnce(solver, is_2d);
+    this->IterateOnce(solver, dim);
     this->Resample();
     iter++;
     if (!viable_)  break;
@@ -370,14 +370,13 @@ double Snake::FindClosestIndexTo(const PointType &p, unsigned &ind) {
   return min_d;
 }
 
-void Snake::IterateOnce(SolverBank *solver, bool is_2d) {
+void Snake::IterateOnce(SolverBank *solver, unsigned dim) {
   VectorContainer rhs;
-  this->ComputeRHSVector(solver->gamma(), rhs, is_2d);
-  // this->PrintVectorContainer(rhs);
-  const unsigned d = is_2d ? 2 : 3;
-  for (unsigned dim = 0; dim < d; ++dim) {
-    solver->SolveSystem(rhs, dim, open_);
-    this->CopySolutionToVertices(solver, dim);
+  this->ComputeRHSVector(solver->gamma(), rhs, dim);
+
+  for (unsigned i = 0; i < dim; ++i) {
+    solver->SolveSystem(rhs, i, open_);
+    this->CopySolutionToVertices(solver, i);
   }
 
   if (this->HeadIsFixed())
@@ -404,8 +403,7 @@ void Snake::CopySolutionToVertices(SolverBank *solver, unsigned dim) {
   }
 }
 
-void Snake::ComputeRHSVector(double gamma, VectorContainer &rhs, bool is_2d) {
-  unsigned dim = is_2d ? 2 : kDimension;
+void Snake::ComputeRHSVector(double gamma, VectorContainer &rhs, unsigned dim) {
   this->AddVerticesInfo(gamma, rhs);
   this->AddExternalForce(rhs, dim);
   if (open_)
@@ -820,7 +818,7 @@ void Snake::CopySubSnakes(SnakeContainer &c) {
 }
 
 void Snake::EvolveWithTipFixed(SolverBank *solver, unsigned max_iter,
-                               bool is_2d) {
+                               unsigned dim) {
   unsigned iter = 0;
   fixed_head_ = vertices_.front();
   fixed_tail_ = vertices_.back();
@@ -831,7 +829,7 @@ void Snake::EvolveWithTipFixed(SolverBank *solver, unsigned max_iter,
         break;
     }
 
-    this->IterateOnce(solver, is_2d);
+    this->IterateOnce(solver, dim);
     this->Resample();
     iter++;
   }

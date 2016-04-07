@@ -916,7 +916,6 @@ void MainWindow::DeformSnakes() {
 }
 
 void MainWindow::DeformSnakesInAction() {
-  bool is_2d = multisnake_->is_2d();
   viewer_->RemoveSnakes();
   progress_bar_->setMaximum(multisnake_->GetNumberOfInitialSnakes());
   unsigned ncompleted = 0;
@@ -924,9 +923,8 @@ void MainWindow::DeformSnakesInAction() {
     Snake *s = multisnake_->PopLastInitialSnake();
     viewer_->SetupSnake(s, 0);
     viewer_->Render();
-    s->Evolve(multisnake_->solver_bank(),
-              multisnake_->converged_snakes(),
-              Snake::iterations_per_press(), is_2d);
+    s->Evolve(multisnake_->solver_bank(), multisnake_->converged_snakes(),
+              Snake::iterations_per_press(), multisnake_->dim());
 
     if (s->viable()) {
       if (s->converged()) {
@@ -988,7 +986,7 @@ void MainWindow::DeformOneSnake() {
 
     viewer_->trimmed_snake()->EvolveWithTipFixed(
         multisnake_->solver_bank(), Snake::iterations_per_press(),
-        multisnake_->is_2d());
+        multisnake_->dim());
 
     if (viewer_->trimmed_snake()->converged()) {
       statusBar()->showMessage(tr("Snake is converged."));

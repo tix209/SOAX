@@ -509,7 +509,8 @@ void MainWindow::OpenImage() {
   multisnake_->LoadImage(image_filename_);
   viewer_->SetupImage(multisnake_->image());
   toggle_planes_->setChecked(true);
-  toggle_mip_->setChecked(true);
+  if (multisnake_->dim() > 2)
+    toggle_mip_->setChecked(true);
   toggle_orientation_marker_->setChecked(true);
   toggle_corner_text_->setChecked(true);
   toggle_bounding_box_->setChecked(false);

@@ -241,11 +241,6 @@ class Snake {
 
   void IterateOnce(SolverBank *solver, unsigned dim);
 
-  /*
-   * Ensure the updated snake points stay within image after each
-   * iteration.
-   */
-  void CopySolutionToVertices(SolverBank *solver, unsigned direction);
   void ComputeRHSVector(double gamma, VectorContainer &rhs, unsigned dim);
   void AddExternalForce(VectorContainer &rhs, unsigned dim);
   void AddStretchingForce(VectorContainer &rhs, unsigned dim);

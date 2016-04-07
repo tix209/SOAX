@@ -374,9 +374,12 @@ void Snake::IterateOnce(SolverBank *solver, unsigned dim) {
   VectorContainer rhs;
   this->ComputeRHSVector(solver->gamma(), rhs, dim);
 
-  for (unsigned i = 0; i < dim; ++i) {
-    solver->SolveSystem(rhs, i, open_);
-    this->CopySolutionToVertices(solver, i);
+  for (unsigned d = 0; d < dim; ++d) {
+    solver->SolveSystem(rhs, d, open_);
+    for (unsigned i = 0; i < vertices_.size(); ++i) {
+      double value = solver->GetSolution(vertices_.size(), i, open_);
+      vertices_.at(i)[d] = value;
+    }
   }
 
   if (this->HeadIsFixed())
@@ -385,22 +388,6 @@ void Snake::IterateOnce(SolverBank *solver, unsigned dim) {
     vertices_.back() = fixed_tail_;
 
   iterations_++;
-}
-
-void Snake::CopySolutionToVertices(SolverBank *solver, unsigned dim) {
-  // double image_size = image_->GetLargestPossibleRegion().GetSize()[dim];
-
-  for (unsigned i = 0; i < vertices_.size(); ++i) {
-    double value = solver->GetSolution(vertices_.size(), i, open_);
-    // if (value < kBoundary) {
-    //   vertices_.at(i)[dim] = kBoundary;
-    // } else if (value > image_size - kBoundary - 1.0) {
-    //   vertices_.at(i)[dim] = image_size - kBoundary - 1.0;
-    // } else {
-    //   vertices_.at(i)[dim] = value;
-    // }
-    vertices_.at(i)[dim] = value;
-  }
 }
 
 void Snake::ComputeRHSVector(double gamma, VectorContainer &rhs, unsigned dim) {
@@ -481,7 +468,7 @@ double Snake::ComputeLocalStretch(unsigned index, unsigned dim) {
   else
     bg = this->ComputeBackgroundMeanIntensity(index);
 
-  if (bg < 0.0)
+  if (fg < bg || bg < 0.0)
     return 0.0;
   return 1.0 - bg / fg;
 }

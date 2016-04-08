@@ -943,6 +943,7 @@ void MainWindow::DeformSnakesInAction() {
       ncompleted++;
     }
     progress_bar_->setValue(ncompleted);
+    qApp->processEvents();
     viewer_->Render();
     std::cout << "\rRemaining: " << std::setw(6)
               << multisnake_->GetNumberOfInitialSnakes() << std::flush;

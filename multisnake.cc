@@ -8,6 +8,7 @@
 
 
 #include "./multisnake.h"
+#include <QApplication>
 #include <fstream>
 #include <iomanip>
 #include "itkImageFileReader.h"
@@ -656,6 +657,7 @@ void Multisnake::DeformSnakes() {
     emit ExtractionProgressed(ncompleted);
     std::cout << "\rRemaining: " << std::setw(6)
               << initial_snakes_.size() << std::flush;
+    qApp->processEvents();
   }
   std::cout << "\n# Converged snakes: " << converged_snakes_.size()
             << std::endl;

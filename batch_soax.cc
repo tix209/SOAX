@@ -81,6 +81,9 @@ int main(int argc, char **argv) {
     }
 
     fs::path snake_path(vm["snake"].as<std::string>());
+    std::string snake_path_name = snake_path.string();
+    if (snake_path_name.back() != '/')
+      snake_path_name += "/";
     if (!fs::exists(snake_path)) {
       std::cerr << snake_path << " does not exist. Abort." << std::endl;
       return EXIT_FAILURE;
@@ -110,11 +113,12 @@ int main(int argc, char **argv) {
             while (stretch < stretch_range[2]) {
               std::string snake_name = ConstructSnakeFilename(
                   image_path.string(), ridge_threshold, stretch);
-              fs::path output_snake_path(snake_path.string() + snake_name);
+
+              fs::path output_snake_path(snake_path_name + snake_name);
 
               if (fs::exists(output_snake_path)) {
                 std::cout << snake_name
-                          << " existed. No extraction is performed."
+                          << " exists. No extraction is performed."
                           << std::endl;
               } else {
                 std::cout << "stretch is set to: " << stretch << std::endl;
@@ -138,7 +142,7 @@ int main(int argc, char **argv) {
 
                 std::cout << snake_name << std::endl;
                 multisnake->SaveSnakes(multisnake->converged_snakes(),
-                                      snake_path.string() + snake_name);
+                                       snake_path_name + snake_name);
 
                 std::cout << "Segmentation completed (Evolution time: "
                           << time_elasped << "s)" << std::endl;
@@ -200,7 +204,7 @@ int main(int argc, char **argv) {
                 std::string snake_name = ConstructSnakeFilename(
                     image_it->string(), ridge_threshold, stretch);
                 multisnake->SaveSnakes(multisnake->converged_snakes(),
-                                      snake_path.string() + snake_name);
+                                       snake_path_name + snake_name);
 
                 std::cout << "Segmentation completed (Evolution time: "
                           << time_elasped << "s)" << std::endl;
@@ -267,7 +271,7 @@ int main(int argc, char **argv) {
                 slash_pos+1, dot_pos-slash_pos-1);
             multisnake->SaveSnakes(
                 multisnake->converged_snakes(),
-                snake_path.string() + extracted_name + ".txt");
+                snake_path_name + extracted_name + ".txt");
 
             std::cout << "Segmentation completed (Evolution time: "
                       << time_elasped << "s)" << std::endl;

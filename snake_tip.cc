@@ -34,6 +34,7 @@ double SnakeTip::ComputeAngle(const SnakeTip *t1, const SnakeTip *t2) {
 VectorType SnakeTip::GetDirection() const {
   unsigned delta = snake_->GetSize() > Snake::grouping_delta() ?
       Snake::grouping_delta() : snake_->GetSize();
+  assert(delta > 0);
   VectorType v;
   if (is_head_) {
     v = snake_->GetPoint(delta/2) - snake_->GetPoint(delta-1);

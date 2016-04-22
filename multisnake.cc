@@ -888,7 +888,7 @@ void Multisnake::LoadJFilamentSnakes(const std::string &filename,
       }
       points.clear();
       pound = true;
-    } else if (line[0] == '0') {
+    } else if (isdigit(line[0])) {
       if (pound) {
         pound = false;
         continue;

@@ -7,8 +7,6 @@ SOAX is an open source software tool to extract the centerlines, junctions and f
 
 SOAX provides 3D visualization for exploring image data and visually checking results against the image. Quantitative analysis functions based on extracted networks are also implemented in SOAX, including spatial distribution, orientation, and curvature of filamentous structures. SOAX also provides interactive manual editing to furthure improve the extraction results, which can be saved in a file for archiving or further analysis.
 
-Website: http://www.cse.lehigh.edu/~idealab/soax/
-
 Reference
 ---------
 T. Xu, D. Vavylonis, F. Tsai, G. H. Koenderink, W. Nie, E. Yusuf, I-Ju Lee, J.-Q. Wu, and X. Huang, "[SOAX: A Software for Quantification of 3D Biopolymer Networks](http://www.nature.com/srep/2015/150313/srep09081/full/srep09081.html)", In Scientific Reports, 5, 9081; DOI:10.1038/srep09081, 2015.

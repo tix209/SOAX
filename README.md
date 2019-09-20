@@ -7,7 +7,7 @@ SOAX is an open source software tool to extract the centerlines, junctions and f
 
 SOAX provides 3D visualization for exploring image data and visually checking results against the image. Quantitative analysis functions based on extracted networks are also implemented in SOAX, including spatial distribution, orientation, and curvature of filamentous structures. SOAX also provides interactive manual editing to furthure improve the extraction results, which can be saved in a file for archiving or further analysis.
 
-**\*New\*** [TSOAX](https://github.com/tix209/TSOAX) has been released as an extension of SOAX for tracking filaments and networks over multiple frames (in 2D or 3D).
+**\*New\*** [TSOAX](https://github.com/tix209/TSOAX) (based on Qt 5) has been released as an enhanced version of SOAX that supports tracking filaments and networks over multiple frames.
 
 Reference
 ---------

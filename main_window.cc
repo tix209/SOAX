@@ -925,7 +925,7 @@ void MainWindow::DeformSnakesInAction() {
     viewer_->SetupSnake(s, 0);
     viewer_->Render();
     s->Evolve(multisnake_->solver_bank(), multisnake_->converged_snakes(),
-              Snake::iterations_per_press(), multisnake_->dim());
+              Snake::iterations_per_press(), multisnake_->dim(), multisnake_->converged_snakes_grid());
 
     if (s->viable()) {
       if (s->converged()) {

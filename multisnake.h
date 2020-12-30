@@ -12,6 +12,7 @@
 
 #include <string>
 #include <QObject>  // NOLINT(build/include_order)
+#include <omp.h>
 #include "./global.h"
 #include "./snake.h"
 #include "./junctions.h"
@@ -128,6 +129,9 @@ class Multisnake : public QObject {
   }
   const SnakeContainer &comparing_snakes2() const {
     return comparing_snakes2_;
+  }
+  const std::vector<std::vector<IndexPairContainer> > &converged_snakes_grid() const {
+    return converged_snakes_grid_;
   }
 
   void SaveConvergedSnakesAsJFilamentFormat(
@@ -327,8 +331,10 @@ class Multisnake : public QObject {
   SnakeContainer comparing_snakes2_;
 
   Junctions junctions_;
-
-
+ 
+  // grid with converged_snakes index and then index of vertex of converged_snakes
+  std::vector<std::vector<IndexPairContainer> > converged_snakes_grid_;
+  
   /*
    * Intensity scale factor to normalize the intensity roughly inside
    * the range of [0, 1].

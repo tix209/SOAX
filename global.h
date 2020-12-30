@@ -41,6 +41,7 @@ typedef PointContainer::iterator PointIterator;
 typedef PointContainer::const_iterator PointConstIterator;
 typedef itk::Image<unsigned short, kDimension> ImageType;
 typedef itk::Image<VectorType, kDimension> VectorImageType;
+typedef std::deque<std::pair<int, int>> IndexPairContainer;
 
 class Snake;
 typedef std::vector<Snake *> SnakeContainer;

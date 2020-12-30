@@ -154,9 +154,10 @@ void Snake::InterpolateVertices(const PairContainer *sums,
 
 
 void Snake::Evolve(SolverBank *solver, const SnakeContainer &converged_snakes,
-                   unsigned max_iter, unsigned dim) {
+                   unsigned max_iter, unsigned dim, const std::vector<std::vector<IndexPairContainer > >  &converged_snakes_grid) {
   unsigned iter = 0;
 
+  
   while (iter <= max_iter) {
     if (iterations_ >= max_iterations_)  {
       // std::cout << this << " reaches maximum iterations." << std::endl;
@@ -169,19 +170,19 @@ void Snake::Evolve(SolverBank *solver, const SnakeContainer &converged_snakes,
       if (iterations_ && initial_state_)
         initial_state_ = false;
     }
-
+    
     this->CheckSelfIntersection();
     if (!viable_)  break;
-    this->HandleHeadOverlap(converged_snakes);
+    this->HandleHeadOverlap(converged_snakes, converged_snakes_grid);
     if (!viable_)  break;
-    this->HandleTailOverlap(converged_snakes);
+    this->HandleTailOverlap(converged_snakes, converged_snakes_grid);
     if (!viable_)  break;
     this->IterateOnce(solver, dim);
     this->Resample();
     iter++;
-    if (!viable_)  break;
+    if (!viable_)  break;    
   }
-  this->CheckBodyOverlap(converged_snakes);
+  this->CheckBodyOverlap(converged_snakes, converged_snakes_grid);
 }
 
 bool Snake::IsConverged() {
@@ -245,24 +246,36 @@ void Snake::TryInitializeFromPart(PointIterator it1, PointIterator it2,
   }
 }
 
-void Snake::HandleHeadOverlap(const SnakeContainer &converged_snakes) {
+void Snake::HandleHeadOverlap(const SnakeContainer &converged_snakes, const std::vector<std::vector<IndexPairContainer > > &converged_snakes_grid) {
   PointIterator first_detach = vertices_.begin();
   PointIterator start = vertices_.begin();
 
   if (this->HeadIsFixed())
     start += static_cast<int>(overlap_threshold_/spacing_);
-  first_detach = this->CheckHeadOverlap(start, converged_snakes);
 
+  //first vertex in current snake that does not have an overlap
+  first_detach = this->CheckHeadOverlap(start, converged_snakes, converged_snakes_grid);
+  
+  
+  
+  // if there is an overlap  
   if (first_detach != start) {
     if (first_detach == vertices_.end()) {
       // std::cout << "head: total overlap!" << std::endl;
       viable_ = false;
     } else {
+      
+      // finds closest point to last_touch (last vertex that has an overlap) on a converged_snake
       PointIterator last_touch = first_detach - 1;
       this->FindHookedSnakeAndIndex(*last_touch, converged_snakes,
                                     head_hooked_snake_,
-                                    head_hooked_index_);
+                                    head_hooked_index_, converged_snakes_grid);
+                                    
+      // point on converged snake closest to last_touch
       fixed_head_ = head_hooked_snake_->GetPoint(head_hooked_index_);
+      
+      
+      // connects last_touch to point on converged snake
       vertices_.erase(vertices_.begin(), first_detach);
       vertices_.push_front(fixed_head_);
       if (!open_)
@@ -272,13 +285,13 @@ void Snake::HandleHeadOverlap(const SnakeContainer &converged_snakes) {
   }
 }
 
-void Snake::HandleTailOverlap(const SnakeContainer &converged_snakes) {
+void Snake::HandleTailOverlap(const SnakeContainer &converged_snakes, const std::vector<std::vector<IndexPairContainer > > &converged_snakes_grid) {
   PointIterator first_detach = vertices_.end()-1;
   PointIterator start = vertices_.end()-1;
 
   if (this->TailIsFixed())
     start -= static_cast<int>(overlap_threshold_/spacing_);
-  first_detach = this->CheckTailOverlap(start, converged_snakes);
+  first_detach = this->CheckTailOverlap(start, converged_snakes, converged_snakes_grid);
 
 
   if (first_detach != start) {
@@ -286,11 +299,18 @@ void Snake::HandleTailOverlap(const SnakeContainer &converged_snakes) {
       // std::cout << "tail: total overlap!" << std::endl;
       viable_ = false;
     } else {
+        
+      // finds closest point to last_touch on a converged_snake
       PointIterator last_touch = first_detach + 1;
+      
       this->FindHookedSnakeAndIndex(*last_touch, converged_snakes,
                                     tail_hooked_snake_,
-                                    tail_hooked_index_);
+                                    tail_hooked_index_, converged_snakes_grid);
+                                    
+      // point on converged snake closest to last_touch
       fixed_tail_ = tail_hooked_snake_->GetPoint(tail_hooked_index_);
+      
+      // connects last_touch to point on converged snake
       vertices_.erase(last_touch, vertices_.end());
       vertices_.push_back(fixed_tail_);
       if (!open_)
@@ -300,33 +320,63 @@ void Snake::HandleTailOverlap(const SnakeContainer &converged_snakes) {
   }
 }
 
+// starting from head vertex checks if each vertex in the called snake overlaps with another converged snake
+// returns the first vertex that has no overlap
 PointIterator Snake::CheckHeadOverlap(
-    PointIterator const &start, const SnakeContainer &converged_snakes) {
+    PointIterator const &start, const SnakeContainer &converged_snakes, const std::vector<std::vector<IndexPairContainer > >  &converged_snakes_grid) {
+        
+  int loopCount = 0;
   PointIterator it = start;
-  while (it != vertices_.end() && VertexOverlap(*it, converged_snakes)) {
+  while (it != vertices_.end() && VertexOverlap(*it, converged_snakes, converged_snakes_grid)) {
+    loopCount++;
     ++it;
   }
   return it;
 }
 
 PointIterator Snake::CheckTailOverlap(
-    PointIterator const &start, const SnakeContainer &converged_snakes) {
+    PointIterator const &start, const SnakeContainer &converged_snakes, const std::vector<std::vector<IndexPairContainer > > &converged_snakes_grid) {
   PointIterator it = start;
-  while (it != vertices_.begin() && VertexOverlap(*it, converged_snakes)) {
+  while (it != vertices_.begin() && VertexOverlap(*it, converged_snakes, converged_snakes_grid)) {
     --it;
   }
   return it;
 }
 
+// checks if there is an overlap between a point and any of the converged snakes within a threshold distance
 bool Snake::VertexOverlap(const PointType &p,
-                          const SnakeContainer &converged_snakes) {
+                          const SnakeContainer &converged_snakes, const std::vector<std::vector<IndexPairContainer > > &converged_snakes_grid) {
   if (converged_snakes.empty()) return false;
-  for (SnakeConstIterator it = converged_snakes.begin();
+  /*for (SnakeConstIterator it = converged_snakes.begin();
        it != converged_snakes.end(); ++it) {
     if ((*it)->PassThrough(p, overlap_threshold_))
       return true;
+  }*/
+  
+  int org_x_grid = (int)(p[0] / overlap_threshold_);
+  int org_y_grid = (int)(p[1] / overlap_threshold_);  
+  
+  IndexPairContainer indexes_of_points_in_grid = converged_snakes_grid[org_x_grid][org_y_grid];
+
+  bool test = false;
+  //#pragma omp parallel for
+  for(unsigned i = 0; i < indexes_of_points_in_grid.size(); ++i)
+  {
+      if(test == false)
+      {
+          PointType point_in_grid = converged_snakes[std::get<0>(indexes_of_points_in_grid[i])]->GetPoint(std::get<1>(indexes_of_points_in_grid[i]));
+          double dist = p.EuclideanDistanceTo(point_in_grid);
+          if (dist < overlap_threshold_)
+          {
+              //#pragma omp critical
+              {
+                test = true;
+              }
+          }
+      }
   }
-  return false;
+  
+  return test;
 }
 
 bool Snake::PassThrough(const PointType &p, double threshold) const {
@@ -339,11 +389,16 @@ bool Snake::PassThrough(const PointType &p, double threshold) const {
   return false;
 }
 
+// loops through the converged snakes to find the closest point on each converged snake to p
+// then finds the closest overall point to p on a converged snake
+// returns the converged snake and the index of the vertex which is closest to p
 void Snake::FindHookedSnakeAndIndex(const PointType &p,
                                     const SnakeContainer &converged_snakes,
-                                    Snake * &s, unsigned &index) {
+                                    Snake * &s, unsigned &index, const std::vector<std::vector<IndexPairContainer > >  &converged_snakes_grid) {
   double min_d = kPlusInfinity;
-  for (SnakeConstIterator it = converged_snakes.begin();
+  
+  
+  /*for (SnakeConstIterator it = converged_snakes.begin();
        it != converged_snakes.end(); ++it) {
     unsigned ind;
     double d = (*it)->FindClosestIndexTo(p, ind);
@@ -352,10 +407,51 @@ void Snake::FindHookedSnakeAndIndex(const PointType &p,
       index = ind;
       s = *it;
     }
+  }*/
+  
+  int org_x_grid = (int)(p[0] / overlap_threshold_);
+  int org_y_grid = (int)(p[1] / overlap_threshold_);
+  //int org_z_grid = (int)(p[2] / overlap_threshold_);
+  
+  IndexPairContainer indexes_of_points_in_grid = converged_snakes_grid[org_x_grid][org_y_grid];
+  
+  //https://stackoverflow.com/questions/28258590/using-openmp-to-get-the-index-of-minimum-element-parallelly
+  //#pragma omp parallel
+  {
+      int index_local = 0;
+      double min_local = min_d;
+      Snake *s_local;
+      
+      //#pragma omp for nowait
+      for (unsigned i = 0; i < indexes_of_points_in_grid.size(); ++i) {
+        //unsigned ind;
+        //double d = converged_snakes[i]->FindClosestIndexTo(p, ind);
+        
+        int s_local_tmp = std::get<0>(indexes_of_points_in_grid[i]);
+        int index_local_tmp = std::get<1>(indexes_of_points_in_grid[i]);
+        
+        PointType point_in_grid = converged_snakes[s_local_tmp]->GetPoint(index_local_tmp);
+        double d = p.EuclideanDistanceTo(point_in_grid);
+        
+        if (d < min_local) {
+          min_local = d;
+          index_local = index_local_tmp;
+          s_local = converged_snakes[s_local_tmp];
+        }
+      }
+      //#pragma omp critical
+      {
+          if(min_local < min_d) {
+              min_d = min_local;
+              index = index_local;
+              s = s_local;
+          }
+      }
   }
+      
 }
 
-
+// finds the index of the called snake that is closest to p
 double Snake::FindClosestIndexTo(const PointType &p, unsigned &ind) {
   double min_d = p.EuclideanDistanceTo(vertices_[0]);
   ind = 0;
@@ -367,13 +463,16 @@ double Snake::FindClosestIndexTo(const PointType &p, unsigned &ind) {
       ind = i;
     }
   }
+
   return min_d;
 }
 
 void Snake::IterateOnce(SolverBank *solver, unsigned dim) {
   VectorContainer rhs;
   this->ComputeRHSVector(solver->gamma(), rhs, dim);
-
+  
+  //std::cout << "dim: " << dim << ", verticesSize: " << vertices_.size() << std::endl;
+  
   for (unsigned d = 0; d < dim; ++d) {
     solver->SolveSystem(rhs, d, open_);
     for (unsigned i = 0; i < vertices_.size(); ++i) {
@@ -400,8 +499,10 @@ void Snake::ComputeRHSVector(double gamma, VectorContainer &rhs, unsigned dim) {
 void Snake::AddExternalForce(VectorContainer &rhs, unsigned dim) {
   for (unsigned i = 0; i < vertices_.size(); ++i) {
     if (IsInsideImage(vertices_.at(i), dim)) {
+      {
       rhs.at(i) += external_factor_ *
                    vector_interpolator_->Evaluate(vertices_.at(i));
+      }
     }
   }
 }
@@ -658,7 +759,7 @@ bool Snake::IsInsideImage(const PointType &point, unsigned dim,
  * overlap part in the body. The reason for detecting first body overlap only
  * is the non-overlap parts will form new snakes which will evolve again.
  */
-void Snake::CheckBodyOverlap(const SnakeContainer &converged_snakes) {
+void Snake::CheckBodyOverlap(const SnakeContainer &converged_snakes, const std::vector<std::vector<IndexPairContainer > >  &converged_snakes_grid) {
   if (!converged_) return;
 
   bool last_is_overlap = true;
@@ -666,7 +767,7 @@ void Snake::CheckBodyOverlap(const SnakeContainer &converged_snakes) {
   PointIterator overlap_end = vertices_.end();
   // PointType overlap_point;
   for (PointIterator it = vertices_.begin(); it != vertices_.end(); ++it) {
-    bool overlap = Snake::VertexOverlap(*it, converged_snakes);
+    bool overlap = Snake::VertexOverlap(*it, converged_snakes, converged_snakes_grid);
     if (overlap && !last_is_overlap) {
       overlap_start = it;
     } else if (!overlap && last_is_overlap && it > overlap_start) {

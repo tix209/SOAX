@@ -18,7 +18,7 @@ if(QT_FOUND)
 endif(QT_FOUND)
 
 # Enable C++11
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -O2")
 
 
 ## Enable these options for Windows build

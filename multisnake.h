@@ -194,6 +194,8 @@ class Multisnake : public QObject {
   void AddInitialSnake(Snake *s) {initial_snakes_.push_back(s);}
   void AddConvergedSnake(Snake *s) {converged_snakes_.push_back(s);}
   void AddSubsnakesToInitialSnakes(Snake *s);
+  
+  void AddConvergedSnakeIndexesToGrid(int org_x_grid, int org_y_grid, int converged_snake_index, int vertex_index);
 
   void ComputeGroundTruthLocalSNRs(int radial_near, int radial_far,
                                    DataContainer &snrs) const;
@@ -215,7 +217,7 @@ class Multisnake : public QObject {
                               double sigma,
                               const std::string &filename) const;
 
-
+  void ClearConvergedSnakesGrid();
  signals:
   void ExtractionProgressed(int value);
 

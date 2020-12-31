@@ -650,15 +650,7 @@ void Multisnake::DeformSnakes() {
   unsigned ncompleted = 0;
   std::cout << "# initial snakes: " << initial_snakes_.size() << std::endl;
   this->ClearSnakeContainer(converged_snakes_);
-  
-  // clear converged_snakes_grid_ while keeping the size the same
-  for(int ix = 0; ix < converged_snakes_grid_.size(); ix++)
-  {
-      for(int iy = 0; iy < converged_snakes_grid_[0].size(); iy++)
-      {
-         converged_snakes_grid_[ix][iy].clear();
-      }
-  }
+  this->ClearConvergedSnakesGrid();
   
   while (!initial_snakes_.empty()) {
     Snake *snake = initial_snakes_.back();
@@ -671,8 +663,7 @@ void Multisnake::DeformSnakes() {
       
       int curr_index_snake = converged_snakes_.size() - 1;
       
-      for(int s = 0; s < snake->GetSize(); s++)
-      {
+      for(int s = 0; s < snake->GetSize(); s++) {
           double curr_x_val = snake->GetX(s);
           double curr_y_val = snake->GetY(s);
           //double curr_z_val = snake->GetZ(s);
@@ -681,28 +672,7 @@ void Multisnake::DeformSnakes() {
           int org_y_grid = (int)(curr_y_val / Snake::overlap_threshold());
           //int org_z_grid = (int)(curr_z_val / Snake::overlap_threshold());
           
-          /* add snake vertex point, s, to subgrid it is in and neighboring subgrids.
-             This ensures that when the grid is used in Snake::VertexOverlap or 
-             Snake::FindHookedSnakeAndIndex only the IndexPairContainer for the subgrid 
-             that point p is in needs to be considered rather than having to loop through 
-             all neighboring subgrids of point p*/
-          for(int ix = -1; ix <= 1; ix++)
-          {
-              int curr_x_grid = org_x_grid + ix;
-              
-              if(curr_x_grid >= 0 && curr_x_grid < converged_snakes_grid_.size())
-              {
-                  for(int iy = -1; iy <= 1; iy++)
-                  {
-                      int curr_y_grid = org_y_grid + iy;
-                      
-                      if(curr_y_grid >= 0 && curr_y_grid < converged_snakes_grid_[0].size())
-                      {
-                          converged_snakes_grid_[curr_x_grid][curr_y_grid].push_back(std::make_pair(curr_index_snake, s));
-                      }
-                  }
-              }
-          }
+          this->AddConvergedSnakeIndexesToGrid(org_x_grid, org_y_grid, curr_index_snake, s);
       }
     } else {
       initial_snakes_.insert(initial_snakes_.end(),
@@ -1515,6 +1485,37 @@ ImageType::PixelType Multisnake::GetMaxImageIntensity() const {
   filter->SetImage(image_);
   filter->ComputeMaximum();
   return filter->GetMaximum();
+}
+
+// clear converged_snakes_grid_ while keeping the size the same
+void Multisnake::ClearConvergedSnakesGrid() {
+
+  for(int ix = 0; ix < converged_snakes_grid_.size(); ix++) {
+      for(int iy = 0; iy < converged_snakes_grid_[0].size(); iy++) {
+         converged_snakes_grid_[ix][iy].clear();
+      }
+  }
+}
+
+/* add snake vertex point, s, to subgrid it is in and neighboring subgrids.
+   This ensures that when the grid is used in Snake::VertexOverlap or 
+   Snake::FindHookedSnakeAndIndex only the IndexPairContainer for the subgrid 
+   that point p is in needs to be considered rather than having to loop through 
+   all neighboring subgrids of point p*/
+void Multisnake::AddConvergedSnakeIndexesToGrid(int org_x_grid, int org_y_grid, int converged_snake_index, int vertex_index) {
+  for(int ix = -1; ix <= 1; ix++) {
+      int curr_x_grid = org_x_grid + ix;
+          
+      if(curr_x_grid >= 0 && curr_x_grid < converged_snakes_grid_.size()) {
+          for(int iy = -1; iy <= 1; iy++) {
+              int curr_y_grid = org_y_grid + iy;
+                  
+              if(curr_y_grid >= 0 && curr_y_grid < converged_snakes_grid_[0].size()){
+                  converged_snakes_grid_[curr_x_grid][curr_y_grid].push_back(std::make_pair(converged_snake_index, vertex_index));
+              }
+          }
+      }
+  }
 }
 
 

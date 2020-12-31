@@ -920,6 +920,10 @@ void MainWindow::DeformSnakesInAction() {
   viewer_->RemoveSnakes();
   progress_bar_->setMaximum(multisnake_->GetNumberOfInitialSnakes());
   unsigned ncompleted = 0;
+  
+  // clear converged_snakes_grid_ while keeping the size the same
+  multisnake_->ClearConvergedSnakesGrid();
+  
   while (!multisnake_->initial_snakes().empty()) {
     Snake *s = multisnake_->PopLastInitialSnake();
     viewer_->SetupSnake(s, 0);
@@ -932,6 +936,16 @@ void MainWindow::DeformSnakesInAction() {
         viewer_->SetupSnake(s, 0);
         viewer_->ChangeSnakeColor(s, Viewer::Yellow());
         multisnake_->AddConvergedSnake(s);
+        
+        for(int iterate_snakes = 0; iterate_snakes < s->GetSize(); iterate_snakes++) {
+           double curr_x_val = s->GetX(iterate_snakes);
+           double curr_y_val = s->GetY(iterate_snakes);
+           
+           int org_x_grid = (int)(curr_x_val / Snake::overlap_threshold());
+           int org_y_grid = (int)(curr_y_val / Snake::overlap_threshold());
+          
+           multisnake_->AddConvergedSnakeIndexesToGrid(org_x_grid, org_y_grid, multisnake_->GetNumberOfConvergedSnakes()-1, iterate_snakes);
+        }
         ncompleted++;
       } else {
         multisnake_->AddInitialSnake(s);

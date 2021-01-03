@@ -46,7 +46,7 @@ int main(int argc, char **argv) {
          po::value<soax::DataContainer>(&stretch_range)->multitoken(),
          "Range of stretching factor (start step end)")
         ("invert", "Use inverted image intensity")
-        ("nocut", "Output snakes before cutting at intersections and regrouping");
+        ("nocut", "Output snakes before cutting at intersections and regrouping")
         ("nogroup", "Output snakes after cutting at intersections but without regrouping");
 
     po::options_description all("Allowed options");

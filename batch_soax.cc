@@ -47,6 +47,7 @@ int main(int argc, char **argv) {
          "Range of stretching factor (start step end)")
         ("invert", "Use inverted image intensity")
         ("nocut", "Output snakes before cutting at intersections and regrouping");
+        ("nogroup", "Output snakes after cutting at intersections but without regrouping");
 
     po::options_description all("Allowed options");
     all.add(generic).add(required).add(optional);
@@ -264,7 +265,9 @@ int main(int argc, char **argv) {
 
             if (!(vm.count("nocut")))  {
                 multisnake->CutSnakesAtTJunctions();
-                multisnake->GroupSnakes();
+                if (!(vm.count("nogroup")))  {
+                    multisnake->GroupSnakes();
+                }
             }
 
             std::string path_str = image_it->string();

@@ -42,7 +42,7 @@ int main(int argc, char **argv) {
       std::string version_msg(
           "Batch Length 3.7.0 \n"
           "Computing SOAC lengths (in pixels) from multiple input SOAC files.\n"
-          "Copyright (C) 2016-2021, Lehigh University.");
+          "Copyright (C) 2015-2021, Lehigh University.");
       std::cout << version_msg << std::endl;
       return EXIT_SUCCESS;
     }

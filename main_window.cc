@@ -1406,7 +1406,7 @@ void MainWindow::SaveSnapshot() {
 void MainWindow::AboutSOAX() {
   QMessageBox::about(
       this, tr("About SOAX"),
-      tr("<h3>SOAX 3.6.1</h3>"
+      tr("<h3>SOAX 3.7.0</h3>"
          "<p>Copyright &copy; Lehigh University"
          "<p>SOAX extracts curvilinear networks from 2D/3D images."
          "This work is supported by NIH grant R01GM098430."));

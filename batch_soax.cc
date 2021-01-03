@@ -45,7 +45,8 @@ int main(int argc, char **argv) {
         ("stretch",
          po::value<soax::DataContainer>(&stretch_range)->multitoken(),
          "Range of stretching factor (start step end)")
-        ("invert", "Use inverted image intensity");
+        ("invert", "Use inverted image intensity")
+        ("nocut", "Output snakes before cutting at intersections and regrouping");
 
     po::options_description all("Allowed options");
     all.add(generic).add(required).add(optional);
@@ -54,8 +55,8 @@ int main(int argc, char **argv) {
 
     if (vm.count("version")) {
       const std::string version_msg(
-          "Batch SOAX 3.6.1\n"
-          "Copyright (C) 2016, Lehigh University.");
+          "Batch SOAX 3.7.0\n"
+          "Copyright (C) 2015-2021, Lehigh University.");
       std::cout << version_msg << std::endl;
       return EXIT_SUCCESS;
     }
@@ -261,8 +262,10 @@ int main(int argc, char **argv) {
             time(&end);
             double time_elasped = difftime(end, start);
 
-            multisnake->CutSnakesAtTJunctions();
-            multisnake->GroupSnakes();
+            if (!(vm.count("nocut")))  {
+                multisnake->CutSnakesAtTJunctions();
+                multisnake->GroupSnakes();
+            }
 
             std::string path_str = image_it->string();
             std::string::size_type slash_pos = path_str.find_last_of("/\\");

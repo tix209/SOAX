@@ -164,7 +164,7 @@ class Snake {
   const SnakeContainer &subsnakes() const {return subsnakes_;}
 
   void Evolve(SolverBank *solver, const SnakeContainer &converged_snakes,
-              unsigned max_iter, unsigned dim);
+              unsigned max_iter, unsigned dim, const std::vector<std::vector<IndexPairContainer > >  &converged_snakes_grid);
   void EvolveWithTipFixed(SolverBank *solver, unsigned max_iter, unsigned dim);
   void UpdateHookedIndices();
   void CopySubSnakes(SnakeContainer &c);
@@ -220,23 +220,23 @@ class Snake {
   void TryInitializeFromPart(PointIterator it1, PointIterator it2,
                              bool is_open);
 
-  void HandleHeadOverlap(const SnakeContainer &converged_snakes);
-  void HandleTailOverlap(const SnakeContainer &converged_snakes);
+  void HandleHeadOverlap(const SnakeContainer &converged_snakes, const std::vector<std::vector<IndexPairContainer > > &converged_snakes_grid);
+  void HandleTailOverlap(const SnakeContainer &converged_snakes, const std::vector<std::vector<IndexPairContainer > > &converged_snakes_grid);
 
   bool HeadIsFixed() {return fixed_head_[0] > 0;}
   bool TailIsFixed() {return fixed_tail_[0] > 0;}
 
   PointIterator CheckHeadOverlap(PointIterator const &start,
-                                 const SnakeContainer &converged_snakes);
+                                 const SnakeContainer &converged_snakes, const std::vector<std::vector<IndexPairContainer > >  &converged_snakes_grid);
   PointIterator CheckTailOverlap(PointIterator const &start,
-                                 const SnakeContainer &converged_snakes);
+                                 const SnakeContainer &converged_snakes, const std::vector<std::vector<IndexPairContainer > >  &converged_snakes_grid);
 
   bool VertexOverlap(const PointType &p,
-                     const SnakeContainer &converged_snakes);
+                     const SnakeContainer &converged_snakes, const std::vector<std::vector<IndexPairContainer > >  &converged_snakes_grid);
 
   void FindHookedSnakeAndIndex(const PointType &p,
                                const SnakeContainer &converged_snakes,
-                               Snake * &s, unsigned &index);
+                               Snake * &s, unsigned &index, const std::vector<std::vector<IndexPairContainer > >  &converged_snakes_grid);
   double FindClosestIndexTo(const PointType &p, unsigned &ind);
 
   void IterateOnce(SolverBank *solver, unsigned dim);
@@ -268,7 +268,7 @@ class Snake {
                           const VectorType &normal,
                           int d, int s) const;
 
-  void CheckBodyOverlap(const SnakeContainer &converged_snakes);
+  void CheckBodyOverlap(const SnakeContainer &converged_snakes, const std::vector<std::vector<IndexPairContainer > >  &converged_snakes_grid);
 
   void AddJunctionIndex(unsigned index);
 

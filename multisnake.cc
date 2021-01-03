@@ -94,6 +94,19 @@ void Multisnake::LoadImage(const std::string &filename) {
   const ImageType::SizeType &size =
       image_->GetLargestPossibleRegion().GetSize();
   std::cout << "Image size: " << size << std::endl;
+  
+  // resize converged_snakes_grid to image size
+  // overlap_threshold is the minimum grid width since this should ensure
+  // all points within overlap_threshold of point of interest are considered
+  int x_grid_size = (int)floor(size[0] / Snake::overlap_threshold());
+  int y_grid_size = (int)floor(size[1] / Snake::overlap_threshold());
+  //int z_grid_size = (int)ceil(size[2] / Snake::overlap_threshold());
+  
+  converged_snakes_grid_.resize(x_grid_size);
+  for (int i = 0; i < x_grid_size; ++i){
+      converged_snakes_grid_[i].resize(y_grid_size);
+  }
+
   if (size[2] < 2) {
     dim_ = 2;
   }
@@ -637,15 +650,30 @@ void Multisnake::DeformSnakes() {
   unsigned ncompleted = 0;
   std::cout << "# initial snakes: " << initial_snakes_.size() << std::endl;
   this->ClearSnakeContainer(converged_snakes_);
-
+  this->ClearConvergedSnakesGrid();
+  
   while (!initial_snakes_.empty()) {
     Snake *snake = initial_snakes_.back();
     initial_snakes_.pop_back();
     solver_bank_->Reset(false);
-    snake->Evolve(solver_bank_, converged_snakes_, kBigNumber, dim_);
+    snake->Evolve(solver_bank_, converged_snakes_, kBigNumber, dim_, converged_snakes_grid_);
 
     if (snake->viable()) {
       converged_snakes_.push_back(snake);
+      
+      int curr_index_snake = converged_snakes_.size() - 1;
+      
+      for(int s = 0; s < snake->GetSize(); s++) {
+          double curr_x_val = snake->GetX(s);
+          double curr_y_val = snake->GetY(s);
+          //double curr_z_val = snake->GetZ(s);
+          
+          int org_x_grid = (int)(curr_x_val / Snake::overlap_threshold());
+          int org_y_grid = (int)(curr_y_val / Snake::overlap_threshold());
+          //int org_z_grid = (int)(curr_z_val / Snake::overlap_threshold());
+          
+          this->AddConvergedSnakeIndexesToGrid(org_x_grid, org_y_grid, curr_index_snake, s);
+      }
     } else {
       initial_snakes_.insert(initial_snakes_.end(),
                              snake->subsnakes().begin(),
@@ -654,11 +682,15 @@ void Multisnake::DeformSnakes() {
     }
 
     ncompleted++;
+    
+    //std::cout << "snakeSize: " << initial_snakes_.size() << " " << ncompleted << std::endl;
+    
     emit ExtractionProgressed(ncompleted);
     std::cout << "\rRemaining: " << std::setw(6)
               << initial_snakes_.size() << std::flush;
     qApp->processEvents();
   }
+  
   std::cout << "\n# Converged snakes: " << converged_snakes_.size()
             << std::endl;
 }
@@ -1453,6 +1485,37 @@ ImageType::PixelType Multisnake::GetMaxImageIntensity() const {
   filter->SetImage(image_);
   filter->ComputeMaximum();
   return filter->GetMaximum();
+}
+
+// clear converged_snakes_grid_ while keeping the size the same
+void Multisnake::ClearConvergedSnakesGrid() {
+
+  for(int ix = 0; ix < converged_snakes_grid_.size(); ix++) {
+      for(int iy = 0; iy < converged_snakes_grid_[0].size(); iy++) {
+         converged_snakes_grid_[ix][iy].clear();
+      }
+  }
+}
+
+/* add snake vertex point, s, to subgrid it is in and neighboring subgrids.
+   This ensures that when the grid is used in Snake::VertexOverlap or 
+   Snake::FindHookedSnakeAndIndex only the IndexPairContainer for the subgrid 
+   that point p is in needs to be considered rather than having to loop through 
+   all neighboring subgrids of point p*/
+void Multisnake::AddConvergedSnakeIndexesToGrid(int org_x_grid, int org_y_grid, int converged_snake_index, int vertex_index) {
+  for(int ix = -1; ix <= 1; ix++) {
+      int curr_x_grid = org_x_grid + ix;
+          
+      if(curr_x_grid >= 0 && curr_x_grid < converged_snakes_grid_.size()) {
+          for(int iy = -1; iy <= 1; iy++) {
+              int curr_y_grid = org_y_grid + iy;
+                  
+              if(curr_y_grid >= 0 && curr_y_grid < converged_snakes_grid_[0].size()){
+                  converged_snakes_grid_[curr_x_grid][curr_y_grid].push_back(std::make_pair(converged_snake_index, vertex_index));
+              }
+          }
+      }
+  }
 }
 
 

@@ -40,9 +40,9 @@ int main(int argc, char **argv) {
 
     if (vm.count("version")) {
       std::string version_msg(
-          "Batch Length 3.6.1 \n"
+          "Batch Length 3.7.0 \n"
           "Computing SOAC lengths (in pixels) from multiple input SOAC files.\n"
-          "Copyright (C) 2016, Lehigh University.");
+          "Copyright (C) 2016-2021, Lehigh University.");
       std::cout << version_msg << std::endl;
       return EXIT_SUCCESS;
     }

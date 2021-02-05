@@ -989,7 +989,23 @@ void Multisnake::SaveSnakes(const SnakeContainer &snakes,
   for (SnakeConstIterator it = snakes.begin(); it != snakes.end(); ++it) {
     outfile << "#" << (*it)->open() << std::endl;
     for (unsigned j = 0; j != (*it)->GetSize(); ++j) {
-      double intensity = interpolator_->Evaluate((*it)->GetPoint(j));
+      
+      double intensity = 0.0;
+      
+      if ((*it)->radial_save_foreground() == 0)
+      {
+          // if snake r_save_foreground is zero then do this
+          intensity = interpolator_->Evaluate((*it)->GetPoint(j));
+      }
+      else
+      {
+          if (dim_ == 2) {
+            intensity = (*it)->ComputeForegroundMeanIntensity2d(j);
+          } else {
+            intensity = (*it)->ComputeForegroundMeanIntensity(j);
+          }
+      }
+      
       double background_intensity = -1.0;
       if (dim_ == 2) {
         background_intensity = (*it)->ComputeBackgroundMeanIntensity2d(j);

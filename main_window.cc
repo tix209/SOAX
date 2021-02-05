@@ -1360,6 +1360,7 @@ void MainWindow::SetParameters() {
   Snake::set_number_of_sectors(parameters_dialog_->GetNumberOfSectors());
   Snake::set_radial_near(parameters_dialog_->GetRadialNear());
   Snake::set_radial_far(parameters_dialog_->GetRadialFar());
+  Snake::set_radial_save_foreground(parameters_dialog_->GetRadialSaveForeground());
   Snake::set_z_spacing(parameters_dialog_->GetZSpacing());
   Snake::set_delta(parameters_dialog_->GetDelta());
   Snake::set_overlap_threshold(parameters_dialog_->GetOverlapThreshold());
@@ -1406,7 +1407,7 @@ void MainWindow::SaveSnapshot() {
 void MainWindow::AboutSOAX() {
   QMessageBox::about(
       this, tr("About SOAX"),
-      tr("<h3>SOAX 3.7.0</h3>"
+      tr("<h3>SOAX 3.6.1</h3>"
          "<p>Copyright &copy; Lehigh University"
          "<p>SOAX extracts curvilinear networks from 2D/3D images."
          "This work is supported by NIH grant R01GM098430."));

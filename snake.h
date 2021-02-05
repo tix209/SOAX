@@ -131,6 +131,14 @@ class Snake {
   static void set_radial_far(int rfar) {
     radial_far_ = rfar > 0 ? rfar : 2;
   }
+  
+  static int radial_save_foreground() {return radial_save_foreground_;}
+  /*
+   * Note radial_save_foreground_ cannot be less than 0
+   */
+  static void set_radial_save_foreground(int rforeground) {
+    radial_save_foreground_ = rforeground >= 0 ? rforeground : 0;
+  }
 
   static double z_spacing() {return z_spacing_;}
   static void set_z_spacing(double spacing) {
@@ -185,6 +193,9 @@ class Snake {
    */
   double ComputeBackgroundMeanIntensity(unsigned index) const;
   double ComputeBackgroundMeanIntensity2d(unsigned index) const;
+
+  double ComputeForegroundMeanIntensity(unsigned index) const;
+  double ComputeForegroundMeanIntensity2d(unsigned index) const;
 
   /**
    * Return the average local SNR of the snake.
@@ -376,6 +387,7 @@ class Snake {
   static int number_of_sectors_;
   static int radial_near_;
   static int radial_far_;
+  static int radial_save_foreground_;
 
   /*
    * Number of points apart to compute the tangent vector at snake

@@ -52,6 +52,7 @@ void ParametersDialog::SetCurrentParameters(Multisnake *ms) {
       QString::number(Snake::number_of_sectors()));
   radial_near_edit_->setText(QString::number(Snake::radial_near()));
   radial_far_edit_->setText(QString::number(Snake::radial_far()));
+  radial_save_foreground_edit_->setText(QString::number(Snake::radial_save_foreground()));
   z_spacing_edit_->setText(QString::number(Snake::z_spacing()));
   delta_edit_->setText(QString::number(Snake::delta()));
   overlap_threshold_edit_->setText(
@@ -94,6 +95,7 @@ QGroupBox * ParametersDialog::CreateSnakeGroup() {
   number_of_sectors_edit_ = new QLineEdit("0");
   radial_near_edit_ = new QLineEdit("0");
   radial_far_edit_ = new QLineEdit("0");
+  radial_save_foreground_edit_ = new QLineEdit("0");
   z_spacing_edit_ = new QLineEdit("0");
   delta_edit_ = new QLineEdit("0");
   overlap_threshold_edit_ = new QLineEdit("0.0");
@@ -144,6 +146,8 @@ QGroupBox * ParametersDialog::CreateSnakeGroup() {
           this, SLOT(EnableOKButton()));
   connect(radial_far_edit_, SIGNAL(textEdited(const QString &)),
           this, SLOT(EnableOKButton()));
+  connect(radial_save_foreground_edit_, SIGNAL(textEdited(const QString &)),
+          this, SLOT(EnableOKButton()));
   connect(z_spacing_edit_, SIGNAL(textEdited(const QString &)),
           this, SLOT(EnableOKButton()));
   connect(delta_edit_, SIGNAL(textEdited(const QString &)),
@@ -192,6 +196,7 @@ QGroupBox * ParametersDialog::CreateSnakeGroup() {
                        number_of_sectors_edit_);
   layout_right->addRow(tr("Radial Near (pixels)"), radial_near_edit_);
   layout_right->addRow(tr("Radial Far (pixels)"), radial_far_edit_);
+  layout_right->addRow(tr("Radial Save Foreground (pixels)"), radial_save_foreground_edit_);
   layout_right->addRow(tr("Background Z/XY Ratio (pixels)"), z_spacing_edit_);
   layout_right->addRow(tr("Delta (snake points)"), delta_edit_);
   layout_right->addRow(tr("Overlap Threshold (pixels)"),

@@ -28,6 +28,7 @@ double Snake::stretch_factor_ = 0.2;
 int Snake::number_of_sectors_ = 8;
 int Snake::radial_near_ = 4;
 int Snake::radial_far_ = 8;
+int Snake::radial_save_foreground_ = 0;
 unsigned Snake::delta_ = 4;
 double Snake::overlap_threshold_ = 1.0;
 double Snake::grouping_distance_threshold_ = 4.0;
@@ -653,6 +654,90 @@ double Snake::ComputeBackgroundMeanIntensity2d(unsigned index) const {
   else
     return Mean(bgs);
 }
+
+
+
+double Snake::ComputeForegroundMeanIntensity(unsigned index) const {
+  const PointType &vertex = vertices_[index];
+  const VectorType &normal = this->ComputeUnitTangentVector(index);
+
+  assert(std::fabs(normal.GetNorm() - 1.0) < 1e-9);
+  VectorType z_axis;
+  z_axis[0] = 0.0;
+  z_axis[1] = 0.0;
+  z_axis[2] = 1.0;
+  VectorType projection = z_axis - normal[2] * normal;
+  VectorType long_axis;
+  long_axis[0] = 1.0;
+  long_axis[1] = 0.0;
+  long_axis[2] = 0.0;
+  VectorType short_axis;
+  short_axis[0] = 0.0;
+  short_axis[1] = 1.0;
+  short_axis[2] = 0.0;
+  double projection_length = projection.GetNorm();
+  if (projection_length > kEpsilon) {
+    long_axis = projection / projection_length;
+    short_axis = itk::CrossProduct(long_axis, normal);
+    short_axis.Normalize();
+  }
+  DataContainer bgs;
+  const double angle_step = 2 * kPi / number_of_sectors_;
+  for (int r = 0; r < radial_save_foreground_; r++) {
+    for (int s = 0; s < number_of_sectors_; s++) {
+      double angle = s * angle_step;
+      VectorType v = static_cast<double>(r) * (std::cos(angle) * long_axis +
+                                               std::sin(angle) * short_axis);
+      v[2] *= z_spacing_;
+      PointType p = vertex + v;
+      if (IsInsideImage(p)) {
+        double intensity = interpolator_->Evaluate(p);
+        if (intensity > background_)
+          bgs.push_back(intensity);
+      }
+    }
+  }
+
+  if (bgs.empty()) {
+    return -1.0;  // return a negative value intentionally
+  } else {
+    return Mean(bgs);
+  }
+}
+
+double Snake::ComputeForegroundMeanIntensity2d(unsigned index) const {
+  const VectorType &normal = this->ComputeUnitTangentVector(index);
+  PointType vertex = vertices_[index];
+  DataContainer bgs;
+
+  for (int d = 0; d < radial_save_foreground_; d++) {
+    PointType pod;
+    pod[0] = this->ComputePodX(vertex[0], normal, d, true);
+    pod[1] = this->ComputePodY(vertex[1], normal, d, false);
+    pod[2] = vertex[2];
+
+    if (IsInsideImage(pod, 2)) {
+      double intensity = interpolator_->Evaluate(pod);
+      bgs.push_back(intensity);
+    }
+
+    pod[0] = this->ComputePodX(vertex[0], normal, d, false);
+    pod[1] = this->ComputePodY(vertex[1], normal, d, true);
+    pod[2] = vertex[2];
+
+    if (IsInsideImage(pod, 2)) {
+      double intensity = interpolator_->Evaluate(pod);
+      bgs.push_back(intensity);
+    }
+  }
+
+  if (bgs.empty())
+    return -1.0;
+  else
+    return Mean(bgs);
+}
+
+
 
 double Snake::ComputePodX(double x, const VectorType &tvec,
                           double dist, bool plus_root) const {

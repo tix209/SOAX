@@ -98,8 +98,8 @@ void Multisnake::LoadImage(const std::string &filename) {
   // resize converged_snakes_grid to image size
   // overlap_threshold is the minimum grid width since this should ensure
   // all points within overlap_threshold of point of interest are considered
-  int x_grid_size = (int)floor(size[0] / Snake::overlap_threshold());
-  int y_grid_size = (int)floor(size[1] / Snake::overlap_threshold());
+  int x_grid_size = (int)floor(size[0] / Snake::overlap_threshold()) + 1;
+  int y_grid_size = (int)floor(size[1] / Snake::overlap_threshold()) + 1;
   //int z_grid_size = (int)ceil(size[2] / Snake::overlap_threshold());
   
   converged_snakes_grid_.resize(x_grid_size);

@@ -355,7 +355,17 @@ bool Snake::VertexOverlap(const PointType &p,
   }*/
   
   int org_x_grid = (int)(p[0] / overlap_threshold_);
-  int org_y_grid = (int)(p[1] / overlap_threshold_);  
+  int org_y_grid = (int)(p[1] / overlap_threshold_);
+
+  // bounds check for whether point p is in grid
+  if(org_x_grid < 0 || org_x_grid >= converged_snakes_grid.size())
+  {
+      std::cerr << "Snake vertex out of grid in VertexOverlap!: " << org_x_grid << ", " << converged_snakes_grid.size() << std::endl;
+  }
+  if(org_y_grid < 0 || org_y_grid >= converged_snakes_grid[0].size())
+  {
+      std::cerr << "Snake vertex out of grid in VertexOverlap!" << org_y_grid << ", " << converged_snakes_grid[0].size() << std::endl;
+  }
   
   IndexPairContainer indexes_of_points_in_grid = converged_snakes_grid[org_x_grid][org_y_grid];
 
@@ -412,6 +422,17 @@ void Snake::FindHookedSnakeAndIndex(const PointType &p,
   
   int org_x_grid = (int)(p[0] / overlap_threshold_);
   int org_y_grid = (int)(p[1] / overlap_threshold_);
+  
+  // bounds check for whether point p is in grid
+  if(org_x_grid < 0 || org_x_grid >= converged_snakes_grid.size())
+  {
+      std::cerr << "Snake vertex out of grid in VertexOverlap!: " << org_x_grid << ", " << converged_snakes_grid.size() << std::endl;
+  }
+  if(org_y_grid < 0 || org_y_grid >= converged_snakes_grid[0].size())
+  {
+      std::cerr << "Snake vertex out of grid in VertexOverlap!" << org_y_grid << ", " << converged_snakes_grid[0].size() << std::endl;
+  }
+  
   //int org_z_grid = (int)(p[2] / overlap_threshold_);
   
   IndexPairContainer indexes_of_points_in_grid = converged_snakes_grid[org_x_grid][org_y_grid];

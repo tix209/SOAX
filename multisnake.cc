@@ -672,6 +672,25 @@ void Multisnake::DeformSnakes() {
           int org_y_grid = (int)(curr_y_val / Snake::overlap_threshold());
           //int org_z_grid = (int)(curr_z_val / Snake::overlap_threshold());
           
+          // bounds check for whether point p is in grid, puts particles outside grid into most extreme existing grid (should be okay, just means that more particles are being compared)
+          if(org_x_grid < 0)
+          {
+              org_x_grid = 0;
+          }
+          else if(org_x_grid >= converged_snakes_grid_.size())
+          {
+              org_x_grid = converged_snakes_grid_.size() - 1;
+          }
+          
+          if(org_y_grid < 0)
+          {
+              org_y_grid = 0;
+          }
+          else if(org_y_grid >= converged_snakes_grid_[0].size())
+          {
+              org_y_grid = converged_snakes_grid_[0].size() - 1;
+          }
+          
           this->AddConvergedSnakeIndexesToGrid(org_x_grid, org_y_grid, curr_index_snake, s);
       }
     } else {

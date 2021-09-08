@@ -17,4 +17,4 @@ T. Xu, D. Vavylonis, X. Huang, "[3D Actin Network Centerline Extraction with Mul
 
 Acknowledgement
 ---------------
-This work has been supported by NIH grants R01GM098430, R01GM114201, and R35GM136372.
+This work has been supported by NIH grants R01GM098430 and R35GM136372.

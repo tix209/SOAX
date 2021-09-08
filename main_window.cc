@@ -1410,7 +1410,7 @@ void MainWindow::AboutSOAX() {
       tr("<h3>SOAX 3.7.1</h3>"
          "<p>Copyright &copy; Lehigh University"
          "<p>SOAX extracts curvilinear networks from 2D/3D images."
-         "This work is supported by NIH grant R01GM098430."));
+         "This work was supported by NIH grants R01GM098430 and R35GM136372."));
 }
 
 QString MainWindow::GetLastDirectory(const std::string &filename) const {

@@ -12,7 +12,7 @@
 
 #include <string>
 #include <QObject>  // NOLINT(build/include_order)
-#include <omp.h>
+//#include <omp.h>
 #include "./global.h"
 #include "./snake.h"
 #include "./junctions.h"

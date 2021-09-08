@@ -313,6 +313,7 @@ std::ostream & Multisnake::WriteParameters(std::ostream &os) const {
   os << "background-z-xy-ratio\t" << Snake::z_spacing() << std::endl;
   os << "radial-near\t" << Snake::radial_near() << std::endl;
   os << "radial-far\t" << Snake::radial_far() << std::endl;
+  os << "radial-save-foreground\t" << Snake::radial_save_foreground() << std::endl;
   os << "delta\t" << Snake::delta() << std::endl;
   os << "overlap-threshold\t" << Snake::overlap_threshold() << std::endl;
   os << "grouping-distance-threshold\t"

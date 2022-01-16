@@ -224,8 +224,50 @@ int main(int argc, char **argv) {
       } else if (!vm.count("ridge") && !vm.count("stretch")) {
         std::cout << "Fixed parameters." << std::endl;
         if (fs::is_regular_file(image_path)) {
-          std::cout << "Input is a single image. Please use the GUI version."
+          std::string suffix = GetImageSuffix(image_path.string());
+          if (suffix != "mha" && suffix != "tif" && suffix != "TIF") {
+            std::cout << "Unknown image type: " << suffix << std::endl;
+          }
+          multisnake->LoadImage(image_path.string());
+          if (vm.count("invert"))  multisnake->InvertImageIntensity();
+          multisnake->LoadParameters(parameter_path.string());
+          multisnake->ComputeImageGradient();
+
+          std::cout << "\nSegmentation started on " << image_path
                     << std::endl;
+          std::cout << "=========== Current Parameters ==========="
+                    << std::endl;
+          multisnake->WriteParameters(std::cout);
+          std::cout << "=========================================="
+                    << std::endl;
+
+          multisnake->InitializeSnakes();
+
+          time_t start, end;
+          time(&start);
+          multisnake->DeformSnakes();
+          time(&end);
+          double time_elasped = difftime(end, start);
+
+          if (!(vm.count("nocut")))  {
+              multisnake->CutSnakesAtTJunctions();
+              if (!(vm.count("nogroup")))  {
+                  multisnake->GroupSnakes();
+              }
+          }
+
+          std::string path_str = image_path.string();
+          std::string::size_type slash_pos = path_str.find_last_of("/\\");
+          std::string::size_type dot_pos = path_str.find_last_of(".");
+          std::string extracted_name = path_str.substr(
+              slash_pos+1, dot_pos-slash_pos-1);
+          multisnake->SaveSnakes(
+              multisnake->converged_snakes(),
+              snake_path_name + extracted_name + ".txt");
+
+          std::cout << "Segmentation completed (Evolution time: "
+                    << time_elasped << "s)" << std::endl;
+          multisnake->Reset();
         } else if (fs::is_directory(image_path)) {
           std::cout << "Input may contain multiple images." << std::endl;
 

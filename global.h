@@ -50,6 +50,8 @@ typedef SnakeContainer::iterator SnakeIterator;
 typedef SnakeContainer::const_iterator SnakeConstIterator;
 
 typedef itk::LinearInterpolateImageFunction<ImageType> InterpolatorType;
+typedef itk::LinearInterpolateImageFunction<ImageType>::OutputType
+InterpolatorOutputType;
 typedef itk::VectorLinearInterpolateImageFunction<VectorImageType>
 VectorInterpolatorType;
 typedef itk::VersorTransform<double> TransformType;

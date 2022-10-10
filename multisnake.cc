@@ -418,6 +418,23 @@ void Multisnake::ComputeImageGradient(bool reset) {
   vector_interpolator_->SetInputImage(external_force_);
 }
 
+InterpolatorOutputType Multisnake::InterpolateImageIntensity(PointType coords) const {
+  const ImageType::SizeType &size =
+      image_->GetLargestPossibleRegion().GetSize();
+
+  // Make sure the coords is within 0.5 pixels of image edge in each direction
+  if (coords[0] < -0.5)          coords[0] = -0.5;
+  if (coords[0] > size[0] - 0.5) coords[0] = size[0] - 0.5;
+
+  if (coords[1] < -0.5)          coords[1] = -0.5;
+  if (coords[1] > size[1] - 0.5) coords[1] = size[1] - 0.5;
+
+  if (coords[2] < - 0.5)         coords[2] = -0.5;
+  if (coords[2] > size[2] - 0.5) coords[2] = size[2] - 0.5;
+
+  return interpolator_->Evaluate(coords);
+}
+
 void Multisnake::InitializeSnakes() {
   this->ClearSnakeContainer(initial_snakes_);
   BoolVectorImageType::Pointer ridge_image =
@@ -1015,7 +1032,7 @@ void Multisnake::SaveSnakes(const SnakeContainer &snakes,
       if ((*it)->radial_save_foreground() == 0)
       {
           // if snake r_save_foreground is zero then do this
-          intensity = interpolator_->Evaluate((*it)->GetPoint(j));
+          intensity = InterpolateImageIntensity((*it)->GetPoint(j));
       }
       else
       {
@@ -1210,7 +1227,7 @@ void Multisnake::ComputePointDensityAndIntensity(const PointType &center,
       unsigned r = static_cast<unsigned>(center.EuclideanDistanceTo(p));
       if (r < max_r) {
         snaxel_counts[r]++;
-        snake_intensities[r] += interpolator_->Evaluate(p);
+        snake_intensities[r] += InterpolateImageIntensity(p);
       }
     }
   }

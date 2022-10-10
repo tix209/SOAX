@@ -197,6 +197,8 @@ class Snake {
   double ComputeForegroundMeanIntensity(unsigned index) const;
   double ComputeForegroundMeanIntensity2d(unsigned index) const;
 
+  InterpolatorOutputType InterpolateImageIntensity(PointType coords) const;
+
   /**
    * Return the average local SNR of the snake.
    */

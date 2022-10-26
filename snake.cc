@@ -599,7 +599,7 @@ void Snake::UpdateTailTangent() {
 /* Note that scaling the intensity is not necessary here because they
  * are cancelled out. */
 double Snake::ComputeLocalStretch(unsigned index, unsigned dim) {
-  double fg = interpolator_->Evaluate(vertices_[index]);
+  double fg = InterpolateImageIntensity(vertices_[index]);
   if (fg < background_ + kEpsilon || fg > foreground_)
     return 0.0;
 
@@ -648,7 +648,7 @@ double Snake::ComputeBackgroundMeanIntensity(unsigned index) const {
       v[2] *= z_spacing_;
       PointType p = vertex + v;
       if (IsInsideImage(p)) {
-        double intensity = interpolator_->Evaluate(p);
+        double intensity = InterpolateImageIntensity(p);
         if (intensity > background_)
           bgs.push_back(intensity);
       }
@@ -674,7 +674,7 @@ double Snake::ComputeBackgroundMeanIntensity2d(unsigned index) const {
     pod[2] = vertex[2];
 
     if (IsInsideImage(pod, 2)) {
-      double intensity = interpolator_->Evaluate(pod);
+      double intensity = InterpolateImageIntensity(pod);
       bgs.push_back(intensity);
     }
 
@@ -683,7 +683,7 @@ double Snake::ComputeBackgroundMeanIntensity2d(unsigned index) const {
     pod[2] = vertex[2];
 
     if (IsInsideImage(pod, 2)) {
-      double intensity = interpolator_->Evaluate(pod);
+      double intensity = InterpolateImageIntensity(pod);
       bgs.push_back(intensity);
     }
   }
@@ -730,7 +730,7 @@ double Snake::ComputeForegroundMeanIntensity(unsigned index) const {
       v[2] *= z_spacing_;
       PointType p = vertex + v;
       if (IsInsideImage(p)) {
-        double intensity = interpolator_->Evaluate(p);
+        double intensity = InterpolateImageIntensity(p);
         if (intensity > background_)
           bgs.push_back(intensity);
       }
@@ -756,7 +756,7 @@ double Snake::ComputeForegroundMeanIntensity2d(unsigned index) const {
     pod[2] = vertex[2];
 
     if (IsInsideImage(pod, 2)) {
-      double intensity = interpolator_->Evaluate(pod);
+      double intensity = InterpolateImageIntensity(pod);
       bgs.push_back(intensity);
     }
 
@@ -765,7 +765,7 @@ double Snake::ComputeForegroundMeanIntensity2d(unsigned index) const {
     pod[2] = vertex[2];
 
     if (IsInsideImage(pod, 2)) {
-      double intensity = interpolator_->Evaluate(pod);
+      double intensity = InterpolateImageIntensity(pod);
       bgs.push_back(intensity);
     }
   }
@@ -776,7 +776,22 @@ double Snake::ComputeForegroundMeanIntensity2d(unsigned index) const {
     return Mean(bgs);
 }
 
+InterpolatorOutputType Snake::InterpolateImageIntensity(PointType coords) const {
+  const ImageType::SizeType &size =
+      image_->GetLargestPossibleRegion().GetSize();
 
+  // Make sure the coords is within 0.5 pixels of image edge in each direction
+  if (coords[0] < -0.5)          coords[0] = -0.5;
+  if (coords[0] > size[0] - 0.5) coords[0] = size[0] - 0.5;
+
+  if (coords[1] < -0.5)          coords[1] = -0.5;
+  if (coords[1] > size[1] - 0.5) coords[1] = size[1] - 0.5;
+
+  if (coords[2] < - 0.5)         coords[2] = -0.5;
+  if (coords[2] > size[2] - 0.5) coords[2] = size[2] - 0.5;
+
+  return interpolator_->Evaluate(coords);
+}
 
 double Snake::ComputePodX(double x, const VectorType &tvec,
                           double dist, bool plus_root) const {
@@ -934,7 +949,7 @@ void Snake::PrintSelf() const {
               << std::setw(column_width) << this->GetY(j)
               << std::setw(column_width) << this->GetZ(j)
               << std::setw(column_width)
-              << interpolator_->Evaluate(this->GetPoint(j))
+              << InterpolateImageIntensity(this->GetPoint(j))
               << std::endl;
   }
 }
@@ -1058,7 +1073,7 @@ const PointType &Snake::GetTip(bool is_head) const {
 
 bool Snake::ComputeLocalSNRAtIndex(unsigned index, int radial_near,
                                    int radial_far, double &local_snr) const {
-  double foreground = interpolator_->Evaluate(this->GetPoint(index));
+  double foreground = InterpolateImageIntensity(this->GetPoint(index));
   double bg_mean(0.0), bg_std(0.0);
   bool local_bg_defined = this->ComputeLocalBackgroundMeanStd(
       index, radial_near, radial_far, bg_mean, bg_std);
@@ -1113,7 +1128,7 @@ bool Snake::ComputeLocalBackgroundMeanStd(unsigned index, int radial_near,
       v[2] *= z_spacing_;
       PointType p = vertex + v;
       if (IsInsideImage(p)) {
-        bgs.push_back(interpolator_->Evaluate(p));
+        bgs.push_back(InterpolateImageIntensity(p));
       }
     }
   }
@@ -1176,7 +1191,7 @@ void Snake::TrimAndInsert(unsigned start, unsigned end, const PointType &p) {
 double Snake::ComputeIntensity() const {
   double intensity_sum = 0.0;
   for (unsigned i = 0; i < vertices_.size(); ++i) {
-    intensity_sum += interpolator_->Evaluate(vertices_.at(i));
+    intensity_sum += InterpolateImageIntensity(vertices_.at(i));
   }
   return intensity_sum / vertices_.size();
 }

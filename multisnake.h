@@ -105,6 +105,8 @@ class Multisnake : public QObject {
    */
   void ComputeImageGradient(bool reset = true);
 
+  InterpolatorOutputType InterpolateImageIntensity(PointType coords) const;
+  
   void InitializeSnakes();
 
   unsigned GetNumberOfInitialSnakes() const {

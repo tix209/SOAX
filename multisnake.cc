@@ -17,7 +17,7 @@
 #include "itkResampleImageFilter.h"
 #include "itkShiftScaleImageFilter.h"
 #include "itkGradientImageFilter.h"
-#include "itkVectorCastImageFilter.h"
+#include "itkCastImageFilter.h"
 #include "itkDiscreteGaussianImageFilter.h"
 #include "itkCastImageFilter.h"
 #include "itkGradientRecursiveGaussianImageFilter.h"
@@ -36,7 +36,7 @@
 namespace soax {
 
 Multisnake::Multisnake(QObject *parent) :
-    QObject(parent), image_(NULL), external_force_(NULL),
+    QObject(parent), image_(nullptr), external_force_(nullptr),
     intensity_scaling_(0.0), sigma_(0.0),
     ridge_threshold_(0.01), foreground_(65535),
     background_(0), initialize_z_(true), dim_(kDimension) {
@@ -403,8 +403,8 @@ void Multisnake::ComputeImageGradient(bool reset) {
       GradientFilterType;
   GradientFilterType::Pointer filter = GradientFilterType::New();
   filter->SetInput(img);
-  typedef itk::VectorCastImageFilter<GradientFilterType::OutputImageType,
-                                     VectorImageType> CasterType;
+  typedef itk::CastImageFilter<GradientFilterType::OutputImageType,
+                               VectorImageType> CasterType;
   CasterType::Pointer caster = CasterType::New();
   caster->SetInput(filter->GetOutput());
   try {

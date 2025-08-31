@@ -7,7 +7,7 @@
  */
 
 #include "./parameters_dialog.h"
-#include <QtGui>
+#include <QtWidgets>
 #include "./multisnake.h"
 #include "./snake.h"
 #include "./solver_bank.h"

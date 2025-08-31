@@ -3,13 +3,17 @@
  * All rights reserved.
  * See COPYING for license.
  *
- * This file implements the visulization class for SOAX.
+ * This file implements the visualization class for SOAX.
  */
 
 #include "./viewer.h"
-#include "QVTKWidget.h"
+#include <algorithm>
+#include "QVTKOpenGLWidget.h"
+#include "vtkVersion.h"
+#include "vtkGenericOpenGLRenderWindow.h"
 #include "itkImageToVTKImageFilter.h"
 #include "vtkImageCast.h"
+#include "vtkImageShiftScale.h"
 #include "vtkImagePlaneWidget.h"
 #include "vtkRenderer.h"
 #include "vtkRenderWindow.h"
@@ -20,6 +24,7 @@
 #include "vtkCornerAnnotation.h"
 #include "vtkVolumeProperty.h"
 #include "vtkSmartVolumeMapper.h"
+#include "vtkFixedPointVolumeRayCastMapper.h"
 #include "vtkPiecewiseFunction.h"
 #include "vtkColorTransferFunction.h"
 #include "vtkAxesActor.h"
@@ -34,11 +39,13 @@
 #include "vtkWindowToImageFilter.h"
 #include "vtkPNGWriter.h"
 #include "vtkTIFFWriter.h"
-#include "vtkEventQtSlotConnect.h"
+#include "vtkRenderWindowInteractor.h"
 #include "vtkPointPicker.h"
+#include "vtkPropCollection.h"
 #include "itkStatisticsImageFilter.h"
 #include "./snake.h"
 #include "./utility.h"
+
 
 namespace soax {
 
@@ -51,17 +58,22 @@ double Viewer::kGreen[3] = {0.0, 1.0, 0.0};
 double Viewer::kCyan[3] = {0.0, 1.0, 1.0};
 double Viewer::kBlue[3] = {0.0, 0.0, 1.0};
 
-Viewer::Viewer():
+Viewer::Viewer(QVTKOpenGLWidget *qvtk):
     window_(0.0), level_(0.0), mip_min_intensity_(0.0),
     mip_max_intensity_(0.0), clip_span_(6.0), color_segment_step_(3),
     trimmed_actor_(NULL), selected_snake_(NULL), trimmed_snake_(NULL),
-    trim_tip_index_(kBigNumber), trim_body_index1_(kBigNumber),
-    trim_body_index2_(kBigNumber), is_trim_body_second_click_(false) {
-  qvtk_ = new QVTKWidget;
-  qvtk_->GetRenderWindow()->SetMultiSamples(8);
+    trim_tip_index_(kBigNumber), trim_body_index1_(kBigNumber),    trim_body_index2_(kBigNumber), is_trim_body_second_click_(false) {
+  if (qvtk) {
+    qvtk_ = qvtk;
+  } else {
+    qvtk_ = new QVTKOpenGLWidget;
+  }
+  render_window_ = vtkGenericOpenGLRenderWindow::New();
+  qvtk_->SetRenderWindow(render_window_);
 
   renderer_ = vtkSmartPointer<vtkRenderer>::New();
-  qvtk_->GetRenderWindow()->AddRenderer(renderer_);
+  renderer_->SetBackground(0, 0, 0); 
+  render_window_->AddRenderer(renderer_);
   camera_ = vtkSmartPointer<vtkCamera>::New();
   renderer_->SetActiveCamera(camera_);
 
@@ -125,6 +137,9 @@ Viewer::~Viewer() {
   for (unsigned i = 0; i < kDimension; i++) {
     slice_planes_[i]->Delete();
   }
+  if (render_window_) {
+    render_window_->Delete();
+  }
   delete qvtk_;
 }
 
@@ -150,6 +165,8 @@ void Viewer::SetupImage(ImageType::Pointer image) {
   ConnectorType::Pointer connector = ConnectorType::New();
   connector->SetInput(image);
   connector->Update();
+  
+  vtkSmartPointer<vtkImageData> vtkImage = connector->GetOutput();
 
   typedef itk::StatisticsImageFilter<ImageType> FilterType;
   FilterType::Pointer filter = FilterType::New();
@@ -163,12 +180,12 @@ void Viewer::SetupImage(ImageType::Pointer image) {
       0.05 * (max_intensity - min_intensity);
   mip_max_intensity_ = max_intensity;
 
-  this->SetupSlicePlanes(connector->GetOutput());
-  this->SetupMIPRendering(connector->GetOutput());
+  this->SetupSlicePlanes(vtkImage);
+  this->SetupMIPRendering(vtkImage);
   this->SetupOrientationMarker();
   this->SetupUpperLeftCornerText(min_intensity, max_intensity);
   this->SetupBoundingBox(volume_);
-  this->SetupCubeAxes(connector->GetOutput());
+  this->SetupCubeAxes(vtkImage);
 
   this->UpdateJunctionRadius(image);
 }
@@ -190,12 +207,16 @@ void Viewer::UpdateJunctionRadius(ImageType::Pointer image) {
     junction_radius_ = 3.5;
 }
 
-void Viewer::SetupSlicePlanes(vtkImageData *data) {
+void Viewer::SetupSlicePlanes(vtkSmartPointer<vtkImageData> data) {
+  double range[2];
+  data->GetScalarRange(range);
+  double window = range[1] - range[0];
+  double level = range[0] + window / 2.0;
   for (unsigned i = 0; i < kDimension; ++i) {
     slice_planes_[i]->SetInputData(data);
     slice_planes_[i]->SetPlaneOrientation(i);
     slice_planes_[i]->UpdatePlacement();
-    slice_planes_[i]->SetWindowLevel(window_, level_);
+    slice_planes_[i]->SetWindowLevel(window, level);
   }
 }
 
@@ -213,38 +234,54 @@ void Viewer::ToggleSlicePlanes(bool state) {
   this->Render();
 }
 
-void Viewer::SetupMIPRendering(vtkImageData *data) {
-  vtkSmartPointer<vtkPiecewiseFunction> opacity_function =
-      vtkSmartPointer<vtkPiecewiseFunction>::New();
+void Viewer::SetupMIPRendering(vtkSmartPointer<vtkImageData> data) {
+  if (!data) {
+    std::cerr << "ERROR: No image data provided to SetupMIPRendering" << std::endl;
+    return;
+  }
 
-  opacity_function->AddPoint(mip_min_intensity_, 0.0);
-  opacity_function->AddPoint(mip_max_intensity_, 1.0);
+  // Get image scalar range for transfer function setup
+  double range[2];
+  data->GetScalarRange(range);
+  
+  // ratio for min intensity 
+  double ratio = 0.05;
+  double min_intensity = range[0] + ratio * (range[1] - range[0]);
+  double max_intensity = range[1];
 
-  vtkSmartPointer<vtkColorTransferFunction> color_function =
-      vtkSmartPointer<vtkColorTransferFunction>::New();
+  // Create opacity transfer function using actual data range
+  vtkSmartPointer<vtkPiecewiseFunction> opacity_function = vtkSmartPointer<vtkPiecewiseFunction>::New();
+  opacity_function->AddPoint(min_intensity, 0.0);
+  opacity_function->AddPoint(max_intensity, 1.0);
+
+  // Create color transfer function - hardcoded 0-255 range
+  vtkSmartPointer<vtkColorTransferFunction> color_function = vtkSmartPointer<vtkColorTransferFunction>::New();
   color_function->SetColorSpaceToRGB();
-  // color is all white
-  color_function->AddRGBPoint(0, 1, 1, 1);
-  color_function->AddRGBPoint(255, 1, 1, 1);
+  color_function->AddRGBPoint(0, 1, 1, 1);    // White at 0
+  color_function->AddRGBPoint(255, 1, 1, 1);  // White at 255
 
-  vtkSmartPointer<vtkVolumeProperty> mip_volume_property =
-      vtkSmartPointer<vtkVolumeProperty>::New();
+  vtkSmartPointer<vtkVolumeProperty> mip_volume_property = vtkSmartPointer<vtkVolumeProperty>::New();
   mip_volume_property->SetScalarOpacity(opacity_function);
   mip_volume_property->SetColor(color_function);
   mip_volume_property->SetInterpolationTypeToLinear();
   volume_->SetProperty(mip_volume_property);
 
-  vtkSmartPointer<vtkSmartVolumeMapper> mapper =
-      vtkSmartPointer<vtkSmartVolumeMapper>::New();
+  vtkSmartVolumeMapper* mapper = vtkSmartVolumeMapper::New();
   mapper->SetBlendModeToMaximumIntensity();
   mapper->SetInputData(data);
   volume_->SetMapper(mapper);
+  mapper->Delete();
+
+  volume_->SetVisibility(1);
+  volume_->SetPickable(1);
 }
 
 void Viewer::ToggleMIPRendering(bool state) {
   if (state) {
     renderer_->AddViewProp(volume_);
-    renderer_->ResetCamera();
+    renderer_->ResetCamera();   
+    renderer_->SetBackground(0, 0, 0);
+    
   } else {
     renderer_->RemoveViewProp(volume_);
   }
@@ -842,17 +879,17 @@ void Viewer::RemoveColorSegments() {
 
 void Viewer::ToggleNone(bool state) {
   if (state) {
-    slot_connector_->Connect(qvtk_->GetInteractor(),
+    slot_connector_->Connect(static_cast<vtkObject*>(qvtk_->GetInteractor()),
                              vtkCommand::LeftButtonPressEvent,
                              this, SLOT(SelectSnakeForView()));
-    slot_connector_->Connect(qvtk_->GetInteractor(),
+    slot_connector_->Connect(static_cast<vtkObject*>(qvtk_->GetInteractor()),
                              vtkCommand::RightButtonPressEvent,
                              this, SLOT(DeselectSnakeForView()));
   } else {
-    slot_connector_->Disconnect(qvtk_->GetInteractor(),
+    slot_connector_->Disconnect(static_cast<vtkObject*>(qvtk_->GetInteractor()),
                                 vtkCommand::LeftButtonPressEvent,
                                 this, SLOT(SelectSnakeForView()));
-    slot_connector_->Disconnect(qvtk_->GetInteractor(),
+    slot_connector_->Disconnect(static_cast<vtkObject*>(qvtk_->GetInteractor()),
                                 vtkCommand::RightButtonPressEvent,
                                 this, SLOT(DeselectSnakeForView()));
   }
@@ -889,17 +926,17 @@ void Viewer::DeselectSnakeForView() {
 
 void Viewer::ToggleDeleteSnake(bool state) {
   if (state) {
-    slot_connector_->Connect(qvtk_->GetInteractor(),
+    slot_connector_->Connect(static_cast<vtkObject*>(qvtk_->GetInteractor()),
                              vtkCommand::LeftButtonPressEvent,
                              this, SLOT(SelectSnakeForDeletion()));
-    slot_connector_->Connect(qvtk_->GetInteractor(),
+    slot_connector_->Connect(static_cast<vtkObject*>(qvtk_->GetInteractor()),
                              vtkCommand::RightButtonPressEvent,
                              this, SLOT(DeselectSnakeForDeletion()));
   } else {
-    slot_connector_->Disconnect(qvtk_->GetInteractor(),
+    slot_connector_->Disconnect(static_cast<vtkObject*>(qvtk_->GetInteractor()),
                                 vtkCommand::LeftButtonPressEvent,
                                 this, SLOT(SelectSnakeForDeletion()));
-    slot_connector_->Disconnect(qvtk_->GetInteractor(),
+    slot_connector_->Disconnect(static_cast<vtkObject*>(qvtk_->GetInteractor()),
                                 vtkCommand::RightButtonPressEvent,
                                 this, SLOT(DeselectSnakeForDeletion()));
   }
@@ -952,17 +989,17 @@ void Viewer::RemoveSelectedSnakes() {
 
 void Viewer::ToggleTrimTip(bool state) {
   if (state) {
-    slot_connector_->Connect(qvtk_->GetInteractor(),
+    slot_connector_->Connect(static_cast<vtkObject*>(qvtk_->GetInteractor()),
                              vtkCommand::LeftButtonPressEvent,
                              this, SLOT(SelectVertex()));
-    slot_connector_->Connect(qvtk_->GetInteractor(),
+    slot_connector_->Connect(static_cast<vtkObject*>(qvtk_->GetInteractor()),
                              vtkCommand::RightButtonPressEvent,
                              this, SLOT(DeselectVertex()));
   } else {
-    slot_connector_->Disconnect(qvtk_->GetInteractor(),
+    slot_connector_->Disconnect(static_cast<vtkObject*>(qvtk_->GetInteractor()),
                                 vtkCommand::LeftButtonPressEvent,
                                 this, SLOT(SelectVertex()));
-    slot_connector_->Disconnect(qvtk_->GetInteractor(),
+    slot_connector_->Disconnect(static_cast<vtkObject*>(qvtk_->GetInteractor()),
                                 vtkCommand::RightButtonPressEvent,
                                 this, SLOT(DeselectVertex()));
     this->ResetTrimTip();
@@ -1033,10 +1070,10 @@ void Viewer::TrimTip() {
 
 void Viewer::ToggleExtendTip(bool state) {
   if (state) {
-    slot_connector_->Connect(qvtk_->GetInteractor(),
+    slot_connector_->Connect(static_cast<vtkObject*>(qvtk_->GetInteractor()),
                              vtkCommand::LeftButtonPressEvent,
                              this, SLOT(SelectVertex()));
-    slot_connector_->Connect(qvtk_->GetInteractor(),
+    slot_connector_->Connect(static_cast<vtkObject*>(qvtk_->GetInteractor()),
                              vtkCommand::RightButtonPressEvent,
                              this, SLOT(DeselectVertex()));
 
@@ -1046,15 +1083,15 @@ void Viewer::ToggleExtendTip(bool state) {
                                this,
                                SLOT(SelectExtendVertex(vtkObject *)));
     }
-    slot_connector_->Connect(qvtk_->GetInteractor(),
+    slot_connector_->Connect(static_cast<vtkObject*>(qvtk_->GetInteractor()),
                              vtkCommand::RightButtonPressEvent,
                              this,
                              SLOT(DeselectExtendVertex(vtkObject *)));
   } else {
-    slot_connector_->Disconnect(qvtk_->GetInteractor(),
+    slot_connector_->Disconnect(static_cast<vtkObject*>(qvtk_->GetInteractor()),
                                 vtkCommand::LeftButtonPressEvent,
                                 this, SLOT(SelectVertex()));
-    slot_connector_->Disconnect(qvtk_->GetInteractor(),
+    slot_connector_->Disconnect(static_cast<vtkObject*>(qvtk_->GetInteractor()),
                                 vtkCommand::RightButtonPressEvent,
                                 this, SLOT(DeselectVertex()));
     for (unsigned i = 0; i < kDimension; ++i) {
@@ -1063,7 +1100,7 @@ void Viewer::ToggleExtendTip(bool state) {
                                   this,
                                   SLOT(SelectExtendVertex(vtkObject *)));
     }
-    slot_connector_->Disconnect(qvtk_->GetInteractor(),
+    slot_connector_->Disconnect(static_cast<vtkObject*>(qvtk_->GetInteractor()),
                                 vtkCommand::RightButtonPressEvent,
                                 this, SLOT(DeselectVertex(vtkObject *)));
     this->ResetExtendTip();
@@ -1118,10 +1155,10 @@ void Viewer::ExtendTip() {
 
 void Viewer::ToggleTrimBody(bool state) {
   if (state) {
-    slot_connector_->Connect(qvtk_->GetInteractor(),
+    slot_connector_->Connect(static_cast<vtkObject*>(qvtk_->GetInteractor()),
                              vtkCommand::LeftButtonPressEvent,
                              this, SLOT(SelectBodyVertex()));
-    slot_connector_->Connect(qvtk_->GetInteractor(),
+    slot_connector_->Connect(static_cast<vtkObject*>(qvtk_->GetInteractor()),
                              vtkCommand::RightButtonPressEvent,
                              this, SLOT(DeselectBodyVertex()));
 
@@ -1131,15 +1168,15 @@ void Viewer::ToggleTrimBody(bool state) {
                                this,
                                SLOT(SelectInsertedVertex(vtkObject *)));
     }
-    slot_connector_->Connect(qvtk_->GetInteractor(),
+    slot_connector_->Connect(static_cast<vtkObject*>(qvtk_->GetInteractor()),
                              vtkCommand::RightButtonPressEvent,
                              this,
                              SLOT(DeselectInsertedVertex(vtkObject *)));
   } else {
-    slot_connector_->Disconnect(qvtk_->GetInteractor(),
+    slot_connector_->Disconnect(static_cast<vtkObject*>(qvtk_->GetInteractor()),
                                 vtkCommand::LeftButtonPressEvent,
                                 this, SLOT(SelectBodyVertex()));
-    slot_connector_->Disconnect(qvtk_->GetInteractor(),
+    slot_connector_->Disconnect(static_cast<vtkObject*>(qvtk_->GetInteractor()),
                                 vtkCommand::RightButtonPressEvent,
                                 this, SLOT(DeselectBodyVertex()));
     for (unsigned i = 0; i < kDimension; ++i) {
@@ -1148,7 +1185,7 @@ void Viewer::ToggleTrimBody(bool state) {
                                   this,
                                   SLOT(SelectInsertedVertex(vtkObject *)));
     }
-    slot_connector_->Disconnect(qvtk_->GetInteractor(),
+    slot_connector_->Disconnect(static_cast<vtkObject*>(qvtk_->GetInteractor()),
                                 vtkCommand::RightButtonPressEvent,
                                 this,
                                 SLOT(DeselectInsertedVertex(vtkObject *)));
@@ -1392,21 +1429,23 @@ void Viewer::SaveViewpoint(const std::string &filename) const {
 
 
 void Viewer::PrintScreenAsPNGImage(const std::string &filename) const {
-  vtkWindowToImageFilter *filter = vtkWindowToImageFilter::New();
+  vtkSmartPointer<vtkWindowToImageFilter> filter = 
+      vtkSmartPointer<vtkWindowToImageFilter>::New();
   filter->SetInput(qvtk_->GetRenderWindow());
   // filter->SetMagnification(2);
   filter->SetInputBufferTypeToRGBA();
   filter->Update();
-  vtkPNGWriter *png_writer = vtkPNGWriter::New();
+  
+  vtkSmartPointer<vtkPNGWriter> png_writer = 
+      vtkSmartPointer<vtkPNGWriter>::New();
   png_writer->SetInputConnection(filter->GetOutputPort());
   png_writer->SetFileName(filename.c_str());
   png_writer->Write();
-  png_writer->Delete();
-  filter->Delete();
 }
 
 void Viewer::PrintScreenAsTIFFImage(const std::string &filename) const {
-  vtkWindowToImageFilter *filter = vtkWindowToImageFilter::New();
+  vtkSmartPointer<vtkWindowToImageFilter> filter = 
+      vtkSmartPointer<vtkWindowToImageFilter>::New();
   filter->SetInput(qvtk_->GetRenderWindow());
   // filter->SetMagnification(2);
   filter->SetInputBufferTypeToRGBA();
@@ -1415,12 +1454,11 @@ void Viewer::PrintScreenAsTIFFImage(const std::string &filename) const {
   std::string name = filename;
   name.replace(name.length()-3, 3, "tif");
 
-  vtkTIFFWriter *tiff_writer = vtkTIFFWriter::New();
+  vtkSmartPointer<vtkTIFFWriter> tiff_writer = 
+      vtkSmartPointer<vtkTIFFWriter>::New();
   tiff_writer->SetInputConnection(filter->GetOutputPort());
   tiff_writer->SetFileName(name.c_str());
   tiff_writer->Write();
-  tiff_writer->Delete();
-  filter->Delete();
 }
 
 }  // namespace soax

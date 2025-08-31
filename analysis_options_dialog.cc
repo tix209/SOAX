@@ -7,7 +7,7 @@
  */
 
 #include "./analysis_options_dialog.h"
-#include <QtGui>  // NOLINT(build/include_order)
+#include <QtWidgets>  // NOLINT(build/include_order)
 
 namespace soax {
 AnalysisOptionsDialog::AnalysisOptionsDialog(QWidget *parent) :
@@ -34,7 +34,7 @@ bool AnalysisOptionsDialog::GetPixelSize(double *pixel_size) const {
 }
 
 bool AnalysisOptionsDialog::GetCoarseGraining(int *coarse_graining) const {
-  bool ok = false;
+  bool ok = false;  
   *coarse_graining = coarse_graining_edit_->text().toInt(&ok);
   return ok;
 }

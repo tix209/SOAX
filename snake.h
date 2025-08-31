@@ -6,7 +6,6 @@
  * This file defines the SOAC (snake) class for SOAX.
  */
 
-
 #ifndef SNAKE_H_
 #define SNAKE_H_
 
@@ -23,11 +22,11 @@ class SolverBank;
 class Snake {
  public:
   Snake(const PointContainer &points, bool is_open = true,
-        bool is_grouping = false, ImageType::Pointer image = NULL,
-        VectorImageType::Pointer external_force = NULL,
-        InterpolatorType::Pointer interpolator = NULL,
-        VectorInterpolatorType::Pointer vector_interpolator = NULL,
-        TransformType::Pointer transform = NULL);
+        bool is_grouping = false, ImageType::Pointer image = nullptr,
+        VectorImageType::Pointer external_force = nullptr,
+        InterpolatorType::Pointer interpolator = nullptr,
+        VectorInterpolatorType::Pointer vector_interpolator = nullptr,
+        TransformType::Pointer transform = nullptr);
 
   bool open() const {return open_;}
   bool viable() const {return viable_;}

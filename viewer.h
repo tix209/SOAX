@@ -17,9 +17,10 @@
 #include "vtkSmartPointer.h"
 #include "./global.h"
 #include "./junctions.h"
+#include <QVTKOpenGLWidget.h>
+#include "vtkEventQtSlotConnect.h"
 
-
-class QVTKWidget;
+class QVTKOpenGLWidget;
 class vtkImagePlaneWidget;
 class vtkRenderer;
 class vtkCamera;
@@ -30,7 +31,6 @@ class vtkCubeAxesActor;
 class vtkActor;
 class vtkImageData;
 class vtkPolyData;
-class vtkEventQtSlotConnect;
 class vtkObject;
 class vtkPointPicker;
 
@@ -39,11 +39,11 @@ namespace soax {
 class Viewer : public QObject {
   Q_OBJECT
 
- public:
-  Viewer();
+public:
+  Viewer(QVTKOpenGLWidget *qvtk = nullptr);
   ~Viewer();
   void Reset();
-  QVTKWidget *qvtk() const {return qvtk_;}
+  QVTKOpenGLWidget *qvtk() const {return qvtk_;}
 
   void SetupImage(ImageType::Pointer image);
 
@@ -160,8 +160,8 @@ class Viewer : public QObject {
   typedef std::map<vtkActor *, PointType> ActorPointMap;
   typedef std::vector<vtkActor *> ActorContainer;
 
-  void SetupSlicePlanes(vtkImageData *data);
-  void SetupMIPRendering(vtkImageData *data);
+  void SetupSlicePlanes(vtkSmartPointer<vtkImageData> data);
+  void SetupMIPRendering(vtkSmartPointer<vtkImageData> data);
   void SetupOrientationMarker();
   void SetupUpperLeftCornerText(unsigned min_intensity,
                                 unsigned max_intensity);
@@ -187,13 +187,13 @@ class Viewer : public QObject {
   void ComputeThetaPhi(const VectorType &vector, double *theta, double *phi);
   void ComputeRGBFromHue(double hue, double *color);
   void RemoveColorSegments();
-
   void ResetTrimTip();
   void ResetExtendTip();
   void ResetTrimBody();
 
 
-  QVTKWidget *qvtk_;
+  QVTKOpenGLWidget *qvtk_;
+  vtkGenericOpenGLRenderWindow *render_window_;  
   vtkSmartPointer<vtkRenderer> renderer_;
   vtkSmartPointer<vtkCamera> camera_;
   vtkImagePlaneWidget *slice_planes_[kDimension];

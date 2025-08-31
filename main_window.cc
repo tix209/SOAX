@@ -6,8 +6,7 @@
  * This file implements the main window class for SOAX.
  */
 
-#include <QtGui>
-#include "QVTKWidget.h"
+#include <QtWidgets>
 #include "./main_window.h"
 #include "./multisnake.h"
 #include "./viewer.h"
@@ -23,7 +22,8 @@ namespace soax {
 MainWindow::MainWindow() : message_timeout_(0) {
   central_widget_ = new QWidget(this);
   multisnake_ = new Multisnake;
-  viewer_ = new Viewer;
+  QVTKOpenGLWidget* qvtk_widget = new QVTKOpenGLWidget(this);
+  viewer_ = new Viewer(qvtk_widget);
   parameters_dialog_ = new ParametersDialog(this);
   view_options_dialog_ = new ViewOptionsDialog(this);
   analysis_options_dialog_ = new AnalysisOptionsDialog(this);
@@ -1407,7 +1407,7 @@ void MainWindow::SaveSnapshot() {
 void MainWindow::AboutSOAX() {
   QMessageBox::about(
       this, tr("About SOAX"),
-      tr("<h3>SOAX 3.7.1</h3>"
+      tr("<h3>SOAX 3.8.0</h3>"
          "<p>Copyright &copy; Lehigh University"
          "<p>SOAX extracts curvilinear networks from 2D/3D images."
          "This work was supported by NIH grants R01GM098430 and R35GM136372."));

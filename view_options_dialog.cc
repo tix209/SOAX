@@ -7,7 +7,7 @@
  */
 
 #include "./view_options_dialog.h"
-#include <QtGui>
+#include <QtWidgets>
 
 namespace soax {
 

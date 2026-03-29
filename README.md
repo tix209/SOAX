@@ -25,7 +25,10 @@ A synthetic test image and ground truth are available:
 - [Test image](https://www.lehigh.edu/~div206/soax/data/cable1_std_4.mha)
 - [Ground truth](https://www.lehigh.edu/~div206/soax/data/cable1.txt). Load the ground truth via *Load JFilament Snakes* in SOAX's *File* menu.
 
+##  Binaries
+You can download and install binaries from [SOAX](https://www.lehigh.edu/~div206/soax/) website.
 
+This website also contains instructions on how to download and run SOAX in a docker container
 
 ## Building from Source
 
